@@ -233,7 +233,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   }
   if (twtUpdated) {
     TwtStatus_save();
-    TwtStatus_redraw();
+    // the redraw + layout happen via message_processed_callback() (redrawScreen -> apply_twt_layout)
   }
 
   // notify the main screen, in case something changed

@@ -2,7 +2,9 @@
 #include <pebble.h>
 
 #define TWT_TASK_NAME_LEN 32
-#define TWT_STATUS_PERSIST_KEY 300   // unused by TimeStyle (100=settings, 223=weather, 200=migration)
+#define TWT_STATUS_PERSIST_KEY 300         // unused by TimeStyle (100=settings, 223=weather, 200=migration)
+#define TWT_STATUS_VERSION_PERSIST_KEY 301 // guards against reading a stale blob into a changed layout
+#define TWT_STATUS_VERSION 1               // bump whenever the TwtStatus struct layout changes
 
 // Height in px reserved at the bottom of the screen for the status line.
 #define TWT_STATUS_HEIGHT 22
@@ -30,6 +32,9 @@ void TwtStatus_deinitLayer();
 
 // Show/hide the status line (used to revert to the original watchface when not tracking).
 void TwtStatus_setHidden(bool hidden);
+
+// Reposition the status line (so it can be inset to clear the sidebar while tracking).
+void TwtStatus_setFrame(GRect frame);
 
 // Mark the status layer dirty (call on tick + after a message updates twt_status).
 void TwtStatus_redraw();

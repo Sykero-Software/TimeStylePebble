@@ -15,15 +15,19 @@ bool TwtStatus_isSupported() {
 }
 
 void TwtStatus_load() {
-  if (persist_exists(TWT_STATUS_PERSIST_KEY)) {
+  bool versionMatches = persist_exists(TWT_STATUS_VERSION_PERSIST_KEY)
+      && persist_read_int(TWT_STATUS_VERSION_PERSIST_KEY) == TWT_STATUS_VERSION;
+  if (versionMatches && persist_exists(TWT_STATUS_PERSIST_KEY)) {
     persist_read_data(TWT_STATUS_PERSIST_KEY, &twt_status, sizeof(TwtStatus));
   } else {
+    // no data, or a blob from a different struct layout -> start clean
     twt_status = (TwtStatus){0};
     twt_status.taskName[0] = '\0';
   }
 }
 
 void TwtStatus_save() {
+  persist_write_int(TWT_STATUS_VERSION_PERSIST_KEY, TWT_STATUS_VERSION);
   persist_write_data(TWT_STATUS_PERSIST_KEY, &twt_status, sizeof(TwtStatus));
 }
 
@@ -44,8 +48,15 @@ static void build_status_text() {
 void TwtStatus_redraw() {
   if (!s_status_text_layer) return;
   build_status_text();
+  text_layer_set_text_color(s_status_text_layer, settings.timeColor); // track time-color setting changes
   text_layer_set_text(s_status_text_layer, s_status_buffer);
   layer_mark_dirty(text_layer_get_layer(s_status_text_layer));
+}
+
+void TwtStatus_setFrame(GRect frame) {
+  if (s_status_text_layer) {
+    layer_set_frame(text_layer_get_layer(s_status_text_layer), frame);
+  }
 }
 
 void TwtStatus_initLayer(Layer* parent, GRect frame) {

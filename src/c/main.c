@@ -60,6 +60,11 @@ static void apply_twt_layout() {
   GRect root = layer_get_bounds(window_get_root_layer(mainWindow));
   if (twt_status.isTracking) {
     layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h - TWT_STATUS_HEIGHT));
+    // Inset the status line to the clock-area horizontal span so it never overlaps the
+    // full-height sidebar (which is not shrunk). Follows the sidebar's left/right setting.
+    int statusX = settings.sidebarOnLeft ? sidebarWidth : 0;
+    int statusW = root.size.w - sidebarWidth;
+    TwtStatus_setFrame(GRect(statusX, root.size.h - TWT_STATUS_HEIGHT, statusW, TWT_STATUS_HEIGHT));
     TwtStatus_setHidden(false);
     TwtStatus_redraw();
   } else {
