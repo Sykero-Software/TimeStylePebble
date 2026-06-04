@@ -6,7 +6,7 @@
 
 #define DIGIT_COUNT 4
 
-static Layer* clock_area_layer;
+Layer* clock_area_layer;
 static ClockDigit digits[DIGIT_COUNT];
 
 static char time_hours[3];

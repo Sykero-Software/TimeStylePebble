@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "weather.h"
 #include "settings.h"
+#include "twt_status.h"
 #include "messaging.h"
 
 void (*message_processed_callback)(void);
@@ -201,6 +202,39 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   // save the new settings to persistent storage
   Settings_saveToStorage();
+
+  // does this message contain TrackWorkTime status?
+  bool twtUpdated = false;
+  Tuple *twtTracking_tuple = dict_find(iterator, MESSAGE_KEY_TWT_IS_TRACKING);
+  if (twtTracking_tuple != NULL) {
+    twt_status.isTracking = (twtTracking_tuple->value->uint8 != 0);
+    twtUpdated = true;
+  }
+  Tuple *twtTaskId_tuple = dict_find(iterator, MESSAGE_KEY_TWT_TASK_ID);
+  if (twtTaskId_tuple != NULL) {
+    twt_status.taskId = twtTaskId_tuple->value->int32;
+    twtUpdated = true;
+  }
+  Tuple *twtTaskName_tuple = dict_find(iterator, MESSAGE_KEY_TWT_TASK_NAME);
+  if (twtTaskName_tuple != NULL) {
+    strncpy(twt_status.taskName, twtTaskName_tuple->value->cstring, TWT_TASK_NAME_LEN);
+    twt_status.taskName[TWT_TASK_NAME_LEN] = '\0';
+    twtUpdated = true;
+  }
+  Tuple *twtWorked_tuple = dict_find(iterator, MESSAGE_KEY_TWT_WORKED_BEFORE_MIN);
+  if (twtWorked_tuple != NULL) {
+    twt_status.workedBeforeMin = twtWorked_tuple->value->int32;
+    twtUpdated = true;
+  }
+  Tuple *twtSegStart_tuple = dict_find(iterator, MESSAGE_KEY_TWT_SEGMENT_START);
+  if (twtSegStart_tuple != NULL) {
+    twt_status.segmentStartEpoch = twtSegStart_tuple->value->int32;
+    twtUpdated = true;
+  }
+  if (twtUpdated) {
+    TwtStatus_save();
+    TwtStatus_redraw();
+  }
 
   // notify the main screen, in case something changed
   message_processed_callback();

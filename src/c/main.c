@@ -5,6 +5,7 @@
 #include "weather.h"
 #include "sidebar.h"
 #include "util.h"
+#include "twt_status.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -23,6 +24,7 @@ void update_clock();
 void redrawScreen();
 void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 void bluetoothStateChanged(bool newConnectionState);
+static void apply_twt_layout();
 
 
 void update_clock() {
@@ -47,6 +49,24 @@ void update_clock() {
 
   ClockArea_update_time(timeInfo);
   Sidebar_updateTime(timeInfo);
+}
+
+// Apply the TrackWorkTime layout. While tracking, shrink the clock to make room for the
+// status line and show it. When not tracking, restore the original full-size clock and hide
+// the line, so the watchface looks exactly as it did before the integration.
+static void apply_twt_layout() {
+  if (!TwtStatus_isSupported()) return;
+
+  GRect root = layer_get_bounds(window_get_root_layer(mainWindow));
+  if (twt_status.isTracking) {
+    layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h - TWT_STATUS_HEIGHT));
+    TwtStatus_setHidden(false);
+    TwtStatus_redraw();
+  } else {
+    layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h));
+    TwtStatus_setHidden(true);
+  }
+  layer_mark_dirty(clock_area_layer); // re-run the FCTX update proc so the clock rescales
 }
 
 /* forces everything on screen to be redrawn -- perfect for keeping track of settings! */
@@ -74,6 +94,8 @@ void redrawScreen() {
   Sidebar_redraw();
 
   ClockArea_redraw();
+
+  apply_twt_layout();
 }
 
 static void main_window_load(Window *window) {
@@ -84,12 +106,18 @@ static void main_window_load(Window *window) {
 
   ClockArea_init(window);
 
-  // Make sure the time is displayed from the start
-  redrawScreen();
+  if (TwtStatus_isSupported()) {
+    GRect root = layer_get_bounds(window_get_root_layer(window));
+    GRect statusFrame = GRect(0, root.size.h - TWT_STATUS_HEIGHT, root.size.w, TWT_STATUS_HEIGHT);
+    TwtStatus_initLayer(window_get_root_layer(window), statusFrame); // created hidden
+  }
+
+  redrawScreen(); // calls apply_twt_layout() -> sets clock size + line visibility per tracking
 }
 
 static void main_window_unload(Window *window) {
   ClockArea_deinit();
+  TwtStatus_deinitLayer();
   Sidebar_deinit();
 }
 
@@ -122,6 +150,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // redraw all screen
   Sidebar_redraw();
   ClockArea_redraw();
+  TwtStatus_redraw();
 }
 
 void bluetoothStateChanged(bool newConnectionState) {
@@ -175,6 +204,8 @@ static void init() {
 
   // init settings
   Settings_init();
+
+  TwtStatus_load();
 
   // init weather system
   Weather_init();
