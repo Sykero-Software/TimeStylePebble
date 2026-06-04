@@ -63,7 +63,12 @@
       "WeatherUseNightIcon",
       "SettingWidget0ID",
       "SettingWidget1ID",
-      "SettingWidget2ID"
+      "SettingWidget2ID",
+      "TWT_IS_TRACKING",
+      "TWT_TASK_ID",
+      "TWT_TASK_NAME",
+      "TWT_WORKED_BEFORE_MIN",
+      "TWT_SEGMENT_START"
     ],
     "resources": {
       "media": [
