@@ -1,0 +1,255 @@
+---
+# Only the main Sass file needs front matter (the dashes are enough)
+---
+
+.btn {
+  white-space: normal;
+}
+
+.subtle {
+  font-weight: normal;
+  color: #666;
+}
+
+.example_face {
+  width: 56px;
+  height: 66px;
+  box-shadow: 0 0 0 1px black;
+  background: black;
+  border-right: 10px solid #FFFFFF;
+  margin: 0 auto 4px;
+  font-size: 33px;
+  line-height: 30px;
+  padding-top: 2px;
+  padding-right: 2px;
+  color: white;
+  text-align: right;
+  position: relative;
+
+  &.light_bg {
+    background: white;
+    color: black;
+  }
+
+  &.sidebar_left {
+    border-right: 0 none;
+    border-left: 10px solid #FFFFFF;
+  }
+}
+
+.example_img {
+  border: 1px solid black;
+  display: block;
+  margin: 0 auto 4px;
+}
+
+#preset_selector {
+  p {
+    margin: 10px 0 5px;
+    color: #666;
+  }
+
+  label.btn {
+    width: 130px;
+    margin-bottom: 3px;
+  }
+
+  input[type=radio] {
+    position: absolute;
+    clip: rect(0,0,0,0);
+    pointer-events: none;
+  }
+}
+
+ #clock_font_setting label.btn {
+   width: 49%;
+   margin-bottom: 3px;
+ }
+
+.sp-preview {
+  width: 50px;
+  height: 50px;
+  border-radius: 4px;
+}
+
+ .sp-preview-inner {
+  border-radius: 3px;
+}
+
+.sp-palette {
+  max-width: 275px;
+
+  .sp-thumb-el {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+
+.nav-tabs {
+  margin-bottom: 15px;
+}
+
+.navbar-inverse {
+  box-shadow: 0 -8px 11px 7px black;
+  border: none;
+
+  .navbar-text {
+    color: white;
+    font-size: 16px;
+    line-height: 19px;
+  }
+}
+
+
+#close_button, #reset_button {
+  background-color: #444;
+  color: white;
+}
+
+#custom_preview_container > div {
+  display: inline-block;
+  vertical-align: middle;
+
+  button {
+    display: block;
+    margin: 5px 0;
+  }
+}
+
+.alert-info {
+    color: #666;
+    background-color: #eee;
+    border-color: #DCDCDC;
+}
+
+#sharable_theme {
+  font-weight: bold;
+  word-wrap: break-word;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.theme_actions {
+  display: inline-block;
+  vertical-align: middle;
+
+  .btn {
+    margin-left: 5px;
+    display: block;
+    margin: 2px 5px;
+    width: 86px;
+  }
+}
+
+#sidebar_layout_section.rect {
+  display: table-row;
+
+  .col {
+    display: table-cell;
+    vertical-align: middle;
+  }
+
+  .col:nth-child(2) {
+    padding: 0 10px;
+  }
+
+  .col:nth-child(3) {
+    width: 100%;
+
+    select:nth-child(2) {
+      margin: 41px 0;
+    }
+  }
+
+  .col:nth-child(4) {
+    width: 40px;
+
+    button:nth-child(2) {
+      margin: 41px 0;
+    }
+  }
+
+
+  #widget_0_preview {
+    -webkit-align-self: flex-start;
+  }
+
+  #widget_1_preview {
+    -webkit-align-items: center;
+    -webkit-justify-content: center;
+    -webkit-flex-grow: 1;
+    display: -webkit-flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    display: flex;
+  }
+
+  #widget_2_preview {
+    -webkit-align-self: flex-end;
+    align-self: flex-end;
+  }
+}
+
+#sidebar_layout_section.round {
+
+  #widget_2_preview {
+    float: right;
+  }
+
+}
+
+#sidebar_layout_preview {
+  height: 168px;
+  border: 2px solid black;
+  color: rgba(255,255,255,0.9);
+  font-size: 16px;
+  background-color: #FF5500;
+  width: 34px;
+  margin: 20px 0;
+  padding: 5px 0;
+  display: flex;
+  -webkit-flex-direction: column;
+  -webkit-align-items: center;
+  -webkit-justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar_preview_round {
+  height: 180px;
+  width: 180px;
+  background: url('../images/sidebar_layout_round_bg.png');
+  line-height: 180px;
+  padding: 0 6px;
+  margin: 0 auto;
+
+  > div {
+    display: inline-block;
+  }
+}
+
+#presets_scroller_outer {
+  width: 100vw;
+  overflow-y: scroll;
+  position: relative;
+  right: 15px;
+}
+
+#presets_scroller_inner {
+  width: 3700px;
+  padding-left: 15px;
+}
+
+.presets_group {
+  width: 280px;
+  float: left;
+}
+
+.weather_datasource_attribution {
+  display: block;
+  text-align: center;
+  margin: 2px auto;
+}

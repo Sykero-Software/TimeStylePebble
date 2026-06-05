@@ -1,0 +1,310 @@
+
+<hr>
+<div id="widget_steps_settings">
+  <label>Steps</label><br>
+  <label class="subtle">Display as</label>
+  <div id="health_use_distance" class="form-group" >
+    <div class="btn-group btn-group-justified"  data-toggle="buttons">
+      <label class="btn btn-default" data-setting="no" >
+        <input type="radio" name="options" autocomplete="off">Number of steps
+      </label>
+      <label class="btn btn-default" data-setting="yes" >
+        <input type="radio" name="options" autocomplete="off">Distance
+      </label>
+    </div>
+  </div>
+  <hr>
+</div>
+<div id="widget_sleep_settings">
+  <label>Sleep</label><br>
+  <label class="subtle">Which count should be used for the displayed sleep time?</label>
+  <div id="health_use_restful_sleep" class="form-group" >
+    <div class="btn-group btn-group-justified"  data-toggle="buttons">
+      <label class="btn btn-default" data-setting="no" >
+        <input type="radio" name="options" autocomplete="off">Total Sleep
+      </label>
+      <label class="btn btn-default" data-setting="yes" >
+        <input type="radio" name="options" autocomplete="off">"Restful" Sleep
+      </label>
+    </div>
+  </div>
+  <hr>
+</div>
+<div id="widget_battery_settings">
+  <label>Battery Meter</label>
+  <div id="autobattery_setting" class="form-group" >
+    <label class="subtle">Automatic Battery Notification</label>
+    <div class="btn-group btn-group-justified"  data-toggle="buttons">
+      <label class="btn btn-default" data-setting="on" >
+        <input type="radio" name="options" autocomplete="off">
+        Automatically show battery meter at 10%
+      </label>
+      <label class="btn btn-default" data-setting="off" >
+        <input type="radio" name="options" autocomplete="off">
+        Never show
+      </label>
+    </div>
+  </div>
+  <div id="battery_meter_setting" class="form-group" >
+    <label class="subtle">Style</label>
+    <div class="btn-group btn-group-justified"  data-toggle="buttons">
+      <label class="btn btn-default" data-setting="icon-and-percent" >
+        <input type="radio" name="options" autocomplete="off">
+        <img src="images/battery_meter_with_percent.png" width="30" height="30" ><br />
+        Icon &amp; percent
+      </label>
+      <label class="btn btn-default" data-setting="icon-only" >
+        <input type="radio" name="options" autocomplete="off">
+        <img src="images/battery_meter.png" width="30" height="30" ><br />
+        Icon only
+      </label>
+    </div>
+  </div>
+  <hr>
+</div>
+<div id="widget_weather_settings">
+  <label>Weather</label>
+  <br>
+  <label class="subtle">Location</label>
+  <div id="weather_setting" class="form-group" >
+  <div class="alert alert-info" role="alert">
+    Weather not updating? Setting your location manually often fixes weather issues.
+  </div>
+    <div class="btn-group btn-group-justified"  data-toggle="buttons">
+      <label class="btn btn-default" data-setting="auto" >
+        <input type="radio" name="options" autocomplete="off"> Automatic (GPS)
+      </label>
+      <label class="btn btn-default" data-setting="manual" >
+        <input type="radio" name="options" autocomplete="off" id="weather_setting_manual"> Manual
+      </label>
+    </div>
+    <div class="form_group collapse" id="manual_weather_loc_setting_area">
+      <input type="text" class="form-control" style="margin-top: 15px" id="weather_loc" placeholder='Type to search for a location...'>
+      <input type="hidden" id="weather_loc_lat">
+      <input type="hidden" id="weather_loc_lng">
+      <div id="weather_suggestions" class="list-group"></div>
+    </div>
+  </div>
+  <label class="subtle">Units</label>
+  <div id="units_setting" class="form-group" >
+    <div class="btn-group btn-group-justified"  data-toggle="buttons">
+      <label class="btn btn-default" data-setting="f" >
+        <input type="radio" name="options" autocomplete="off"> Fahrenheit
+      </label>
+      <label class="btn btn-default" data-setting="c" >
+        <input type="radio" name="options" autocomplete="off"> Celsius
+      </label>
+    </div>
+  </div>
+  <label class="subtle">Data Source</label>
+  <div id="weather_datasource_setting" class="form-group" >
+    <a class="weather_datasource_attribution" href="https://open-meteo.com/">
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="-mt-1" viewBox="0 0 16 16"><path d="M7 8a3.5 3.5 0 0 1 3.5 3.555.5.5 0 0 0 .624.492A1.503 1.503 0 0 1 13 13.5a1.5 1.5 0 0 1-1.5 1.5H3a2 2 0 1 1 .1-3.998.5.5 0 0 0 .51-.375A3.502 3.502 0 0 1 7 8zm4.473 3a4.5 4.5 0 0 0-8.72-.99A3 3 0 0 0 3 16h8.5a2.5 2.5 0 0 0 0-5h-.027z"/><path d="M10.5 1.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 1 0v-1zm3.743 1.964a.5.5 0 1 0-.707-.707l-.708.707a.5.5 0 0 0 .708.708l.707-.708zm-7.779-.707a.5.5 0 0 0-.707.707l.707.708a.5.5 0 1 0 .708-.708l-.708-.707zm1.734 3.374a2 2 0 1 1 3.296 2.198c.199.281.372.582.516.898a3 3 0 1 0-4.84-3.225c.352.011.696.055 1.028.129zm4.484 4.074c.6.215 1.125.59 1.522 1.072a.5.5 0 0 0 .039-.742l-.707-.707a.5.5 0 0 0-.854.377zM14.5 6.5a.5.5 0 0 0 0 1h1a.5.5 0 0 0 0-1h-1z"/></svg>
+      <br />
+      Weather data by Open-Meteo.com
+    </a>
+  </div>
+  <hr>
+</div>
+<div id="widget_altclock_settings">
+  <label>Alternate Time Zone</label>
+  <br>
+  <div class="alert alert-info" role="alert">
+    Note: Daylight Saving Time is not applied automatically, so you may need to adjust the offset by one to get the correct time.
+  </div>
+  <label class="subtle">
+    Time Zone
+  </label>
+
+<select id="altclock_offset_hour" class="form-control">
+  <option data-setting="-12">UTC−12:00 (Baker Island)</option>
+  <option data-setting="-11">UTC−11:00 (American Samoa)</option>
+  <option data-setting="-10">UTC−10:00 (Hawaii, Tahiti)</option>
+  <!-- <option data-setting="-9.5">UTC−09:30 (Marquesas Islands)</option> -->
+  <option data-setting="-9">UTC−09:00 (Alaska)</option>
+  <option data-setting="-8">UTC−08:00 (Los Angeles, Vancouver)</option>
+  <option data-setting="-7">UTC−07:00 (Denver, Phoenix)</option>
+  <option data-setting="-6">UTC−06:00 (Chicago, Mexico City)</option>
+  <option data-setting="-5">UTC−05:00 (New York, Bogotá)</option>
+  <option data-setting="-4">UTC−04:00 (Santiago, Halifax)</option>
+  <!-- <option data-setting="-3.5">UTC−03:30 (Newfoundland)</option> -->
+  <option data-setting="-3">UTC−03:00 (Buenos Aires, Montevideo)</option>
+  <option data-setting="-2">UTC−02:00 (South Georgia)</option>
+  <option data-setting="-1">UTC−01:00 (Azores, Cape Verde)</option>
+  <option data-setting="0" selected>UTC±00:00 (London, Reykjavik)</option>
+  <option data-setting="1">UTC+01:00 (Berlin, Lagos, Paris)</option>
+  <option data-setting="2">UTC+02:00 (Cairo, Johannesburg)</option>
+  <option data-setting="3">UTC+03:00 (Moscow, Riyadh)</option>
+  <!-- <option data-setting="3.5">UTC+03:30 (Tehran)</option> -->
+  <option data-setting="4">UTC+04:00 (Dubai, Baku)</option>
+  <!-- <option data-setting="4.5">UTC+04:30 (Kabul)</option> -->
+  <option data-setting="5">UTC+05:00 (Karachi, Tashkent)</option>
+  <!-- <option data-setting="5.5">UTC+05:30 (Delhi, Colombo)</option> -->
+  <!-- <option data-setting="5.75">UTC+05:45 (Kathmandu)</option> -->
+  <option data-setting="6">UTC+06:00 (Dhaka, Almaty)</option>
+  <!-- <option data-setting="6.5">UTC+06:30 (Myanmar, Cocos Islands)</option> -->
+  <option data-setting="7">UTC+07:00 (Bangkok, Jakarta)</option>
+  <option data-setting="8">UTC+08:00 (Beijing, Perth, Singapore)</option>
+  <!-- <option data-setting="8.75">UTC+08:45 (Eucla, Australia)</option> -->
+  <option data-setting="9">UTC+09:00 (Tokyo, Seoul)</option>
+  <!-- <option data-setting="9.5">UTC+09:30 (Adelaide, Darwin)</option> -->
+  <option data-setting="10">UTC+10:00 (Sydney, Vladivostok)</option>
+  <!-- <option data-setting="10.5">UTC+10:30 (Lord Howe Island)</option> -->
+  <option data-setting="11">UTC+11:00 (Solomon Islands, Magadan)</option>
+  <option data-setting="12">UTC+12:00 (Auckland, Fiji)</option>
+  <!-- <option data-setting="12.75">UTC+12:45 (Chatham Islands)</option> -->
+  <option data-setting="13">UTC+13:00 (Tonga, Phoenix Islands)</option>
+  <option data-setting="14">UTC+14:00 (Kiritimati, Line Islands)</option>
+</select>
+  <br>
+  <label class="subtle">Display Name (Max 4 letters)</label>
+  <input type="text" value="ALT" class="form-control" id="altclock_name" maxlength="4" placeholder='e.g. "PDT, CET, or UTC"'>
+  <hr>
+</div>
+<label>Time Display</label><br>
+<div class="alert alert-info" role="alert">
+  To change between 12 hour and 24 hour mode, use the setting on your watch,
+  under Settings &rarr; Date &amp; Time.
+</div>
+<label class="subtle">Leading Zero</label>
+<div id="time_leading_zero_setting" class="form-group" >
+  <div class="btn-group btn-group-justified"  data-toggle="buttons">
+    <label class="btn btn-default" data-setting="no" >
+      <input type="radio" name="options" autocomplete="off">
+      <div class="example_face">6<br>32</div>
+      No leading zero
+    </label>
+    <label class="btn btn-default" data-setting="yes" >
+      <input type="radio" name="options" autocomplete="off">
+      <div class="example_face">06<br>32</div>
+      With leading zero
+    </label>
+  </div>
+</div>
+<label class="subtle">Font</label>
+<div id="clock_font_setting" class="form-group" >
+  <div data-toggle="buttons">
+    <label class="btn btn-default" data-setting="default" >
+      <input type="radio" name="options" autocomplete="off">
+      <img class="example_img" src="images/font-preview-default.png" width="56" height="66">
+      Default
+    </label>
+    <label class="btn btn-default" data-setting="bold" >
+      <input type="radio" name="options" autocomplete="off">
+      <img class="example_img" src="images/font-preview-bold.png" width="56" height="66">
+      Bold
+    </label>
+    <label class="btn btn-default" data-setting="bold-h" >
+      <input type="radio" name="options" autocomplete="off">
+      <img class="example_img" src="images/font-preview-bold-H.png" width="56" height="66">
+      Bold Hour
+    </label>
+    <label class="btn btn-default" data-setting="bold-m" >
+      <input type="radio" name="options" autocomplete="off">
+      <img class="example_img" src="images/font-preview-bold-M.png" width="56" height="66">
+      Bold Minute
+    </label>
+    <label class="btn btn-default" data-setting="leco" >
+      <input type="radio" name="options" autocomplete="off">
+      <img class="example_img" src="images/font-preview-leco.png" width="56" height="66">
+      LECO
+    </label>
+  </div>
+</div>
+<hr>
+<label>Bluetooth Disconnection</label><br>
+<label class="subtle">Icon Indication</label>
+<div id="disconnect_icon_setting" class="form-group" >
+  <div class="btn-group btn-group-justified"  data-toggle="buttons">
+    <label class="btn btn-default" data-setting="no" >
+      <input type="radio" name="options" autocomplete="off">Hide
+    </label>
+    <label class="btn btn-default" data-setting="yes" >
+      <input type="radio" name="options" autocomplete="off">Show
+    </label>
+  </div>
+</div>
+<label class="subtle">Vibration</label>
+<div id="bluetooth_vibe_setting" class="form-group" >
+  <div class="btn-group btn-group-justified"  data-toggle="buttons">
+    <label class="btn btn-default" data-setting="no" >
+      <input type="radio" name="options" autocomplete="off">None
+    </label>
+    <label class="btn btn-default" data-setting="yes" >
+      <input type="radio" name="options" autocomplete="off">Vibrate
+    </label>
+  </div>
+</div>
+<hr>
+<label>Notification</label><br>
+<label class="subtle">Vibration on interval</label>
+<div id="hourly_vibe_setting" class="form-group" >
+  <div class="btn-group btn-group-justified"  data-toggle="buttons">
+    <label class="btn btn-default" data-setting="no" >
+      <input type="radio" name="options" autocomplete="off">No vibration
+    </label>
+    <label class="btn btn-default" data-setting="half" >
+      <input type="radio" name="options" autocomplete="off">Every 30 minutes
+    </label>
+    <label class="btn btn-default" data-setting="yes" >
+      <input type="radio" name="options" autocomplete="off">Every hour
+    </label>
+  </div>
+</div>
+<hr>
+<label>Regional Options</label><br />
+<label class="subtle">Language</label><br />
+<div class="form-group" >
+<select id="language_selection" class="form-control">
+  <option data-setting="0" selected>English (Default)</option>
+  <option data-setting="30">Bahasa Indonesia</option>
+  <option data-setting="15">Català</option>
+  <option data-setting="7">Čeština</option>
+  <option data-setting="32">Cymraeg</option>
+  <option data-setting="21">Dansk</option>
+  <option data-setting="2">Deutsch</option>
+  <option data-setting="18">Eesti</option>
+  <option data-setting="3">Español</option>
+  <option data-setting="19">Euskara</option>
+  <option data-setting="1">Français</option>
+  <option data-setting="26">Gaeilge</option>
+  <option data-setting="33">Galego</option>
+  <option data-setting="25">Hrvatski</option>
+  <option data-setting="4">Italiano</option>
+  <option data-setting="27">Latviešu</option>
+  <option data-setting="22">Lietuviškai</option>
+  <option data-setting="24">Magyar</option>
+  <option data-setting="5">Nederlands</option>
+  <option data-setting="16">Norsk</option>
+  <option data-setting="14">Română</option>
+  <option data-setting="11">Polski</option>
+  <option data-setting="8">Português</option>
+  <option data-setting="12">Slovenčina</option>
+  <option data-setting="23">Slovenščina</option>
+  <option data-setting="20">Suomi</option>
+  <option data-setting="28">Srpski</option>
+  <option data-setting="10">Svenska</option>
+  <option data-setting="13">Tiếng Việt</option>
+  <option data-setting="6">Türkçe</option>
+  <option data-setting="9">Ελληνικά (requires language pack)</option>
+  <option data-setting="17">Русский (requires language pack)</option>
+  <option data-setting="31">Українська (requires language pack)</option>
+  <option data-setting="29">中文 (requires language pack)</option>
+  <option data-setting="34">日本語 (requires language pack)</option>
+  <option data-setting="35">한국어 (requires language pack)</option>
+  <option data-setting="36">‏עברית‏ (requires language pack)</option>
+</select>
+</div>
+{% if health %}
+<label class="subtle">Decimal Separator</label>
+<div id="decimal_separator" class="form-group" >
+  <div class="btn-group btn-group-justified"  data-toggle="buttons">
+    <label class="btn btn-default" data-setting="." style="font-size: 24px">
+      <input type="radio" name="options" autocomplete="off">.
+    </label>
+    <label class="btn btn-default" data-setting="," style="font-size: 24px">
+      <input type="radio" name="options" autocomplete="off">,
+    </label>
+  </div>
+</div>
+{% endif %}

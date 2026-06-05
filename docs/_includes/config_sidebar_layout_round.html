@@ -1,0 +1,44 @@
+<hr>
+<label>Sidebar Widgets</label>
+<div id="sidebar_layout_section" class="round">
+  <div class="sidebar_preview_round col">
+    <div id="widget_0_preview" class="widget_preview">
+      <img src="images/sidebar_widgets/0-NONE.png" >
+    </div>
+    <div id="widget_2_preview" class="widget_preview">
+      <img src="images/sidebar_widgets/0-NONE.png" >
+    </div>
+  </div>
+  <!-- <img id="sidebar_preview_lines" src="images/lines.svg" height="155" /> -->
+  <div class="col">
+    <label class="subtle">Left Side</label>
+    <select class="form-control" id="widget_0_selector">
+      {% include widget_selector.html %}
+    </select>
+    <br>
+    <label class="subtle">Right Side</label>
+    <select class="form-control" id="widget_2_selector">
+      {% include widget_selector.html %}
+    </select>
+    <select class="form-control" style="display: none" id="widget_1_selector">
+      {% include widget_selector.html %}  
+    </select>
+  </div>
+</div>
+<hr>
+<label>Sidebar Display</label><br>
+<label class="subtle">Text Size</label>
+<div id="use_large_sidebar_font_setting" class="form-group" >
+  <div class="btn-group btn-group-justified"  data-toggle="buttons">
+    <label class="btn btn-default" data-setting="no" >
+      <input type="radio" name="options" autocomplete="off">
+      <img class="example_img" src="images/sidebar-preview-default.png" width="56" height="66">
+      Normal
+      </label>
+    <label class="btn btn-default" data-setting="yes" >
+      <input type="radio" name="options" autocomplete="off">
+      <img class="example_img" src="images/sidebar-preview-large.png" width="56" height="66">
+      Large
+      </label>
+  </div>
+</div>

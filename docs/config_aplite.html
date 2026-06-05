@@ -1,0 +1,24 @@
+---
+layout: default
+title: "TimeStyle Settings"
+---
+
+<body style="padding: 70px 0;">
+{% include config_navbar.html %}
+
+<div class="container">
+  {% include version_warning.html %}
+
+<form>
+  {% include config_theme_bw.html %}
+  {% include config_sidebar_layout_rect.html %}
+  {% include config_common_options.html %}
+</form>
+</div>
+
+<script>
+  var has_health = false;
+  var is_bw = true;
+</script>
+
+{% include footer_bw.html %}

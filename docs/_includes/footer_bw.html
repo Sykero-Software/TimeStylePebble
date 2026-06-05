@@ -1,0 +1,25 @@
+
+<script src="lib/jquery-2.2.4.min.js"></script>
+<script src="lib/bootstrap-3.4.1.min.js"></script>
+<script src="lib/spectrum/spectrum.js"></script>
+<script src="lib/jquery.geocomplete.min.js"></script>
+<script>
+$(".colorpicker").spectrum({
+    allowEmpty: true,
+    showPaletteOnly: true,
+    preferredFormat: "hex",
+    hideAfterPaletteSelect: true,
+    change: function(color) {
+        // if we change a custom color, deselect any preset_selector
+        $('#preset_selector > .active').removeClass('active');
+    },
+    palette: [
+        ["#000000", "#AAAAAA", "#FFFFFF"]
+    ]
+});
+
+</script>
+
+<script src="js/config.js"></script>
+</body>
+</html>
