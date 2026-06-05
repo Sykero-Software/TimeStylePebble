@@ -6,6 +6,7 @@
 #include "sidebar.h"
 #include "util.h"
 #include "twt_status.h"
+#include "midi_status.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -58,20 +59,29 @@ static void apply_twt_layout() {
   if (!TwtStatus_isSupported()) return;
 
   GRect root = layer_get_bounds(window_get_root_layer(mainWindow));
-  if (twt_status.isTracking) {
+  bool showMidi = midi_status.isRecording;
+  bool showTwt  = !showMidi && twt_status.isTracking;
+
+  if (showMidi || showTwt) {
     layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h - TWT_STATUS_HEIGHT));
-    // Inset the status line to the clock-area horizontal span so it never overlaps the
-    // full-height sidebar (which is not shrunk). Follows the sidebar's left/right setting.
     int statusX = settings.sidebarOnLeft ? sidebarWidth : 0;
     int statusW = root.size.w - sidebarWidth;
-    TwtStatus_setFrame(GRect(statusX, root.size.h - TWT_STATUS_HEIGHT, statusW, TWT_STATUS_HEIGHT));
-    TwtStatus_setHidden(false);
-    TwtStatus_redraw();
+    GRect statusFrame = GRect(statusX, root.size.h - TWT_STATUS_HEIGHT, statusW, TWT_STATUS_HEIGHT);
+    if (showMidi) {
+      MidiStatus_setFrame(statusFrame);
+      MidiStatus_setHidden(false); MidiStatus_redraw();
+      TwtStatus_setHidden(true);
+    } else {
+      TwtStatus_setFrame(statusFrame);
+      TwtStatus_setHidden(false); TwtStatus_redraw();
+      MidiStatus_setHidden(true);
+    }
   } else {
     layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h));
     TwtStatus_setHidden(true);
+    MidiStatus_setHidden(true);
   }
-  layer_mark_dirty(clock_area_layer); // re-run the FCTX update proc so the clock rescales
+  layer_mark_dirty(clock_area_layer);
 }
 
 /* forces everything on screen to be redrawn -- perfect for keeping track of settings! */
@@ -115,6 +125,7 @@ static void main_window_load(Window *window) {
     GRect root = layer_get_bounds(window_get_root_layer(window));
     GRect statusFrame = GRect(0, root.size.h - TWT_STATUS_HEIGHT, root.size.w, TWT_STATUS_HEIGHT);
     TwtStatus_initLayer(window_get_root_layer(window), statusFrame); // created hidden
+    MidiStatus_initLayer(window_get_root_layer(window), statusFrame); // created hidden
   }
 
   redrawScreen(); // calls apply_twt_layout() -> sets clock size + line visibility per tracking
@@ -123,6 +134,7 @@ static void main_window_load(Window *window) {
 static void main_window_unload(Window *window) {
   ClockArea_deinit();
   TwtStatus_deinitLayer();
+  MidiStatus_deinitLayer();
   Sidebar_deinit();
 }
 
@@ -156,6 +168,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   Sidebar_redraw();
   ClockArea_redraw();
   TwtStatus_redraw();
+  MidiStatus_redraw();
 }
 
 void bluetoothStateChanged(bool newConnectionState) {
@@ -211,6 +224,7 @@ static void init() {
   Settings_init();
 
   TwtStatus_load();
+  MidiStatus_load();
 
   // init weather system
   Weather_init();
