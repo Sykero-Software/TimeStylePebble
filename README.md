@@ -1,4 +1,10 @@
 # TimeStyle
+
+> **Fork notice:** This is a fork of [freakified/TimeStylePebble](https://github.com/freakified/TimeStylePebble),
+> maintained by Sykerö Software. It adds a TWT (Track Work Time) status line and
+> PebbleKit Android 2 companion integration. All credit for the original
+> watchface goes to the upstream authors.
+
 A stylish, modern watchface for the Pebble and Pebble Time watches.
 
 <img src="project_banner.png" width="400" height="300">
