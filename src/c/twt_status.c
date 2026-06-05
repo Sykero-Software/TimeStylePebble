@@ -64,7 +64,7 @@ void TwtStatus_initLayer(Layer* parent, GRect frame) {
   s_status_text_layer = text_layer_create(frame);
   text_layer_set_background_color(s_status_text_layer, GColorClear);
   text_layer_set_text_color(s_status_text_layer, settings.timeColor);
-  text_layer_set_font(s_status_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_font(s_status_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   text_layer_set_text_alignment(s_status_text_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(s_status_text_layer, GTextOverflowModeTrailingEllipsis);
   layer_add_child(parent, text_layer_get_layer(s_status_text_layer));

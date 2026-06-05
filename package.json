@@ -17,8 +17,7 @@
     "companionApp": {
       "android": {
         "apps": [
-          { "package": "org.zephyrsoft.trackworktime_pebble" },
-          { "package": "org.zephyrsoft.trackworktime" }
+          { "package": "fi.sykero.trackworktime" }
         ]
       }
     },

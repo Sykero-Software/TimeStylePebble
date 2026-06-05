@@ -7,7 +7,7 @@
 #define TWT_STATUS_VERSION 1               // bump whenever the TwtStatus struct layout changes
 
 // Height in px reserved at the bottom of the screen for the status line.
-#define TWT_STATUS_HEIGHT 22
+#define TWT_STATUS_HEIGHT 34
 
 typedef struct {
   bool isTracking;
