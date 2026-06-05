@@ -3,7 +3,7 @@ var weather = require('./weather');
 
 var CONFIG_VERSION = 9;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
-var BASE_CONFIG_URL = 'http://freakified.github.io/TimeStylePebble/';
+var BASE_CONFIG_URL = 'https://sykero-software.github.io/TimeStylePebble/';
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready',
