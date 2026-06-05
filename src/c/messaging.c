@@ -2,6 +2,7 @@
 #include "weather.h"
 #include "settings.h"
 #include "twt_status.h"
+#include "midi_status.h"
 #include "messaging.h"
 
 void (*message_processed_callback)(void);
@@ -234,6 +235,28 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if (twtUpdated) {
     TwtStatus_save();
     // the redraw + layout happen via message_processed_callback() (redrawScreen -> apply_twt_layout)
+  }
+
+  bool midiUpdated = false;
+  Tuple *midiRec_tuple = dict_find(iterator, MESSAGE_KEY_MIDI_IS_RECORDING);
+  if (midiRec_tuple != NULL) {
+    midi_status.isRecording = (midiRec_tuple->value->uint8 != 0);
+    midiUpdated = true;
+  }
+  Tuple *midiName_tuple = dict_find(iterator, MESSAGE_KEY_MIDI_DEVICE_NAME);
+  if (midiName_tuple != NULL) {
+    strncpy(midi_status.deviceName, midiName_tuple->value->cstring, MIDI_DEVICE_NAME_LEN);
+    midi_status.deviceName[MIDI_DEVICE_NAME_LEN] = '\0';
+    midiUpdated = true;
+  }
+  Tuple *midiStart_tuple = dict_find(iterator, MESSAGE_KEY_MIDI_REC_START);
+  if (midiStart_tuple != NULL) {
+    midi_status.recStartEpoch = midiStart_tuple->value->int32;
+    midiUpdated = true;
+  }
+  if (midiUpdated) {
+    MidiStatus_save();
+    // redraw + relayout happen via message_processed_callback() -> redrawScreen -> apply_twt_layout
   }
 
   // notify the main screen, in case something changed
