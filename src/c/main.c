@@ -88,10 +88,11 @@ static void apply_twt_layout() {
 void redrawScreen() {
 
   // check if the tick handler frequency should be changed
-  if(dynamicSettings.updateScreenEverySecond != updatingEverySecond) {
+  bool wantEverySecond = dynamicSettings.updateScreenEverySecond || midi_status.isRecording;
+  if(wantEverySecond != updatingEverySecond) {
     tick_timer_service_unsubscribe();
 
-    if(dynamicSettings.updateScreenEverySecond) {
+    if(wantEverySecond) {
       tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
       updatingEverySecond = true;
     } else {
