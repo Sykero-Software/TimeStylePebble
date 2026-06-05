@@ -17,7 +17,8 @@
     "companionApp": {
       "android": {
         "apps": [
-          { "package": "fi.sykero.trackworktime" }
+          { "package": "fi.sykero.trackworktime" },
+          { "package": "fi.sykero.midirecorder" }
         ]
       }
     },
@@ -75,7 +76,10 @@
       "TWT_TASK_ID",
       "TWT_TASK_NAME",
       "TWT_WORKED_BEFORE_MIN",
-      "TWT_SEGMENT_START"
+      "TWT_SEGMENT_START",
+      "MIDI_IS_RECORDING",
+      "MIDI_DEVICE_NAME",
+      "MIDI_REC_START"
     ],
     "resources": {
       "media": [
