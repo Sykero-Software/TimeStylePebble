@@ -10,10 +10,18 @@
     "pebble-fctx": "^1.6.5"
   },
   "pebble": {
-    "displayName": "TimeStyle",
-    "uuid": "4368ffa4-f0fb-4823-90be-f754b076bdaa",
+    "displayName": "TimeStyle TWT",
+    "uuid": "812efd3c-309b-4474-a942-35bcb55a76f2",
     "sdkVersion": "3",
     "enableMultiJS": true,
+    "companionApp": {
+      "android": {
+        "apps": [
+          { "package": "org.zephyrsoft.trackworktime_pebble" },
+          { "package": "org.zephyrsoft.trackworktime" }
+        ]
+      }
+    },
     "targetPlatforms": [
       "aplite",
       "basalt",

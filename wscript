@@ -53,3 +53,38 @@ def build(ctx):
                                          'src/pkjs/**/*.json',
                                          'src/common/**/*.js']),
                    js_entry_file='src/pkjs/index.js')
+
+    # The Pebble SDK bundler drops unknown appinfo.json fields, including
+    # `companionApp`. The Core/Pebble app reads `companionApp.android.apps[].pkg`
+    # to authorise the trackworktime companion to push TWT status to this
+    # watchface via PebbleKit Android 2. Re-inject it into the .pbw here.
+    ctx.add_post_fun(inject_companion_app)
+
+
+def inject_companion_app(ctx):
+    import json, zipfile, shutil, glob, os
+    pkg_path = ctx.path.find_node('package.json').abspath()
+    companion = json.load(open(pkg_path)).get('pebble', {}).get('companionApp')
+    if not companion:
+        return
+    for pbw in glob.glob(os.path.join(out, '*.pbw')):
+        zin = zipfile.ZipFile(pbw, 'r')
+        if 'appinfo.json' not in zin.namelist():
+            zin.close()
+            continue
+        info = json.loads(zin.read('appinfo.json'))
+        if info.get('companionApp') == companion:
+            zin.close()
+            continue
+        info['companionApp'] = companion
+        tmp = pbw + '.tmp'
+        with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                if item.filename == 'appinfo.json':
+                    data = json.dumps(info).encode()
+                zout.writestr(item, data)
+        zin.close()
+        shutil.move(tmp, pbw)
+        from waflib import Logs
+        Logs.pprint('CYAN', 'Injected companionApp into %s' % pbw)
