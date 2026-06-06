@@ -7,6 +7,7 @@
 #include "util.h"
 #include "twt_status.h"
 #include "midi_status.h"
+#include "date_header.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -50,25 +51,49 @@ void update_clock() {
 
   ClockArea_update_time(timeInfo);
   Sidebar_updateTime(timeInfo);
+  DateHeader_updateTime(timeInfo);
 }
 
 // Apply the TrackWorkTime layout. While tracking, shrink the clock to make room for the
 // status line and show it. When not tracking, restore the original full-size clock and hide
 // the line, so the watchface looks exactly as it did before the integration.
 static void apply_twt_layout() {
-  if (!TwtStatus_isSupported()) return;
+  if (!TwtStatus_isSupported()) return;  // same support gate as DateHeader
 
   GRect root = layer_get_bounds(window_get_root_layer(mainWindow));
   bool showMidi = midi_status.isRecording;
   bool showTwt  = !showMidi && twt_status.isTracking;
 
+  // Top strip: large date header (independent of tracking state).
+  int topReserved = settings.showBigDate ? BIG_DATE_HEIGHT : 0;
+
+  // Bottom strip: TWT (two lines) or MIDI (one line) status.
+  int bottomReserved = 0;
   if (showMidi || showTwt) {
-    // TWT shows two lines (work time above task name); MIDI stays one line.
-    int reservedH = showTwt ? TWT_STATUS_HEIGHT_2LINE : TWT_STATUS_HEIGHT;
-    layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h - reservedH));
+    bottomReserved = showTwt ? TWT_STATUS_HEIGHT_2LINE : TWT_STATUS_HEIGHT;
+  }
+
+  // Shrink the clock to fit between the two strips; the clock font rescales
+  // automatically from the layer height, and drawing starts at the layer origin.
+  layer_set_frame(clock_area_layer,
+      GRect(0, topReserved, root.size.w, root.size.h - topReserved - bottomReserved));
+
+  // Date header: centered in the non-sidebar area of the top strip.
+  if (topReserved) {
+    int dateX = settings.sidebarOnLeft ? sidebarWidth : 0;
+    int dateW = root.size.w - sidebarWidth;
+    DateHeader_setFrame(GRect(dateX, 0, dateW, BIG_DATE_HEIGHT));
+    DateHeader_setHidden(false);
+    DateHeader_redraw();
+  } else {
+    DateHeader_setHidden(true);
+  }
+
+  // Bottom status line (unchanged behavior).
+  if (showMidi || showTwt) {
     int statusX = settings.sidebarOnLeft ? sidebarWidth : 0;
     int statusW = root.size.w - sidebarWidth;
-    GRect statusFrame = GRect(statusX, root.size.h - reservedH, statusW, reservedH);
+    GRect statusFrame = GRect(statusX, root.size.h - bottomReserved, statusW, bottomReserved);
     if (showMidi) {
       MidiStatus_setFrame(statusFrame);
       MidiStatus_setHidden(false); MidiStatus_redraw();
@@ -79,10 +104,10 @@ static void apply_twt_layout() {
       MidiStatus_setHidden(true);
     }
   } else {
-    layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h));
     TwtStatus_setHidden(true);
     MidiStatus_setHidden(true);
   }
+
   layer_mark_dirty(clock_area_layer);
 }
 
@@ -131,6 +156,9 @@ static void main_window_load(Window *window) {
     GRect midiFrame = GRect(0, root.size.h - TWT_STATUS_HEIGHT, root.size.w, TWT_STATUS_HEIGHT);
     TwtStatus_initLayer(window_get_root_layer(window), twtFrame);   // created hidden
     MidiStatus_initLayer(window_get_root_layer(window), midiFrame); // created hidden
+    // Date header lives in the top strip; created hidden, apply_twt_layout() shows it per setting.
+    GRect dateFrame = GRect(0, 0, root.size.w, BIG_DATE_HEIGHT);
+    DateHeader_initLayer(window_get_root_layer(window), dateFrame);
   }
 
   redrawScreen(); // calls apply_twt_layout() -> sets clock size + line visibility per tracking
@@ -140,6 +168,7 @@ static void main_window_unload(Window *window) {
   ClockArea_deinit();
   TwtStatus_deinitLayer();
   MidiStatus_deinitLayer();
+  DateHeader_deinitLayer();
   Sidebar_deinit();
 }
 
@@ -174,6 +203,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   ClockArea_redraw();
   TwtStatus_redraw();
   MidiStatus_redraw();
+  DateHeader_redraw();
 }
 
 void bluetoothStateChanged(bool newConnectionState) {
