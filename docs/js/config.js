@@ -1,4 +1,4 @@
-var CURRENT_SETTINGS_VERSION = 9;
+var CURRENT_SETTINGS_VERSION = 10;
 
 // if we have any persistent data saved, load it in
 $(document).ready(function() {
@@ -48,6 +48,7 @@ function loadPreviousSettings() {
       // bluetooth settings
       disconnect_icon_setting: 'no',
       bluetooth_vibe_setting: 'no',
+      midi_vibe_setting: 'no',
 
       // notification settings
       hourly_vibe_setting: 'no',
@@ -110,6 +111,7 @@ function loadPreviousSettings() {
   loadSettingCheckbox('units_setting', savedSettings.units);
   loadSettingCheckbox('disconnect_icon_setting', savedSettings.disconnect_icon_setting);
   loadSettingCheckbox('bluetooth_vibe_setting', savedSettings.bluetooth_vibe_setting);
+  loadSettingCheckbox('midi_vibe_setting', savedSettings.midi_vibe_setting);
   loadSettingCheckbox('hourly_vibe_setting', savedSettings.hourly_vibe_setting);
   loadSettingCheckbox('battery_meter_setting', savedSettings.battery_meter_setting);
   loadSettingCheckbox('autobattery_setting', savedSettings.autobattery_setting);
@@ -515,6 +517,10 @@ function sendSettingsToWatch() {
 
   if($('#bluetooth_vibe_setting .btn.active')) {
     config.bluetooth_vibe_setting = $('#bluetooth_vibe_setting .btn.active').data('setting');
+  }
+
+  if($('#midi_vibe_setting .btn.active')) {
+    config.midi_vibe_setting = $('#midi_vibe_setting .btn.active').data('setting');
   }
 
   // notification settings
