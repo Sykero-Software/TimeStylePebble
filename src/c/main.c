@@ -60,7 +60,9 @@ void update_clock() {
 static void apply_twt_layout() {
   if (!TwtStatus_isSupported()) return;  // same support gate as DateHeader
 
-  GRect root = layer_get_bounds(window_get_root_layer(mainWindow));
+  // Unobstructed bounds: keep the bottom status strip above the system
+  // timeline-peek banner instead of letting the banner draw over it.
+  GRect root = layer_get_unobstructed_bounds(window_get_root_layer(mainWindow));
   bool showMidi = midi_status.isRecording;
   bool showTwt  = !showMidi && twt_status.isTracking;
 
@@ -111,6 +113,13 @@ static void apply_twt_layout() {
   }
 
   layer_mark_dirty(clock_area_layer);
+}
+
+// Recompute the layout the instant the timeline-peek banner slides in/out, so
+// the bottom status strip never lingers hidden behind it (tick-driven relayout
+// alone can lag up to a minute in MINUTE_UNIT mode).
+static void unobstructed_did_change(void *context) {
+  apply_twt_layout();
 }
 
 /* forces everything on screen to be redrawn -- perfect for keeping track of settings! */
@@ -304,6 +313,13 @@ static void init() {
     .did_focus = app_focus_changed,
     .will_focus = app_focus_changing
   });
+
+  // relayout the bottom status strip when the timeline-peek banner appears
+  if (TwtStatus_isSupported()) {
+    unobstructed_area_service_subscribe((UnobstructedAreaHandlers){
+      .did_change = unobstructed_did_change
+    }, NULL);
+  }
 }
 
 static void deinit() {
@@ -317,6 +333,9 @@ static void deinit() {
   tick_timer_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
   battery_state_service_unsubscribe();
+  if (TwtStatus_isSupported()) {
+    unobstructed_area_service_unsubscribe();
+  }
 }
 
 int main(void) {
