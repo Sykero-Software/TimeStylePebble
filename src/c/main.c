@@ -74,7 +74,9 @@ static void apply_twt_layout() {
   }
 
   // Shrink the clock to fit between the two strips; the clock font rescales
-  // automatically from the layer height, and drawing starts at the layer origin.
+  // automatically from the layer height. The clock draws via FCTX in absolute
+  // screen coordinates, so update_clock_area_layer() adds the frame's top
+  // offset back in manually to follow this move down (see clock_area.c).
   layer_set_frame(clock_area_layer,
       GRect(0, topReserved, root.size.w, root.size.h - topReserved - bottomReserved));
 

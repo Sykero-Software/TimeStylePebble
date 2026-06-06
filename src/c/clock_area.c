@@ -109,6 +109,13 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
     }
   #endif
 
+  // FCTX rasterises directly into the framebuffer using absolute screen
+  // coordinates and ignores the layer's frame origin, so the clock would not
+  // follow the layer when apply_twt_layout() moves it down to reserve a top
+  // strip for the date header (it would only shrink, then overlap the date).
+  // Shift drawing down by the layer's vertical offset manually.
+  v_adjust += layer_get_frame(l).origin.y;
+
   FPoint time_pos;
   fctx_begin_fill(&fctx);
   fctx_set_text_em_height(&fctx, hours_font, font_size);
