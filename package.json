@@ -52,7 +52,6 @@
       "SettingAltClockOffset",
       "SettingDisableAutobattery",
       "SettingBluetoothVibe",
-      "SettingMidiVibe",
       "SettingDisconnectIcon",
       "SettingClockFontId",
       "SettingColorBG",
@@ -78,6 +77,7 @@
       "TWT_TASK_NAME",
       "TWT_WORKED_BEFORE_MIN",
       "TWT_SEGMENT_START",
+      "SettingMidiVibe",
       "MIDI_IS_RECORDING",
       "MIDI_DEVICE_NAME",
       "MIDI_REC_START"
