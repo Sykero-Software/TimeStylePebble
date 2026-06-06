@@ -60,11 +60,18 @@ void update_clock() {
 static void apply_twt_layout() {
   if (!TwtStatus_isSupported()) return;  // same support gate as DateHeader
 
-  // Unobstructed bounds: keep the bottom status strip above the system
-  // timeline-peek banner instead of letting the banner draw over it.
-  GRect root = layer_get_unobstructed_bounds(window_get_root_layer(mainWindow));
-  bool showMidi = midi_status.isRecording;
-  bool showTwt  = !showMidi && twt_status.isTracking;
+  // The system timeline-peek banner (upcoming calendar event) eats screen
+  // space. Rather than cram the bottom status strip into what's left, drop it
+  // entirely while obstructed and give the clock + date header the full
+  // unobstructed area. Detected by comparing the unobstructed bounds (what we
+  // get to draw in) against the full screen bounds.
+  Layer *root_layer = window_get_root_layer(mainWindow);
+  GRect full = layer_get_bounds(root_layer);
+  GRect root = layer_get_unobstructed_bounds(root_layer);
+  bool obstructed = root.size.h < full.size.h;
+
+  bool showMidi = !obstructed && midi_status.isRecording;
+  bool showTwt  = !obstructed && !showMidi && twt_status.isTracking;
 
   // Top strip: large date header (independent of tracking state).
   int topReserved = settings.showBigDate ? BIG_DATE_HEIGHT : 0;
