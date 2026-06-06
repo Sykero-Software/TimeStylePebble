@@ -55,6 +55,7 @@ typedef struct {
   // heart rate
   int heartRateHeight;
   int heartRateValueY;
+  int heartRateAgeY;
   // steps
   int stepCounterHeight;
   int stepsTextY;
@@ -306,8 +307,9 @@ void SidebarWidgets_updateFonts() {
         .basicWidgetLabelY = -4,
         .basicWidgetY = 6,
         .btDisconnectHeight = 22,
-        .heartRateHeight = 40,
+        .heartRateHeight = 50,
         .heartRateValueY = 17,
+        .heartRateAgeY = 33,
         .stepCounterHeight = 32,
         .stepsTextY = 13,
         .sleepTimerHeight = 44,
@@ -346,8 +348,9 @@ void SidebarWidgets_updateFonts() {
         .basicWidgetLabelY = -4,
         .basicWidgetY = 9,
         .btDisconnectHeight = 22,
-        .heartRateHeight = 38,
+        .heartRateHeight = 52,
         .heartRateValueY = 21,
+        .heartRateAgeY = 37,
         .stepCounterHeight = 36,
         .stepsTextY = 13,
         .sleepTimerHeight = 44,
@@ -390,8 +393,9 @@ void SidebarWidgets_updateFonts() {
     layout.basicWidgetLabelY = -6;
     layout.basicWidgetY = 8;
     layout.btDisconnectHeight = 22;
-    layout.heartRateHeight = 47;
+    layout.heartRateHeight = 60;
     layout.heartRateValueY = 20;
+    layout.heartRateAgeY = 38;
     layout.stepCounterHeight = 35;
     layout.stepsTextY = 10;
     layout.sleepTimerHeight = 52;
@@ -427,8 +431,9 @@ void SidebarWidgets_updateFonts() {
     layout.basicWidgetLabelY = -4;
     layout.basicWidgetY = 12;
     layout.btDisconnectHeight = 22;
-    layout.heartRateHeight = 40;
+    layout.heartRateHeight = 54;
     layout.heartRateValueY = 20;
+    layout.heartRateAgeY = 36;
     layout.stepCounterHeight = 32;
     layout.stepsTextY = 11;
     layout.sleepTimerHeight = 52;
