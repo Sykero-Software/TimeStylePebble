@@ -307,9 +307,9 @@ void SidebarWidgets_updateFonts() {
         .basicWidgetLabelY = -4,
         .basicWidgetY = 6,
         .btDisconnectHeight = 22,
-        .heartRateHeight = 50,
+        .heartRateHeight = 54,
         .heartRateValueY = 17,
-        .heartRateAgeY = 33,
+        .heartRateAgeY = 37,
         .stepCounterHeight = 32,
         .stepsTextY = 13,
         .sleepTimerHeight = 44,
@@ -348,9 +348,9 @@ void SidebarWidgets_updateFonts() {
         .basicWidgetLabelY = -4,
         .basicWidgetY = 9,
         .btDisconnectHeight = 22,
-        .heartRateHeight = 52,
+        .heartRateHeight = 58,
         .heartRateValueY = 21,
-        .heartRateAgeY = 37,
+        .heartRateAgeY = 41,
         .stepCounterHeight = 36,
         .stepsTextY = 13,
         .sleepTimerHeight = 44,
@@ -393,9 +393,9 @@ void SidebarWidgets_updateFonts() {
     layout.basicWidgetLabelY = -6;
     layout.basicWidgetY = 8;
     layout.btDisconnectHeight = 22;
-    layout.heartRateHeight = 60;
+    layout.heartRateHeight = 62;
     layout.heartRateValueY = 20;
-    layout.heartRateAgeY = 38;
+    layout.heartRateAgeY = 42;
     layout.stepCounterHeight = 35;
     layout.stepsTextY = 10;
     layout.sleepTimerHeight = 52;
@@ -431,9 +431,9 @@ void SidebarWidgets_updateFonts() {
     layout.basicWidgetLabelY = -4;
     layout.basicWidgetY = 12;
     layout.btDisconnectHeight = 22;
-    layout.heartRateHeight = 54;
+    layout.heartRateHeight = 58;
     layout.heartRateValueY = 20;
-    layout.heartRateAgeY = 36;
+    layout.heartRateAgeY = 40;
     layout.stepCounterHeight = 32;
     layout.stepsTextY = 11;
     layout.sleepTimerHeight = 52;
@@ -1078,7 +1078,7 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
   if (age_min < 0) {
     strcpy(age_text, "--");
   } else if (age_min > 59) {
-    strcpy(age_text, "60+");
+    strcpy(age_text, "60+m");
   } else {
     snprintf(age_text, sizeof(age_text), "%dm", age_min);
   }
