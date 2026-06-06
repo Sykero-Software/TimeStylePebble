@@ -7,6 +7,10 @@
 
 void (*message_processed_callback)(void);
 
+// Suppress recording-transition vibration on the first MIDI status message after
+// launch, so we don't buzz merely because we learned recording was already active.
+static bool s_midiSeen = false;
+
 void messaging_requestNewWeatherData() {
   // just send an empty message for now
   DictionaryIterator *iter;
@@ -245,8 +249,20 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   bool midiUpdated = false;
   Tuple *midiRec_tuple = dict_find(iterator, MESSAGE_KEY_MIDI_IS_RECORDING);
   if (midiRec_tuple != NULL) {
-    midi_status.isRecording = (midiRec_tuple->value->uint8 != 0);
+    bool wasRecording = midi_status.isRecording;
+    bool isRecording = (midiRec_tuple->value->uint8 != 0);
+    midi_status.isRecording = isRecording;
     midiUpdated = true;
+
+    if (settings.midiVibe && s_midiSeen && !quiet_time_is_active()
+        && wasRecording != isRecording) {
+      if (isRecording) {
+        vibes_double_pulse();   // recording started
+      } else {
+        vibes_long_pulse();     // recording stopped
+      }
+    }
+    s_midiSeen = true;
   }
   Tuple *midiName_tuple = dict_find(iterator, MESSAGE_KEY_MIDI_DEVICE_NAME);
   if (midiName_tuple != NULL) {
