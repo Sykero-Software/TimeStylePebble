@@ -80,7 +80,8 @@
       "SettingMidiVibe",
       "MIDI_IS_RECORDING",
       "MIDI_DEVICE_NAME",
-      "MIDI_REC_START"
+      "MIDI_REC_START",
+      "SettingBigDate"
     ],
     "resources": {
       "media": [

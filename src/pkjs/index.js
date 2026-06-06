@@ -1,7 +1,7 @@
 
 var weather = require('./weather');
 
-var CONFIG_VERSION = 10;
+var CONFIG_VERSION = 11;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
 var BASE_CONFIG_URL = 'https://sykero-software.github.io/TimeStylePebble/';
 
@@ -149,6 +149,14 @@ Pebble.addEventListener('webviewclosed', function (e) {
         dict.SettingMidiVibe = 1;
       } else {
         dict.SettingMidiVibe = 0;
+      }
+    }
+
+    if (configData.big_date_setting) {
+      if (configData.big_date_setting == 'yes') {
+        dict.SettingBigDate = 1;
+      } else {
+        dict.SettingBigDate = 0;
       }
     }
 

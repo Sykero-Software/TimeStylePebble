@@ -91,6 +91,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *useMetric_tuple = dict_find(iterator, MESSAGE_KEY_SettingUseMetric);
   Tuple *btVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingBluetoothVibe);
   Tuple *midiVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingMidiVibe);
+  Tuple *bigDate_tuple = dict_find(iterator, MESSAGE_KEY_SettingBigDate);
   Tuple *language_tuple = dict_find(iterator, MESSAGE_KEY_SettingLanguageID);
   Tuple *leadingZero_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowLeadingZero);
   Tuple *batteryPct_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowBatteryPct);
@@ -145,6 +146,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   if(midiVibe_tuple != NULL) {
     settings.midiVibe = (bool)midiVibe_tuple->value->int8;
+  }
+
+  if(bigDate_tuple != NULL) {
+    settings.showBigDate = (bool)bigDate_tuple->value->int8;
   }
 
   if(leadingZero_tuple != NULL) {

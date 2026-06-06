@@ -62,6 +62,9 @@ typedef struct {
 
   // MIDI recorder settings
   bool midiVibe;   // vibrate on MIDI recording start/stop
+
+  // clock area extras
+  bool showBigDate;   // large date line above the clock (e.g. "Ti 6.6.")
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
