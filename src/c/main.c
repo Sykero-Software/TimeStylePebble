@@ -63,10 +63,12 @@ static void apply_twt_layout() {
   bool showTwt  = !showMidi && twt_status.isTracking;
 
   if (showMidi || showTwt) {
-    layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h - TWT_STATUS_HEIGHT));
+    // TWT shows two lines (work time above task name); MIDI stays one line.
+    int reservedH = showTwt ? TWT_STATUS_HEIGHT_2LINE : TWT_STATUS_HEIGHT;
+    layer_set_frame(clock_area_layer, GRect(0, 0, root.size.w, root.size.h - reservedH));
     int statusX = settings.sidebarOnLeft ? sidebarWidth : 0;
     int statusW = root.size.w - sidebarWidth;
-    GRect statusFrame = GRect(statusX, root.size.h - TWT_STATUS_HEIGHT, statusW, TWT_STATUS_HEIGHT);
+    GRect statusFrame = GRect(statusX, root.size.h - reservedH, statusW, reservedH);
     if (showMidi) {
       MidiStatus_setFrame(statusFrame);
       MidiStatus_setHidden(false); MidiStatus_redraw();
@@ -124,9 +126,11 @@ static void main_window_load(Window *window) {
 
   if (TwtStatus_isSupported()) {
     GRect root = layer_get_bounds(window_get_root_layer(window));
-    GRect statusFrame = GRect(0, root.size.h - TWT_STATUS_HEIGHT, root.size.w, TWT_STATUS_HEIGHT);
-    TwtStatus_initLayer(window_get_root_layer(window), statusFrame); // created hidden
-    MidiStatus_initLayer(window_get_root_layer(window), statusFrame); // created hidden
+    // Initial frames; apply_twt_layout() resets them per-mode before unhiding.
+    GRect twtFrame = GRect(0, root.size.h - TWT_STATUS_HEIGHT_2LINE, root.size.w, TWT_STATUS_HEIGHT_2LINE);
+    GRect midiFrame = GRect(0, root.size.h - TWT_STATUS_HEIGHT, root.size.w, TWT_STATUS_HEIGHT);
+    TwtStatus_initLayer(window_get_root_layer(window), twtFrame);   // created hidden
+    MidiStatus_initLayer(window_get_root_layer(window), midiFrame); // created hidden
   }
 
   redrawScreen(); // calls apply_twt_layout() -> sets clock size + line visibility per tracking

@@ -7,7 +7,10 @@
 #define TWT_STATUS_VERSION 1               // bump whenever the TwtStatus struct layout changes
 
 // Height in px reserved at the bottom of the screen for the status line.
+// One line (used by the MIDI status strip).
 #define TWT_STATUS_HEIGHT 34
+// Two lines (work time above the task name) for the TWT status strip.
+#define TWT_STATUS_HEIGHT_2LINE 62
 
 typedef struct {
   bool isTracking;
