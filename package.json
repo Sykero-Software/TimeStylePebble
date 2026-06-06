@@ -52,6 +52,7 @@
       "SettingAltClockOffset",
       "SettingDisableAutobattery",
       "SettingBluetoothVibe",
+      "SettingMidiVibe",
       "SettingDisconnectIcon",
       "SettingClockFontId",
       "SettingColorBG",
