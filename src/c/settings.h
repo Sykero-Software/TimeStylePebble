@@ -59,6 +59,9 @@ typedef struct {
   bool healthUseDistance;
   bool healthUseRestfulSleep;
   char decimalSeparator;
+
+  // MIDI recorder settings
+  bool midiVibe;   // vibrate on MIDI recording start/stop
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
