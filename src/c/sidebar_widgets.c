@@ -1069,6 +1069,25 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
                            yPosition + yOffset, layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+
+  // minutes since the last reading, drawn under the BPM value
+  int age_min = (s_last_hr_update_time == 0)
+                    ? -1
+                    : (int)((time(NULL) - s_last_hr_update_time) / 60);
+  char age_text[5];
+  if (age_min < 0) {
+    strcpy(age_text, "--");
+  } else if (age_min > 59) {
+    strcpy(age_text, "60+");
+  } else {
+    snprintf(age_text, sizeof(age_text), "%dm", age_min);
+  }
+
+  graphics_draw_text(ctx, age_text, smSidebarFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           yPosition + layout.heartRateAgeY,
+                           layout.textRectWidth, 20),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
 #endif
