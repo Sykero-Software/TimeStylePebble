@@ -1,6 +1,7 @@
 #include "sidebar_widgets.h"
 #include "languages.h"
 #include "settings.h"
+#include "sidebar.h"
 #include "util.h"
 #include "weather.h"
 #include <math.h>
@@ -136,6 +137,33 @@ void SleepTimer_draw(GContext *ctx, int yPosition);
 SidebarWidget heartRateWidget;
 int HeartRate_getHeight();
 void HeartRate_draw(GContext *ctx, int yPosition);
+
+// UTC time of the most recent heart-rate reading; 0 = unknown.
+static time_t s_last_hr_update_time = 0;
+
+// Seed s_last_hr_update_time from the last hour of minute history so the age is
+// correct immediately at launch, not only after the first in-session update.
+static void hr_seed_from_history() {
+  time_t now = time(NULL);
+  time_t start = now - 3600;
+  time_t end = now;
+  HealthMinuteData minute_data[60];
+  uint32_t num = health_service_get_minute_history(minute_data, 60, &start, &end);
+  // Records are oldest-first; `start` is updated to the first record's time.
+  for (int i = (int)num - 1; i >= 0; i--) {
+    if (!minute_data[i].is_invalid && minute_data[i].heart_rate_bpm > 0) {
+      s_last_hr_update_time = start + (time_t)i * 60;
+      break;
+    }
+  }
+}
+
+static void hr_health_handler(HealthEventType event, void *context) {
+  if (event == HealthEventHeartRateUpdate) {
+    s_last_hr_update_time = time(NULL);
+    Sidebar_redraw();
+  }
+}
 #endif
 
 void SidebarWidgets_init() {
@@ -212,6 +240,9 @@ void SidebarWidgets_init() {
 
   heartRateWidget.getHeight = HeartRate_getHeight;
   heartRateWidget.draw = HeartRate_draw;
+
+  health_service_events_subscribe(hr_health_handler, NULL);
+  hr_seed_from_history();
 #endif
 
   beatsWidget.getHeight = Beats_getHeight;
@@ -231,6 +262,8 @@ void SidebarWidgets_deinit() {
   gdraw_command_image_destroy(stepsImage);
   gdraw_command_image_destroy(sleepImage);
   gdraw_command_image_destroy(heartImage);
+
+  health_service_events_unsubscribe();
 #endif
 }
 
