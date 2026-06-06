@@ -20,6 +20,7 @@ void messaging_requestNewWeatherData() {
 }
 
 void messaging_init(void (*processed_callback)(void)) {
+  s_midiSeen = false;
   // register my custom callback
   message_processed_callback = processed_callback;
 

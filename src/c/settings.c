@@ -46,7 +46,7 @@ void Settings_loadFromStorage() {
   settings.altclockOffset = 0;
   settings.decimalSeparator = '.';
   settings.showBatteryPct = true;
-  settings.midiVibe = false;   // opt-in; off by default
+  settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
