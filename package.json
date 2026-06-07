@@ -48,8 +48,6 @@
       "WeatherForecastHighTemp",
       "WeatherForecastLowTemp",
       "WeatherUVIndex",
-      "ElecStartEpoch",
-      "ElecPrices",
       "SettingAltClockName",
       "SettingAltClockOffset",
       "SettingDisableAutobattery",
@@ -83,7 +81,9 @@
       "MIDI_IS_RECORDING",
       "MIDI_DEVICE_NAME",
       "MIDI_REC_START",
-      "SettingBigDate"
+      "SettingBigDate",
+      "ElecStartEpoch",
+      "ElecPrices"
     ],
     "resources": {
       "media": [

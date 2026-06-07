@@ -205,15 +205,21 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     settings.languageId = language_tuple->value->int8;
   }
 
-  if(widget0Id_tuple != NULL) {
+  // Apply widget IDs, but reject out-of-range values. Defends against a stale /
+  // mismatched config dict (e.g. from an app-message key-id change) writing
+  // garbage widget types into settings.
+  if(widget0Id_tuple != NULL && widget0Id_tuple->value->int8 >= EMPTY
+     && widget0Id_tuple->value->int8 <= ELECTRICITY) {
     settings.widgets[0] = widget0Id_tuple->value->int8;
   }
 
-  if(widget1Id_tuple != NULL) {
+  if(widget1Id_tuple != NULL && widget1Id_tuple->value->int8 >= EMPTY
+     && widget1Id_tuple->value->int8 <= ELECTRICITY) {
     settings.widgets[1] = widget1Id_tuple->value->int8;
   }
 
-  if(widget2Id_tuple != NULL) {
+  if(widget2Id_tuple != NULL && widget2Id_tuple->value->int8 >= EMPTY
+     && widget2Id_tuple->value->int8 <= ELECTRICITY) {
     settings.widgets[2] = widget2Id_tuple->value->int8;
   }
 
