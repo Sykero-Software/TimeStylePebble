@@ -1,5 +1,6 @@
 
 var weather = require('./weather');
+var electricity = require('./electricity');
 
 var CONFIG_VERSION = 11;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
@@ -20,6 +21,14 @@ Pebble.addEventListener('ready',
     if (window.localStorage.getItem('disable_weather') != 'yes') {
       weather.updateWeather();
     }
+
+    // electricity: default disabled until a widget selects it (set in webviewclosed)
+    if (window.localStorage.getItem('disable_electricity') === null) {
+      window.localStorage.setItem('disable_electricity', 'yes');
+    }
+    if (window.localStorage.getItem('disable_electricity') !== 'yes') {
+      electricity.updateElectricity();
+    }
   }
 );
 
@@ -32,6 +41,7 @@ Pebble.addEventListener('appmessage',
     // in the case of recieving this, we assume the watch does, in fact, need weather data
     window.localStorage.setItem('disable_weather', 'no');
     weather.updateWeather();
+    electricity.updateElectricity();
   }
 );
 
@@ -274,6 +284,10 @@ Pebble.addEventListener('webviewclosed', function (e) {
 
     window.localStorage.setItem('disable_weather', disableWeather);
 
+    // electricity widget = id 14; enable the fetcher only when it's selected
+    var disableElectricity = (widgetIDs.indexOf(14) != -1) ? 'no' : 'yes';
+    window.localStorage.setItem('disable_electricity', disableElectricity);
+
     console.log('Preparing message: ', JSON.stringify(dict));
 
     // Send settings to Pebble watchapp
@@ -282,6 +296,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
 
       // after sending config data, force a weather refresh in case that changed
       weather.updateWeather(true);
+      electricity.updateElectricity(true);
     }, function () {
       console.log('Failed to send config data!');
     });
