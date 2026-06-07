@@ -141,9 +141,13 @@ void HeartRate_draw(GContext *ctx, int yPosition);
 
 // UTC time of the most recent heart-rate reading; 0 = unknown.
 static time_t s_last_hr_update_time = 0;
+// BPM of that most recent reading; 0 = unknown. Used as a fallback when the
+// live peek has no value yet (e.g. right after a cold start / install).
+static int s_last_hr_bpm = 0;
 
-// Seed s_last_hr_update_time from the last hour of minute history so the age is
-// correct immediately at launch, not only after the first in-session update.
+// Seed s_last_hr_update_time/s_last_hr_bpm from the last hour of minute history
+// so the age (and a fallback BPM) is correct immediately at launch, not only
+// after the first in-session update.
 static void hr_seed_from_history() {
   time_t now = time(NULL);
   time_t start = now - 3600;
@@ -154,6 +158,7 @@ static void hr_seed_from_history() {
   for (int i = (int)num - 1; i >= 0; i--) {
     if (!minute_data[i].is_invalid && minute_data[i].heart_rate_bpm > 0) {
       s_last_hr_update_time = start + (time_t)i * 60;
+      s_last_hr_bpm = minute_data[i].heart_rate_bpm;
       break;
     }
   }
@@ -161,7 +166,11 @@ static void hr_seed_from_history() {
 
 static void hr_health_handler(HealthEventType event, void *context) {
   if (event == HealthEventHeartRateUpdate) {
-    s_last_hr_update_time = time(NULL);
+    int bpm = health_service_peek_current_value(HealthMetricHeartRateBPM);
+    if (bpm > 0) {
+      s_last_hr_update_time = time(NULL);
+      s_last_hr_bpm = bpm;
+    }
     Sidebar_redraw();
   }
 }
@@ -1060,6 +1069,12 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
 
   // TODO: accessibility check?
   int heart_rate = health_service_peek_current_value(HealthMetricHeartRateBPM);
+  // The live peek has no value right after a cold start (e.g. install) until the
+  // next automatic sample; fall back to the last reading from minute history so
+  // the BPM and the age line below it stay consistent instead of showing "0".
+  if (heart_rate <= 0) {
+    heart_rate = s_last_hr_bpm;
+  }
   char heart_rate_text[8];
 
   snprintf(heart_rate_text, sizeof(heart_rate_text), "%i", heart_rate);
