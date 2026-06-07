@@ -6,6 +6,7 @@
 #include "weather.h"
 #include <math.h>
 #include <pebble.h>
+#include "electricity.h"
 
 bool SidebarWidgets_useCompactMode = false;
 int SidebarWidgets_xOffset;
@@ -25,6 +26,13 @@ GFont mdSidebarFont;
 GFont lgSidebarFont;
 GFont currentSidebarFont;
 GFont batteryFont;
+
+// lightning bolt icon for the electricity widget (vector, no resource needed)
+static const GPathInfo ELEC_BOLT_PATH_INFO = {
+  .num_points = 7,
+  .points = (GPoint[]) {{6, 0}, {0, 11}, {4, 11}, {2, 20}, {12, 7}, {7, 7}, {9, 0}}
+};
+static GPath *electricityBoltPath = NULL;
 
 typedef struct {
   // battery meter
@@ -117,6 +125,10 @@ void AltTime_draw(GContext *ctx, int yPosition);
 SidebarWidget beatsWidget;
 int Beats_getHeight();
 void Beats_draw(GContext *ctx, int yPosition);
+
+SidebarWidget electricityWidget;
+int Electricity_getHeight();
+void Electricity_draw(GContext *ctx, int yPosition);
 
 SidebarWidget uvIndexWidget;
 int UVIndex_getHeight();
@@ -248,6 +260,11 @@ void SidebarWidgets_init() {
 
   beatsWidget.getHeight = Beats_getHeight;
   beatsWidget.draw = Beats_draw;
+
+  electricityWidget.getHeight = Electricity_getHeight;
+  electricityWidget.draw = Electricity_draw;
+
+  electricityBoltPath = gpath_create(&ELEC_BOLT_PATH_INFO);
 }
 
 void SidebarWidgets_deinit() {
@@ -266,6 +283,7 @@ void SidebarWidgets_deinit() {
 
   health_service_events_unsubscribe();
 #endif
+  gpath_destroy(electricityBoltPath);
 }
 
 void SidebarWidgets_updateFonts() {
@@ -540,6 +558,8 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return weekNumberWidget;
   case WEATHER_UV_INDEX:
     return uvIndexWidget;
+  case ELECTRICITY:
+    return electricityWidget;
 #ifdef PBL_HEALTH
   case STEP_COUNTER:
     return stepCounterWidget;
@@ -1099,4 +1119,48 @@ int Beats_getHeight() { return layout.basicWidgetHeight; }
 void Beats_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
   draw_basic_widget(ctx, yPosition, "@", currentBeats, layout.basicWidgetY - 1);
+}
+
+/***** Electricity (pörssisähkö) widget *****/
+
+int Electricity_getHeight() { return layout.heartRateHeight; }
+
+void Electricity_draw(GContext *ctx, int yPosition) {
+  // lightning bolt icon (vector)
+  if (electricityBoltPath) {
+    gpath_move_to(electricityBoltPath,
+                  GPoint(9 + SidebarWidgets_xOffset, yPosition));
+    graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
+    gpath_draw_filled(ctx, electricityBoltPath);
+  }
+
+  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+
+  // current price (large)
+  char nowStr[12];
+  int16_t nowVal;
+  if (Electricity_getCurrentPrice(&nowVal)) {
+    elec_format_price(nowVal, settings.decimalSeparator, nowStr, sizeof(nowStr));
+  } else {
+    strcpy(nowStr, "--");
+  }
+  graphics_draw_text(ctx, nowStr, currentSidebarFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           yPosition + layout.heartRateValueY,
+                           layout.textRectWidth, 20),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+
+  // today's average (small)
+  char avgStr[12];
+  int16_t avgVal;
+  if (Electricity_getTodayAverage(&avgVal)) {
+    elec_format_price(avgVal, settings.decimalSeparator, avgStr, sizeof(avgStr));
+  } else {
+    strcpy(avgStr, "--");
+  }
+  graphics_draw_text(ctx, avgStr, smSidebarFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           yPosition + layout.heartRateAgeY,
+                           layout.textRectWidth, 20),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
