@@ -5,6 +5,7 @@
 #include "midi_status.h"
 #include "messaging.h"
 #include "electricity.h"
+#include "languages.h"
 
 void (*message_processed_callback)(void);
 
@@ -189,7 +190,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     settings.disableAutobattery = (bool)autobattery_tuple->value->int8;
   }
 
-  if(clockFont_tuple != NULL) {
+  if(clockFont_tuple != NULL && clockFont_tuple->value->int8 >= FONT_SETTING_DEFAULT
+     && clockFont_tuple->value->int8 <= FONT_SETTING_BOLD_M) {
     settings.clockFontId = clockFont_tuple->value->int8;
   }
 
@@ -197,11 +199,13 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     settings.useLargeFonts = (bool)useLargeFonts_tuple->value->int8;
   }
 
-  if(hourlyVibe_tuple != NULL) {
+  if(hourlyVibe_tuple != NULL && hourlyVibe_tuple->value->int8 >= NO_VIBE
+     && hourlyVibe_tuple->value->int8 <= VIBE_EVERY_HALF_HOUR) {
     settings.hourlyVibe = hourlyVibe_tuple->value->int8;
   }
 
-  if(language_tuple != NULL) {
+  if(language_tuple != NULL && language_tuple->value->int8 >= LANGUAGE_EN
+     && language_tuple->value->int8 <= LANGUAGE_IW) {
     settings.languageId = language_tuple->value->int8;
   }
 

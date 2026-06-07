@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "languages.h"
 #include <pebble.h>
 
 Settings settings;
@@ -71,6 +72,31 @@ void Settings_loadFromStorage() {
         settings.altclockName[sizeof(settings.altclockName) - 1] = '\0';
       }
     }
+  }
+
+  // Sanitize loaded settings: a value that is out of range (e.g. from an
+  // earlier build whose message-key IDs were shifted, writing a color/garbage
+  // value into languageId) would index arrays like dayNames[37] out of bounds
+  // and crash on every draw -- including at launch, since the bad value is
+  // persisted and survives reinstalls. Clamp anything used as an array index
+  // back to a safe default so the watchface can always start.
+  bool clamped = false;
+
+  if (settings.languageId > LANGUAGE_IW) { settings.languageId = LANGUAGE_EN; clamped = true; }
+  if (settings.clockFontId > FONT_SETTING_BOLD_M) { settings.clockFontId = FONT_SETTING_DEFAULT; clamped = true; }
+  if (settings.hourlyVibe > VIBE_EVERY_HALF_HOUR) { settings.hourlyVibe = NO_VIBE; clamped = true; }
+  for (int i = 0; i < 3; i++) {
+    if (settings.widgets[i] > ELECTRICITY) { settings.widgets[i] = EMPTY; clamped = true; }
+  }
+  if (settings.decimalSeparator != '.' && settings.decimalSeparator != ',') {
+    settings.decimalSeparator = '.'; clamped = true;
+  }
+  settings.altclockName[sizeof(settings.altclockName) - 1] = '\0';
+
+  if (clamped) {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, reset to defaults");
+    persist_write_data(SETTINGS_PERSIST_KEY, &settings, sizeof(settings));
+    persist_write_int(SETTINGS_VERSION_PERSIST_KEY, CURRENT_SETTINGS_VERSION);
   }
 
   Settings_updateDynamicSettings();
