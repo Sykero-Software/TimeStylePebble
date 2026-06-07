@@ -48,6 +48,8 @@
       "WeatherForecastHighTemp",
       "WeatherForecastLowTemp",
       "WeatherUVIndex",
+      "ElecStartEpoch",
+      "ElecPrices",
       "SettingAltClockName",
       "SettingAltClockOffset",
       "SettingDisableAutobattery",
