@@ -36,3 +36,23 @@ test('empty / missing prices', () => {
   assert.strictEqual(parseLatestPrices({}).count, 0);
   assert.strictEqual(parseLatestPrices({ prices: [] }).startEpoch, 0);
 });
+
+test('sorts ascending by startDate regardless of input order', () => {
+  // descending input (newest first) — the watch needs ascending output
+  const json = {
+    prices: [
+      { price: 2.00, startDate: '2025-09-19T22:15:00.000Z', endDate: 'x' },
+      { price: 1.00, startDate: '2025-09-19T22:00:00.000Z', endDate: 'x' }
+    ]
+  };
+  const r = parseLatestPrices(json);
+  // startEpoch must be the EARLIEST entry's start
+  assert.strictEqual(r.startEpoch,
+    Math.floor(Date.parse('2025-09-19T22:00:00.000Z') / 1000));
+  // first emitted quarter must be the 1.00 snt entry: round(100)=100=0x0064 -> [0x64,0x00]
+  assert.strictEqual(r.bytes[0], 0x64);
+  assert.strictEqual(r.bytes[1], 0x00);
+  // second emitted quarter must be the 2.00 snt entry: round(200)=200=0x00C8 -> [0xC8,0x00]
+  assert.strictEqual(r.bytes[2], 0xC8);
+  assert.strictEqual(r.bytes[3], 0x00);
+});
