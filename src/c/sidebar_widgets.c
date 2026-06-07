@@ -309,7 +309,7 @@ void SidebarWidgets_updateFonts() {
         .btDisconnectHeight = 22,
         .heartRateHeight = 54,
         .heartRateValueY = 17,
-        .heartRateAgeY = 37,
+        .heartRateAgeY = 40,
         .stepCounterHeight = 32,
         .stepsTextY = 13,
         .sleepTimerHeight = 44,
@@ -350,7 +350,7 @@ void SidebarWidgets_updateFonts() {
         .btDisconnectHeight = 22,
         .heartRateHeight = 58,
         .heartRateValueY = 21,
-        .heartRateAgeY = 41,
+        .heartRateAgeY = 44,
         .stepCounterHeight = 36,
         .stepsTextY = 13,
         .sleepTimerHeight = 44,
@@ -395,7 +395,7 @@ void SidebarWidgets_updateFonts() {
     layout.btDisconnectHeight = 22;
     layout.heartRateHeight = 62;
     layout.heartRateValueY = 20;
-    layout.heartRateAgeY = 42;
+    layout.heartRateAgeY = 45;
     layout.stepCounterHeight = 35;
     layout.stepsTextY = 10;
     layout.sleepTimerHeight = 52;
@@ -433,7 +433,7 @@ void SidebarWidgets_updateFonts() {
     layout.btDisconnectHeight = 22;
     layout.heartRateHeight = 58;
     layout.heartRateValueY = 20;
-    layout.heartRateAgeY = 40;
+    layout.heartRateAgeY = 43;
     layout.stepCounterHeight = 32;
     layout.stepsTextY = 11;
     layout.sleepTimerHeight = 52;
