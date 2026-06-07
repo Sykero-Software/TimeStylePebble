@@ -8,6 +8,8 @@
 #include "twt_status.h"
 #include "midi_status.h"
 #include "date_header.h"
+#include "electricity.h"
+#include "sidebar_widgets.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -192,9 +194,16 @@ static void main_window_unload(Window *window) {
 
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  // every 30 minutes, request new weather data
-  if(!dynamicSettings.disableWeather) {
-    if(tick_time->tm_min == weatherRefreshMinute && tick_time->tm_sec == 0) {
+  // every 30 minutes, request fresh phone data if weather OR the electricity
+  // widget needs it (the JS side throttles the actual API call to ~2/day)
+  bool needsPhoneData = !dynamicSettings.disableWeather;
+  for (int i = 0; i < 3; i++) {
+    if (settings.widgets[i] == ELECTRICITY) {
+      needsPhoneData = true;
+    }
+  }
+  if (needsPhoneData) {
+    if (tick_time->tm_min == weatherRefreshMinute && tick_time->tm_sec == 0) {
       messaging_requestNewWeatherData();
     }
   }
@@ -281,6 +290,7 @@ static void init() {
 
   // init weather system
   Weather_init();
+  Electricity_init();
 
   // init the messaging thing
   messaging_init(redrawScreen);
@@ -335,6 +345,7 @@ static void deinit() {
 
   // unload weather stuff
   Weather_deinit();
+  Electricity_deinit();
   Settings_deinit();
 
   tick_timer_service_unsubscribe();
