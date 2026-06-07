@@ -4,6 +4,7 @@
 #include "twt_status.h"
 #include "midi_status.h"
 #include "messaging.h"
+#include "electricity.h"
 
 void (*message_processed_callback)(void);
 
@@ -31,7 +32,8 @@ void messaging_init(void (*processed_callback)(void)) {
   app_message_register_outbox_sent(outbox_sent_callback);
 
   // Open AppMessage
-  app_message_open(512, 8);
+  // inbox must hold the 384-byte electricity price table (192 * int16) + overhead
+  app_message_open(1024, 64);
 
   // APP_LOG(APP_LOG_LEVEL_DEBUG, "Watch messaging is started!");
   app_message_register_inbox_received(inbox_received_callback);
@@ -80,6 +82,29 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   // only save new weather if weather info was recieved
   if(weatherDataUpdated) {
     Weather_saveData();
+  }
+
+  // does this message contain electricity price data?
+  bool electricityUpdated = false;
+  Tuple *elecStart_tuple = dict_find(iterator, MESSAGE_KEY_ElecStartEpoch);
+  if (elecStart_tuple != NULL) {
+    Electricity_info.startEpoch = (uint32_t)elecStart_tuple->value->uint32;
+    electricityUpdated = true;
+  }
+  Tuple *elecPrices_tuple = dict_find(iterator, MESSAGE_KEY_ElecPrices);
+  if (elecPrices_tuple != NULL) {
+    int n = elecPrices_tuple->length / 2;          // little-endian int16 per quarter
+    if (n > ELEC_MAX_QUARTERS) { n = ELEC_MAX_QUARTERS; }
+    uint8_t *d = elecPrices_tuple->value->data;
+    for (int i = 0; i < n; i++) {
+      Electricity_info.prices[i] =
+          (int16_t)((uint16_t)d[2 * i] | ((uint16_t)d[2 * i + 1] << 8));
+    }
+    Electricity_info.count = (uint16_t)n;
+    electricityUpdated = true;
+  }
+  if (electricityUpdated) {
+    Electricity_saveData();
   }
 
   // does this message contain new config information?
