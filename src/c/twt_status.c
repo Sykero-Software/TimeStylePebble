@@ -54,7 +54,11 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   char task_buf[12];
   char day_pct_buf[12] = "";
   char task_pct_buf[12] = "";
-  snprintf(total_buf, sizeof(total_buf), "%d:%02d", (int)(total / 60), (int)(total % 60));
+  int32_t shown_total = total;                       // default: worked time
+  if (settings.twtShowRemaining && twt_status.dailyTargetMin > 0) {
+    shown_total = twt_status.dailyTargetMin - total; // remaining; negative on overtime
+  }
+  twt_fmt_hhmm_signed(total_buf, sizeof(total_buf), shown_total);
   snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task / 60), (int)(task % 60));
   if (day_pct >= 0)  snprintf(day_pct_buf, sizeof(day_pct_buf), "(%d%%)", day_pct > 999 ? 999 : day_pct);
   if (task_pct >= 0) snprintf(task_pct_buf, sizeof(task_pct_buf), "(%d%%)", task_pct > 999 ? 999 : task_pct);
