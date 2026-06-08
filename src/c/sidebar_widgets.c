@@ -1157,6 +1157,11 @@ void Electricity_draw(GContext *ctx, int yPosition) {
 
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
+  // The lightning bolt icon is shorter than the heart-rate icon this widget
+  // borrows its layout from, so the reused heartRateValueY/heartRateAgeY leave
+  // too big a gap under the icon. Pull the whole number block up a few px.
+  const int elecYNudge = -6;
+
   // current price (large)
   char nowStr[12];
   int16_t nowVal;
@@ -1167,7 +1172,7 @@ void Electricity_draw(GContext *ctx, int yPosition) {
   }
   graphics_draw_text(ctx, nowStr, currentSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.heartRateValueY,
+                           yPosition + layout.heartRateValueY + elecYNudge,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
@@ -1181,7 +1186,7 @@ void Electricity_draw(GContext *ctx, int yPosition) {
   }
   graphics_draw_text(ctx, avgStr, smSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.heartRateAgeY,
+                           yPosition + layout.heartRateAgeY + elecYNudge,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
