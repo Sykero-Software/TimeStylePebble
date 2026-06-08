@@ -4,7 +4,7 @@
 #define TWT_TASK_NAME_LEN 32
 #define TWT_STATUS_PERSIST_KEY 300         // unused by TimeStyle (100=settings, 223=weather, 200=migration)
 #define TWT_STATUS_VERSION_PERSIST_KEY 301 // guards against reading a stale blob into a changed layout
-#define TWT_STATUS_VERSION 1               // bump whenever the TwtStatus struct layout changes
+#define TWT_STATUS_VERSION 2               // bump whenever the TwtStatus struct layout changes
 
 // Height in px reserved at the bottom of the screen for the status line.
 // One line (used by the MIDI status strip).
@@ -16,8 +16,9 @@ typedef struct {
   bool isTracking;
   int32_t taskId;
   char taskName[TWT_TASK_NAME_LEN + 1];
-  int32_t workedBeforeMin;   // worked minutes today excluding the running segment
-  int32_t segmentStartEpoch; // epoch seconds of current clock-in (0 if not tracking)
+  int32_t workedBeforeMin;       // worked minutes today excluding the running segment
+  int32_t taskWorkedBeforeMin;   // worked minutes today on the CURRENT task, excluding the running segment
+  int32_t segmentStartEpoch;     // epoch seconds of current clock-in (0 if not tracking)
 } TwtStatus;
 
 extern TwtStatus twt_status;

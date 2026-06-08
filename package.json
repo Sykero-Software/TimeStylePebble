@@ -82,7 +82,8 @@
       "MIDI_REC_START",
       "SettingBigDate",
       "ElecStartEpoch",
-      "ElecPrices"
+      "ElecPrices",
+      "TWT_TASK_WORKED_BEFORE_MIN"
     ],
     "resources": {
       "media": [

@@ -277,6 +277,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     twt_status.workedBeforeMin = twtWorked_tuple->value->int32;
     twtUpdated = true;
   }
+  Tuple *twtTaskWorked_tuple = dict_find(iterator, MESSAGE_KEY_TWT_TASK_WORKED_BEFORE_MIN);
+  if (twtTaskWorked_tuple != NULL) {
+    twt_status.taskWorkedBeforeMin = twtTaskWorked_tuple->value->int32;
+    twtUpdated = true;
+  }
   Tuple *twtSegStart_tuple = dict_find(iterator, MESSAGE_KEY_TWT_SEGMENT_START);
   if (twtSegStart_tuple != NULL) {
     twt_status.segmentStartEpoch = twtSegStart_tuple->value->int32;
