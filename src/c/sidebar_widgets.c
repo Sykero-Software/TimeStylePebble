@@ -1154,7 +1154,7 @@ void Electricity_draw(GContext *ctx, int yPosition) {
   // The lightning bolt icon is shorter than the heart-rate icon this widget
   // borrows its layout from, so the reused heartRateValueY/heartRateAgeY leave
   // too big a gap under the icon. Pull the whole number block up a few px.
-  const int elecYNudge = -4;
+  const int elecYNudge = -6;
 
   // current price (large)
   char nowStr[12];
