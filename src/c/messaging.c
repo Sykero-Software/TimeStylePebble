@@ -287,6 +287,16 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     twt_status.segmentStartEpoch = twtSegStart_tuple->value->int32;
     twtUpdated = true;
   }
+  Tuple *twtDailyTarget_tuple = dict_find(iterator, MESSAGE_KEY_TWT_DAILY_TARGET_MIN);
+  if (twtDailyTarget_tuple != NULL) {
+    int32_t t = twtDailyTarget_tuple->value->int32;
+    // defence-in-depth: clamp to a sane range (0 .. 24h) so a stale/garbled dict
+    // can't produce a wild denominator. 0 means "no target -> hide percent/bar".
+    if (t < 0) t = 0;
+    if (t > 1440) t = 1440;
+    twt_status.dailyTargetMin = t;
+    twtUpdated = true;
+  }
   if (twtUpdated) {
     TwtStatus_save();
     // the redraw + layout happen via message_processed_callback() (redrawScreen -> apply_twt_layout)
