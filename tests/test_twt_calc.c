@@ -1,6 +1,7 @@
 #include "twt_calc.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 int main(void) {
   // --- twt_percent (rounded 100*value/base; -1 sentinel when base<=0) ---
@@ -21,6 +22,15 @@ int main(void) {
   assert(twt_bar_fill_px(900, 450, 100) == 100);  // overtime capped to full
   assert(twt_bar_fill_px(225, 0,   100) == 0);    // no target -> empty
   assert(twt_bar_fill_px(225, 450, 0)   == 0);    // zero width
+
+  // --- twt_fmt_hhmm_signed (sign-aware "h:mm"; negative gets leading '-') ---
+  char b[12];
+  twt_fmt_hhmm_signed(b, sizeof(b), 90);    assert(strcmp(b, "1:30") == 0);
+  twt_fmt_hhmm_signed(b, sizeof(b), 0);     assert(strcmp(b, "0:00") == 0);
+  twt_fmt_hhmm_signed(b, sizeof(b), 5);     assert(strcmp(b, "0:05") == 0);
+  twt_fmt_hhmm_signed(b, sizeof(b), -45);   assert(strcmp(b, "-0:45") == 0);
+  twt_fmt_hhmm_signed(b, sizeof(b), -65);   assert(strcmp(b, "-1:05") == 0);
+  twt_fmt_hhmm_signed(b, sizeof(b), 630);   assert(strcmp(b, "10:30") == 0);
 
   printf("All twt_calc tests passed\n");
   return 0;
