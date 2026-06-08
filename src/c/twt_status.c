@@ -31,10 +31,11 @@ void TwtStatus_save() {
   persist_write_data(TWT_STATUS_PERSIST_KEY, &twt_status, sizeof(TwtStatus));
 }
 
-// Top line: day total (big & bold) ending near the centre, with the current-task
-// time (smaller) just to its right. Bottom line: the task name, centred. Both
-// times add the running segment live (it belongs to the current task). Only drawn
-// while tracking (the layer is hidden otherwise).
+// Top line: day total (big & bold) with its percent of the configured workday target
+// in parentheses just after it, and the current-task time (smaller) with its percent of
+// the day total to the right. A thin bar below shows workday completion (only when a
+// target is set). Bottom line: the task name, centred. Both times add the running segment
+// live (it belongs to the current task); percentages are hidden when their base is 0.
 static void status_update_proc(Layer* layer, GContext* ctx) {
   GRect b = layer_get_bounds(layer);
 
@@ -51,12 +52,12 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
 
   char total_buf[12];
   char task_buf[12];
-  char day_pct_buf[8] = "";
-  char task_pct_buf[8] = "";
+  char day_pct_buf[12] = "";
+  char task_pct_buf[12] = "";
   snprintf(total_buf, sizeof(total_buf), "%d:%02d", (int)(total / 60), (int)(total % 60));
   snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task / 60), (int)(task % 60));
-  if (day_pct >= 0)  snprintf(day_pct_buf, sizeof(day_pct_buf), "(%d%%)", day_pct);
-  if (task_pct >= 0) snprintf(task_pct_buf, sizeof(task_pct_buf), "(%d%%)", task_pct);
+  if (day_pct >= 0)  snprintf(day_pct_buf, sizeof(day_pct_buf), "(%d%%)", day_pct > 999 ? 999 : day_pct);
+  if (task_pct >= 0) snprintf(task_pct_buf, sizeof(task_pct_buf), "(%d%%)", task_pct > 999 ? 999 : task_pct);
 
   graphics_context_set_text_color(ctx, settings.timeColor);
 
