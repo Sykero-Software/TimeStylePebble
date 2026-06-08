@@ -83,7 +83,8 @@
       "SettingBigDate",
       "ElecStartEpoch",
       "ElecPrices",
-      "TWT_TASK_WORKED_BEFORE_MIN"
+      "TWT_TASK_WORKED_BEFORE_MIN",
+      "TWT_DAILY_TARGET_MIN"
     ],
     "resources": {
       "media": [
