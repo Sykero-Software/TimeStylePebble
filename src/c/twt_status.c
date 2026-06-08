@@ -79,15 +79,23 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
         GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   }
 
-  // --- Right: task time (small) + task percent (small), left-aligned from mid ---
+  // --- Right: task time (small) + task percent (small), right-aligned to the edge ---
+  GSize tw2 = graphics_text_layout_get_content_size(task_buf, small,
+      GRect(0, 0, b.size.w, 22), GTextOverflowModeFill, GTextAlignmentLeft);
+  int block_w = tw2.w;
+  if (task_pct_buf[0]) {
+    GSize tp = graphics_text_layout_get_content_size(task_pct_buf, pct_font,
+        GRect(0, 0, b.size.w, 18), GTextOverflowModeFill, GTextAlignmentLeft);
+    block_w += 3 + tp.w;
+  }
+  int rx = b.size.w - block_w;
+  if (rx < mid + 2) rx = mid + 2;   // never overlap the left (day) block
   graphics_draw_text(ctx, task_buf, small,
-      GRect(mid + 2, 2, b.size.w - mid - 2, 22),
+      GRect(rx, 2, b.size.w - rx, 22),
       GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   if (task_pct_buf[0]) {
-    GSize tw2 = graphics_text_layout_get_content_size(task_buf, small,
-        GRect(mid + 2, 0, b.size.w - mid - 2, 22), GTextOverflowModeFill, GTextAlignmentLeft);
     graphics_draw_text(ctx, task_pct_buf, pct_font,
-        GRect(mid + 2 + tw2.w + 2, 6, b.size.w - (mid + 2 + tw2.w + 2), 18),
+        GRect(rx + tw2.w + 3, 6, b.size.w - (rx + tw2.w + 3), 18),
         GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   }
 
