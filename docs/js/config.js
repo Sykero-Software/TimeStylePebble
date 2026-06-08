@@ -44,6 +44,7 @@ function loadPreviousSettings() {
       language_id: 0, // english
       leading_zero_setting: 'no',
       big_date_setting: 'no',
+      twt_remaining_setting: 'no',
       clock_font_setting: 'default',
 
       // bluetooth settings
@@ -118,6 +119,7 @@ function loadPreviousSettings() {
   loadSettingCheckbox('autobattery_setting', savedSettings.autobattery_setting);
   loadSettingCheckbox('time_leading_zero_setting', savedSettings.leading_zero_setting);
   loadSettingCheckbox('big_date_setting', savedSettings.big_date_setting);
+  loadSettingCheckbox('twt_remaining_setting', savedSettings.twt_remaining_setting);
   loadSettingCheckbox('clock_font_setting', savedSettings.clock_font_setting);
   loadSettingCheckbox('use_large_sidebar_font_setting', savedSettings.use_large_sidebar_font_setting);
   loadSettingCheckbox('weather_setting', savedSettings.weather_setting);
@@ -527,6 +529,10 @@ function sendSettingsToWatch() {
 
   if($('#big_date_setting .btn.active')) {
     config.big_date_setting = $('#big_date_setting .btn.active').data('setting');
+  }
+
+  if($('#twt_remaining_setting .btn.active')) {
+    config.twt_remaining_setting = $('#twt_remaining_setting .btn.active').data('setting');
   }
 
   // notification settings

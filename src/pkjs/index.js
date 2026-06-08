@@ -170,6 +170,14 @@ Pebble.addEventListener('webviewclosed', function (e) {
       }
     }
 
+    if (configData.twt_remaining_setting) {
+      if (configData.twt_remaining_setting == 'yes') {
+        dict.SettingTwtShowRemaining = 1;
+      } else {
+        dict.SettingTwtShowRemaining = 0;
+      }
+    }
+
     // notification settings
     if (configData.hourly_vibe_setting) {
       if (configData.hourly_vibe_setting == 'yes') {
