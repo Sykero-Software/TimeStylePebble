@@ -3,8 +3,7 @@
 
 TwtStatus twt_status;
 
-static TextLayer* s_status_text_layer;
-static char s_status_buffer[TWT_TASK_NAME_LEN + 20];
+static Layer* s_status_layer;
 
 bool TwtStatus_isSupported() {
 #if defined(PBL_RECT) && !defined(PBL_PLATFORM_APLITE)
@@ -31,59 +30,67 @@ void TwtStatus_save() {
   persist_write_data(TWT_STATUS_PERSIST_KEY, &twt_status, sizeof(TwtStatus));
 }
 
-// Compose two centered lines: worked time "H:MM" on top, task name below.
-// The time is always first (and short), so it stays fully visible; the task
-// name follows on its own line and gets trailing-ellipsized if too long.
-// Only shown while tracking (the layer is hidden otherwise), so there is no
-// "stopped" text.
-static void build_status_text() {
-  int32_t worked = twt_status.workedBeforeMin;
+// Top line: day total (big & bold) ending near the centre, with the current-task
+// time (smaller) just to its right. Bottom line: the task name, centred. Both
+// times add the running segment live (it belongs to the current task). Only drawn
+// while tracking (the layer is hidden otherwise).
+static void status_update_proc(Layer* layer, GContext* ctx) {
+  GRect b = layer_get_bounds(layer);
+
+  int32_t running = 0;
   if (twt_status.isTracking && twt_status.segmentStartEpoch > 0) {
-    int32_t running = ((int32_t)time(NULL) - twt_status.segmentStartEpoch) / 60;
-    if (running > 0) worked += running;
+    running = ((int32_t)time(NULL) - twt_status.segmentStartEpoch) / 60;
+    if (running < 0) running = 0;
   }
-  int h = worked / 60;
-  int m = worked % 60;
-  snprintf(s_status_buffer, sizeof(s_status_buffer), "%d:%02d\n%s",
-           h, m, twt_status.taskName);
+  int32_t total = twt_status.workedBeforeMin + running;
+  int32_t task = twt_status.taskWorkedBeforeMin + running;
+
+  char total_buf[12];
+  char task_buf[12];
+  snprintf(total_buf, sizeof(total_buf), "%d:%02d", (int)(total / 60), (int)(total % 60));
+  snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task / 60), (int)(task % 60));
+
+  graphics_context_set_text_color(ctx, settings.timeColor);
+
+  int mid = b.size.w / 2;
+  graphics_draw_text(ctx, total_buf,
+      fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
+      GRect(0, 0, mid - 2, 30),
+      GTextOverflowModeFill, GTextAlignmentRight, NULL);
+  graphics_draw_text(ctx, task_buf,
+      fonts_get_system_font(FONT_KEY_GOTHIC_18),
+      GRect(mid + 3, 8, b.size.w - mid - 3, 22),
+      GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+
+  graphics_draw_text(ctx, twt_status.taskName,
+      fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD),
+      GRect(0, 30, b.size.w, 32),
+      GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
 }
 
 void TwtStatus_redraw() {
-  if (!s_status_text_layer) return;
-  build_status_text();
-  text_layer_set_text_color(s_status_text_layer, settings.timeColor); // track time-color setting changes
-  text_layer_set_text(s_status_text_layer, s_status_buffer);
-  layer_mark_dirty(text_layer_get_layer(s_status_text_layer));
+  if (s_status_layer) layer_mark_dirty(s_status_layer);
 }
 
 void TwtStatus_setFrame(GRect frame) {
-  if (s_status_text_layer) {
-    layer_set_frame(text_layer_get_layer(s_status_text_layer), frame);
-  }
+  if (s_status_layer) layer_set_frame(s_status_layer, frame);
 }
 
 void TwtStatus_initLayer(Layer* parent, GRect frame) {
   if (!TwtStatus_isSupported()) return;
-  s_status_text_layer = text_layer_create(frame);
-  text_layer_set_background_color(s_status_text_layer, GColorClear);
-  text_layer_set_text_color(s_status_text_layer, settings.timeColor);
-  text_layer_set_font(s_status_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
-  text_layer_set_text_alignment(s_status_text_layer, GTextAlignmentCenter);
-  text_layer_set_overflow_mode(s_status_text_layer, GTextOverflowModeTrailingEllipsis);
-  layer_add_child(parent, text_layer_get_layer(s_status_text_layer));
-  layer_set_hidden(text_layer_get_layer(s_status_text_layer), true); // shown by main.c only while tracking
-  TwtStatus_redraw();
+  s_status_layer = layer_create(frame);
+  layer_set_update_proc(s_status_layer, status_update_proc);
+  layer_add_child(parent, s_status_layer);
+  layer_set_hidden(s_status_layer, true); // shown by main.c only while tracking
 }
 
 void TwtStatus_setHidden(bool hidden) {
-  if (s_status_text_layer) {
-    layer_set_hidden(text_layer_get_layer(s_status_text_layer), hidden);
-  }
+  if (s_status_layer) layer_set_hidden(s_status_layer, hidden);
 }
 
 void TwtStatus_deinitLayer() {
-  if (s_status_text_layer) {
-    text_layer_destroy(s_status_text_layer);
-    s_status_text_layer = NULL;
+  if (s_status_layer) {
+    layer_destroy(s_status_layer);
+    s_status_layer = NULL;
   }
 }
