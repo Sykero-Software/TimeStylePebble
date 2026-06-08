@@ -179,7 +179,13 @@ static void hr_seed_from_history() {
 static void hr_health_handler(HealthEventType event, void *context) {
   if (event == HealthEventHeartRateUpdate) {
     int bpm = health_service_peek_current_value(HealthMetricHeartRateBPM);
-    if (bpm > 0) {
+    // HealthEventHeartRateUpdate also fires when HealthMetricHeartRateRawBPM
+    // changes, which happens a cycle *before* the filtered HealthMetricHeartRateBPM
+    // we display recomputes. Bumping the age timestamp on every event would reset
+    // the age line to "0m" while peek() still returns the previous BPM, so the old
+    // number lingers for ~a minute next to a 0m age. Only treat it as a new reading
+    // (resetting the age) when the displayed filtered value actually changes.
+    if (bpm > 0 && bpm != s_last_hr_bpm) {
       s_last_hr_update_time = time(NULL);
       s_last_hr_bpm = bpm;
     }
