@@ -36,6 +36,9 @@ void TwtStatus_save() {
 // the day total to the right. A thin bar below shows workday completion (only when a
 // target is set). Bottom line: the task name, centred. Both times add the running segment
 // live (it belongs to the current task); percentages are hidden when their base is 0.
+// When settings.twtShowRemaining is set (and a target exists), the big day-total number
+// instead shows remaining = target - worked (negative on overtime); the percent and the
+// bar always reflect worked progress, regardless of that toggle.
 static void status_update_proc(Layer* layer, GContext* ctx) {
   GRect b = layer_get_bounds(layer);
 
