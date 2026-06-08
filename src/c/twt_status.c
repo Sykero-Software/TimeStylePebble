@@ -31,14 +31,15 @@ void TwtStatus_save() {
   persist_write_data(TWT_STATUS_PERSIST_KEY, &twt_status, sizeof(TwtStatus));
 }
 
-// Top line: day total (big & bold) with its percent of the configured workday target
-// in parentheses just after it, and the current-task time (smaller) with its percent of
-// the day total to the right. A thin bar below shows workday completion (only when a
-// target is set). Bottom line: the task name, centred. Both times add the running segment
-// live (it belongs to the current task); percentages are hidden when their base is 0.
-// When settings.twtShowRemaining is set (and a target exists), the big day-total number
-// instead shows remaining = target - worked (negative on overtime); the percent and the
-// bar always reflect worked progress, regardless of that toggle.
+// Line 1: the day total (big & bold) with its percent of the configured workday target in
+// parentheses just after it, spanning the whole strip width. A thin bar below shows workday
+// completion (only when a target is set). Line 2: the task name (left, truncated) with the
+// current-task time and its percent of the day total right-aligned to the edge. The task time
+// is on line 2 (not crammed onto line 1) so a legible font fits without clipping on 144 px.
+// Both times add the running segment live (it belongs to the current task); percentages are
+// hidden when their base is 0. When settings.twtShowRemaining is set (and a target exists), the
+// big day-total number instead shows remaining = target - worked (negative on overtime); the
+// percent and the bar always reflect worked progress, regardless of that toggle.
 static void status_update_proc(Layer* layer, GContext* ctx) {
   GRect b = layer_get_bounds(layer);
 
@@ -69,40 +70,28 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   graphics_context_set_text_color(ctx, settings.timeColor);
 
   GFont big = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
-  GFont small = fonts_get_system_font(FONT_KEY_GOTHIC_18);
-  GFont pct_font = fonts_get_system_font(FONT_KEY_GOTHIC_14);
+  GFont small = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
 
-  int mid = b.size.w / 2;
-
-  // --- Left: day total (big) + day percent (small), left-aligned from x=0 ---
+  // --- Line 1: day total (big) + day percent (small) after it, centred together on the strip. ---
+  // The day percent (worked / daily target) is the headline metric and gets line 1 to itself;
+  // the task time + percent move to line 2 so a legible font fits without clipping on 144 px.
+  GSize tot_sz = graphics_text_layout_get_content_size(total_buf, big,
+      GRect(0, 0, b.size.w, 30), GTextOverflowModeFill, GTextAlignmentLeft);
+  int pct_gap_w = 0;
+  if (day_pct_buf[0]) {
+    GSize pct_sz = graphics_text_layout_get_content_size(day_pct_buf, small,
+        GRect(0, 0, b.size.w, 22), GTextOverflowModeFill, GTextAlignmentLeft);
+    pct_gap_w = 4 + pct_sz.w;
+  }
+  int line1_x = (b.size.w - (tot_sz.w + pct_gap_w)) / 2;
+  if (line1_x < 0) line1_x = 0;
   graphics_draw_text(ctx, total_buf, big,
-      GRect(0, -2, mid, 30),
+      GRect(line1_x, -2, b.size.w - line1_x, 30),
       GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   if (day_pct_buf[0]) {
-    GSize tw = graphics_text_layout_get_content_size(total_buf, big,
-        GRect(0, 0, mid, 30), GTextOverflowModeFill, GTextAlignmentLeft);
-    graphics_draw_text(ctx, day_pct_buf, pct_font,
-        GRect(tw.w + 2, 6, mid - tw.w - 2, 18),
-        GTextOverflowModeFill, GTextAlignmentLeft, NULL);
-  }
-
-  // --- Right: task time (small) + task percent (small), right-aligned to the edge ---
-  GSize tw2 = graphics_text_layout_get_content_size(task_buf, small,
-      GRect(0, 0, b.size.w, 22), GTextOverflowModeFill, GTextAlignmentLeft);
-  int block_w = tw2.w;
-  if (task_pct_buf[0]) {
-    GSize tp = graphics_text_layout_get_content_size(task_pct_buf, pct_font,
-        GRect(0, 0, b.size.w, 18), GTextOverflowModeFill, GTextAlignmentLeft);
-    block_w += 3 + tp.w;
-  }
-  int rx = b.size.w - block_w;
-  if (rx < mid + 2) rx = mid + 2;   // never overlap the left (day) block
-  graphics_draw_text(ctx, task_buf, small,
-      GRect(rx, 2, b.size.w - rx, 22),
-      GTextOverflowModeFill, GTextAlignmentLeft, NULL);
-  if (task_pct_buf[0]) {
-    graphics_draw_text(ctx, task_pct_buf, pct_font,
-        GRect(rx + tw2.w + 3, 6, b.size.w - (rx + tw2.w + 3), 18),
+    int px = line1_x + tot_sz.w + 4;
+    graphics_draw_text(ctx, day_pct_buf, small,
+        GRect(px, 6, b.size.w - px, 22),
         GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   }
 
@@ -116,10 +105,23 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
     graphics_fill_rect(ctx, GRect(0, bar_y, fill, bar_h), 0, GCornerNone);
   }
 
-  // --- Bottom line: task name, centred ---
+  // --- Line 2: task name (left, truncated) + task time & percent (right-aligned). ---
+  char task_line[24];
+  if (task_pct_buf[0]) {
+    snprintf(task_line, sizeof(task_line), "%s %s", task_buf, task_pct_buf);
+  } else {
+    snprintf(task_line, sizeof(task_line), "%s", task_buf);
+  }
+  GSize tl = graphics_text_layout_get_content_size(task_line, small,
+      GRect(0, 0, b.size.w, 22), GTextOverflowModeFill, GTextAlignmentLeft);
+  int task_x = b.size.w - tl.w;
+  if (task_x < 0) task_x = 0;
+  graphics_draw_text(ctx, task_line, small,
+      GRect(task_x, 40, b.size.w - task_x, 22),
+      GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   graphics_draw_text(ctx, twt_status.taskName, big,
-      GRect(0, 32, b.size.w, 30),
-      GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+      GRect(0, 32, task_x - 2, 30),
+      GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
 }
 
 void TwtStatus_redraw() {
