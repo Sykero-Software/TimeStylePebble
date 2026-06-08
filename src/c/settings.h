@@ -65,6 +65,7 @@ typedef struct {
 
   // clock area extras
   bool showBigDate;   // large date line above the clock (e.g. "Ti 6.6.")
+  bool twtShowRemaining;   // TWT strip: show remaining (target - worked), negative on overtime
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

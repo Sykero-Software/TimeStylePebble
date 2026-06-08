@@ -81,6 +81,7 @@
       "MIDI_DEVICE_NAME",
       "MIDI_REC_START",
       "SettingBigDate",
+      "SettingTwtShowRemaining",
       "ElecStartEpoch",
       "ElecPrices",
       "TWT_TASK_WORKED_BEFORE_MIN",

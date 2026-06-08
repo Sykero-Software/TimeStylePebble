@@ -49,6 +49,7 @@ void Settings_loadFromStorage() {
   settings.showBatteryPct = true;
   settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
   settings.showBigDate = false;   // opt-in default; appended field, no settings-version bump
+  settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
