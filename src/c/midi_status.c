@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
 #include "midi_status.h"
 #include "twt_status.h"   // reuse TwtStatus_isSupported() for the rect/non-aplite gate
 #include "settings.h"

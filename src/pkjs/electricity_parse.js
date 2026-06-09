@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
 /* Pure parser for porssisahko.net v2 latest-prices.json.
    No Pebble/browser globals -- unit-testable with `node --test`. */
 

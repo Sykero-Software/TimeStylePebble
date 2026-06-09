@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
 /* Pure CoinGecko price -> displayed thousands. No Pebble/browser globals, so it
    is unit-testable with `node --test`. */
 

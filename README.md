@@ -23,3 +23,20 @@ https://apps.rebble.io/en_US/application/55a5c024f4510f794c000071?section=watchf
 
 ## Contributing
 Want to contribute to TimeStyle? Have a look at [the various feature requests that are still outstanding](https://github.com/freakified/TimeStylePebble/issues?q=is%3Aopen+is%3Aissue) -- just comment on one if you're interested in working on it!
+
+## License
+
+This fork is a combined work distributed under the **GNU General Public License
+v3.0 only** (GPL-3.0-only); see [`LICENSE`](LICENSE).
+
+The upstream TimeStyle code by Dan Tilden and the original TimeStyle contributors
+remains available under the **MIT License** from
+[freakified/TimeStylePebble](https://github.com/freakified/TimeStylePebble); that
+license text is preserved in [`LICENSE.MIT`](LICENSE.MIT). MIT permits
+incorporating the original code into a GPL-licensed work, provided the MIT
+copyright and permission notice are retained (they are, in `LICENSE.MIT`).
+
+Files added by this fork (e.g. the TWT, electricity-price, BTC-price and
+date-header features and their tests) carry an `SPDX-License-Identifier:
+GPL-3.0-only` header and are © 2026 Tuomas Airaksinen. All contributions made to
+this fork going forward are licensed under GPL-3.0-only.

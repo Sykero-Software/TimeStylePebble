@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
 /* Pörssisähkö (spot electricity price). Fetches porssisahko.net v2 latest prices
    at most ~twice a day and pushes the whole 48 h quarter-hour schedule to the
    watch, which indexes "now" and computes today's average locally — so no

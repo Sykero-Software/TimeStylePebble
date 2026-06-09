@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
 const test = require('node:test');
 const assert = require('node:assert');
 const { parseLatestPrices } = require('../src/pkjs/electricity_parse');

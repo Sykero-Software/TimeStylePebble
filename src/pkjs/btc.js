@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
 /* Bitcoin price (USD). Polls CoinGecko on a configurable interval (default 30 min,
    floor 5 min) and pushes the price to the watch ONLY when the displayed value (USD
    rounded to the nearest thousand) changes — no needless Bluetooth wakeups. The poll

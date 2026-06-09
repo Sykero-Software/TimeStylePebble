@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
 #include "twt_status.h"
 #include "settings.h"
 #include "twt_calc.h"
