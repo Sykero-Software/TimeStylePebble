@@ -28,7 +28,12 @@ Pebble.addEventListener('ready',
       window.localStorage.setItem('disable_electricity', 'yes');
     }
     if (window.localStorage.getItem('disable_electricity') !== 'yes') {
-      electricity.updateElectricity();
+      // Force a fetch on (re)launch: the watch's persisted price table is wiped
+      // by a watchface reinstall/reboot, but electricity_last_fetch lives in
+      // phone localStorage and survives, so a throttled call would skip and the
+      // widget would stay empty for up to MIN_FETCH_INTERVAL_S. (weather has no
+      // throttle, so it self-heals; electricity needs this explicit force.)
+      electricity.updateElectricity(true);
     }
 
     // btc: default disabled until a widget selects it (set in webviewclosed)
