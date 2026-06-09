@@ -23,6 +23,8 @@ static bool isPhoneConnected;
 static bool updatingEverySecond;
 
 static time_t lastDataRequest = 0;   // epoch of the last watch->phone data request
+static bool twtTargetAlerted = false;   // already vibrated for the current daily-target crossing
+static bool twtTargetInit = false;      // have we seeded twtTargetAlerted since launch?
 
 void update_clock();
 void redrawScreen();
@@ -280,6 +282,26 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
       } else if(tick_time->tm_min == 30) {
         vibes_short_pulse();
       }
+    }
+  }
+
+  // Daily work-time target reached: vibrate once, on the rising edge, the minute
+  // the worked total first hits the configured target. running is whole-minutes,
+  // so the crossing is minute-granular and the MINUTE_UNIT tick lands on it.
+  bool twtReached = twt_status.isTracking && twt_status.dailyTargetMin > 0
+      && TwtStatus_workedTotalMin() >= twt_status.dailyTargetMin;
+  if (!twtTargetInit) {
+    twtTargetAlerted = twtReached;   // seed at launch: already-over-target -> no spurious vibe
+    twtTargetInit = true;
+  } else if (!twtReached) {
+    twtTargetAlerted = false;        // reset for next day / target raised / tracking stopped
+  } else if (!twtTargetAlerted) {
+    twtTargetAlerted = true;
+    if (settings.twtTargetVibe && !quiet_time_is_active()) {
+      // distinct ascending pattern: short - short - long ("day complete")
+      static const uint32_t segs[] = { 100, 80, 100, 80, 300 };
+      VibePattern pat = { .durations = segs, .num_segments = ARRAY_LENGTH(segs) };
+      vibes_enqueue_custom_pattern(pat);
     }
   }
 
