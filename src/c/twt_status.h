@@ -48,3 +48,7 @@ void TwtStatus_setFrame(GRect frame);
 
 // Mark the status layer dirty (call on tick + after a message updates twt_status).
 void TwtStatus_redraw();
+
+// Worked minutes today INCLUDING the live running segment (workedBeforeMin + running).
+// Shared by the status strip and the daily-target-reached vibration in main.c.
+int32_t TwtStatus_workedTotalMin(void);

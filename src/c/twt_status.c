@@ -43,15 +43,20 @@ void TwtStatus_save() {
 // hidden when their base is 0. When settings.twtShowRemaining is set (and a target exists), the
 // big day-total number instead shows remaining = target - worked (negative on overtime); the
 // percent and the bar always reflect worked progress, regardless of that toggle.
-static void status_update_proc(Layer* layer, GContext* ctx) {
-  GRect b = layer_get_bounds(layer);
-
+int32_t TwtStatus_workedTotalMin(void) {
   int32_t running = 0;
   if (twt_status.isTracking && twt_status.segmentStartEpoch > 0) {
     running = ((int32_t)time(NULL) - twt_status.segmentStartEpoch) / 60;
     if (running < 0) running = 0;
   }
-  int32_t total = twt_status.workedBeforeMin + running;
+  return twt_status.workedBeforeMin + running;
+}
+
+static void status_update_proc(Layer* layer, GContext* ctx) {
+  GRect b = layer_get_bounds(layer);
+
+  int32_t total = TwtStatus_workedTotalMin();
+  int32_t running = total - twt_status.workedBeforeMin;            // live current segment, whole minutes
   int32_t task_today = twt_status.taskWorkedBeforeMin + running;   // today's task time
   int32_t task_total = twt_status.taskTotalBeforeMin + running;    // all-time task time
 
