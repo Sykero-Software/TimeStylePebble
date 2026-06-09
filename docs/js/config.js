@@ -76,6 +76,8 @@ function loadPreviousSettings() {
       // alt timezone widget settings
       altclock_name: 'ALT',
       altclock_offset: 0,
+
+      // shared data refresh interval (weather, electricity, BTC)
       poll_interval: 30,
 
       // health widget settings
