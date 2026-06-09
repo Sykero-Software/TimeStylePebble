@@ -13,3 +13,5 @@ extern BtcInfo Btc_info;
 
 void Btc_init();       // load last-known value from persist (valid=false if none)
 void Btc_saveData();   // persist current Btc_info
+// No Btc_deinit: Btc_saveData() runs immediately whenever a price arrives (the
+// only write path), so there is nothing to flush at shutdown.

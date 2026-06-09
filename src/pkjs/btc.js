@@ -15,9 +15,8 @@ var pollTimer = null;
 
 function readIntervalMin() {
   var v = parseInt(window.localStorage.getItem('btc_poll_interval_min'), 10);
-  if (isNaN(v) || v < MIN_INTERVAL_MIN) {
-    v = (isNaN(v)) ? DEFAULT_INTERVAL_MIN : MIN_INTERVAL_MIN;
-  }
+  if (isNaN(v)) { return DEFAULT_INTERVAL_MIN; }
+  if (v < MIN_INTERVAL_MIN) { return MIN_INTERVAL_MIN; }
   return v;
 }
 
