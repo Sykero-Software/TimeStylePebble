@@ -54,7 +54,8 @@ Pebble.addEventListener('ready',
 );
 
 // Listen for incoming messages
-// when one is received, we simply assume that it is a request for new weather data
+// when one is received, we treat it as the watch's request for fresh phone data
+// (weather + electricity + BTC) -- this is the single shared, watch-driven poll.
 Pebble.addEventListener('appmessage',
   function (msg) {
     console.log('Recieved message: ' + JSON.stringify(msg.payload));
