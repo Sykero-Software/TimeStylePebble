@@ -45,6 +45,7 @@ function loadPreviousSettings() {
       leading_zero_setting: 'no',
       big_date_setting: 'no',
       twt_remaining_setting: 'no',
+      twt_target_vibe_setting: 'no',
       clock_font_setting: 'default',
 
       // bluetooth settings
@@ -127,6 +128,7 @@ function loadPreviousSettings() {
   loadSettingCheckbox('time_leading_zero_setting', savedSettings.leading_zero_setting);
   loadSettingCheckbox('big_date_setting', savedSettings.big_date_setting);
   loadSettingCheckbox('twt_remaining_setting', savedSettings.twt_remaining_setting);
+  loadSettingCheckbox('twt_target_vibe_setting', savedSettings.twt_target_vibe_setting);
   loadSettingCheckbox('clock_font_setting', savedSettings.clock_font_setting);
   loadSettingCheckbox('use_large_sidebar_font_setting', savedSettings.use_large_sidebar_font_setting);
   loadSettingCheckbox('weather_setting', savedSettings.weather_setting);
@@ -555,6 +557,10 @@ function sendSettingsToWatch() {
 
   if($('#twt_remaining_setting .btn.active')) {
     config.twt_remaining_setting = $('#twt_remaining_setting .btn.active').data('setting');
+  }
+
+  if($('#twt_target_vibe_setting .btn.active')) {
+    config.twt_target_vibe_setting = $('#twt_target_vibe_setting .btn.active').data('setting');
   }
 
   // notification settings

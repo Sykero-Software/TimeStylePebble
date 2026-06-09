@@ -3,7 +3,7 @@ var weather = require('./weather');
 var electricity = require('./electricity');
 var btc = require('./btc');
 
-var CONFIG_VERSION = 12;
+var CONFIG_VERSION = 13;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
 var BASE_CONFIG_URL = 'https://sykero-software.github.io/TimeStylePebble/';
 
@@ -198,6 +198,14 @@ Pebble.addEventListener('webviewclosed', function (e) {
         dict.SettingTwtShowRemaining = 1;
       } else {
         dict.SettingTwtShowRemaining = 0;
+      }
+    }
+
+    if (configData.twt_target_vibe_setting) {
+      if (configData.twt_target_vibe_setting == 'yes') {
+        dict.SettingTwtTargetVibe = 1;
+      } else {
+        dict.SettingTwtTargetVibe = 0;
       }
     }
 
