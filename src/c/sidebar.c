@@ -3,6 +3,7 @@
 #include "settings.h"
 #include "sidebar_widgets.h"
 #include "weather.h"
+#include "twt_status.h"
 #include <ctype.h>
 #include <math.h>
 #include <pebble.h>
@@ -29,6 +30,7 @@ static void update_sidebar_width() {
 // layer update callbacks
 #ifndef PBL_ROUND
 void updateRectSidebar(Layer *l, GContext *ctx);
+void updateRectSecondarySidebar(Layer *l, GContext *ctx);
 #else
 
 void updateRoundSidebarLeft(Layer *l, GContext *ctx);
@@ -40,6 +42,10 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
 #endif
 
 Layer *sidebarLayer;
+
+#ifndef PBL_ROUND
+Layer *secondarySidebarLayer;   // shown opposite the primary while a status display is visible
+#endif
 
 #ifdef PBL_ROUND
 Layer *sidebarLayer2;
@@ -76,6 +82,16 @@ void Sidebar_init(Window *window) {
   layer_set_update_proc(sidebarLayer, updateRectSidebar);
 #endif
 
+#ifndef PBL_ROUND
+  // Secondary panel: created hidden; main.c positions/shows it while a status
+  // display is visible. Only meaningful where the status layout runs (rect,
+  // non-aplite), but creating it hidden everywhere rect is harmless.
+  secondarySidebarLayer = layer_create(GRect(0, 0, sidebarWidth, screen_rect.size.h));
+  layer_set_update_proc(secondarySidebarLayer, updateRectSecondarySidebar);
+  layer_set_hidden(secondarySidebarLayer, true);
+  layer_add_child(window_get_root_layer(window), secondarySidebarLayer);
+#endif
+
 #ifdef PBL_ROUND
   sidebarLayer2 = layer_create(bounds2);
   layer_add_child(window_get_root_layer(window), sidebarLayer2);
@@ -85,6 +101,10 @@ void Sidebar_init(Window *window) {
 
 void Sidebar_deinit() {
   layer_destroy(sidebarLayer);
+
+#ifndef PBL_ROUND
+  layer_destroy(secondarySidebarLayer);
+#endif
 
 #ifdef PBL_ROUND
   layer_destroy(sidebarLayer2);
@@ -96,14 +116,19 @@ void Sidebar_deinit() {
 void Sidebar_redraw() {
   update_sidebar_width();
 #ifndef PBL_ROUND
-  // reposition the sidebar if needed
-  if (!settings.sidebarOnLeft) {
-    layer_set_frame(sidebarLayer, GRect(screen_rect.size.w - sidebarWidth, 0,
-                                        sidebarWidth, screen_rect.size.h));
-  } else {
-    layer_set_frame(sidebarLayer,
-                    GRect(0, 0, sidebarWidth, screen_rect.size.h));
+  // On platforms where the status layout runs, main.c owns the panel frames
+  // (apply_twt_layout); don't fight it here. Elsewhere, keep positioning the
+  // primary ourselves.
+  if (!TwtStatus_isSupported()) {
+    if (!settings.sidebarOnLeft) {
+      layer_set_frame(sidebarLayer, GRect(screen_rect.size.w - sidebarWidth, 0,
+                                          sidebarWidth, screen_rect.size.h));
+    } else {
+      layer_set_frame(sidebarLayer,
+                      GRect(0, 0, sidebarWidth, screen_rect.size.h));
+    }
   }
+  layer_mark_dirty(secondarySidebarLayer);
 #endif
 
   // redraw the layer
@@ -245,7 +270,12 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
 
 #else
 
-void updateRectSidebar(Layer *l, GContext *ctx) {
+// Draw a column of three widgets into the layer's frame. Shared by the primary
+// sidebar and the secondary panel. `allowReplacement` enables the auto-battery /
+// disconnect-icon substitution (primary only).
+static void drawWidgetColumn(Layer *l, GContext *ctx,
+                             const SidebarWidgetType widgetTypes[3],
+                             bool allowReplacement) {
   GRect bounds = layer_get_unobstructed_bounds(l);
 
   // this ends up being zero on every rectangular platform besides emery
@@ -258,30 +288,33 @@ void updateRectSidebar(Layer *l, GContext *ctx) {
 
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
-  bool showDisconnectIcon = false;
-  bool showAutoBattery = isAutoBatteryShown();
-
-  // if the pebble is disconnected and activated, show the disconnect icon
-  if (settings.activateDisconnectIcon) {
-    showDisconnectIcon = !bluetooth_connection_service_peek();
-  }
-
   SidebarWidget displayWidgets[3];
 
-  displayWidgets[0] = getSidebarWidgetByType(settings.widgets[0]);
-  displayWidgets[1] = getSidebarWidgetByType(settings.widgets[1]);
-  displayWidgets[2] = getSidebarWidgetByType(settings.widgets[2]);
+  displayWidgets[0] = getSidebarWidgetByType(widgetTypes[0]);
+  displayWidgets[1] = getSidebarWidgetByType(widgetTypes[1]);
+  displayWidgets[2] = getSidebarWidgetByType(widgetTypes[2]);
 
-  // do we need to replace a widget?
-  // if so, determine which widget should be replaced
-  if (showAutoBattery || showDisconnectIcon) {
-    int widget_to_replace = getReplacableWidget();
+  // auto-battery / disconnect-icon replacement applies to the primary only
+  if (allowReplacement) {
+    bool showDisconnectIcon = false;
+    bool showAutoBattery = isAutoBatteryShown();
 
-    if (showAutoBattery) {
-      displayWidgets[widget_to_replace] = getSidebarWidgetByType(BATTERY_METER);
-    } else if (showDisconnectIcon) {
-      displayWidgets[widget_to_replace] =
-          getSidebarWidgetByType(BLUETOOTH_DISCONNECT);
+    // if the pebble is disconnected and activated, show the disconnect icon
+    if (settings.activateDisconnectIcon) {
+      showDisconnectIcon = !bluetooth_connection_service_peek();
+    }
+
+    // do we need to replace a widget?
+    // if so, determine which widget should be replaced
+    if (showAutoBattery || showDisconnectIcon) {
+      int widget_to_replace = getReplacableWidget();
+
+      if (showAutoBattery) {
+        displayWidgets[widget_to_replace] = getSidebarWidgetByType(BATTERY_METER);
+      } else if (showDisconnectIcon) {
+        displayWidgets[widget_to_replace] =
+            getSidebarWidgetByType(BLUETOOTH_DISCONNECT);
+      }
     }
   }
 
@@ -330,4 +363,32 @@ void updateRectSidebar(Layer *l, GContext *ctx) {
   displayWidgets[2].draw(ctx, lowerWidgetPos);
 }
 
+void updateRectSidebar(Layer *l, GContext *ctx) {
+  drawWidgetColumn(l, ctx, settings.widgets, true);
+}
+
+void updateRectSecondarySidebar(Layer *l, GContext *ctx) {
+  drawWidgetColumn(l, ctx, settings.widgets2, false);
+}
+
 #endif
+
+// Frame setters: rect implementations move the real layers; no-ops on round so
+// the shared header stays simple and main.c links on every platform.
+void Sidebar_setPrimaryFrame(GRect frame) {
+#ifndef PBL_ROUND
+  layer_set_frame(sidebarLayer, frame);
+#endif
+}
+
+void Sidebar_setSecondaryFrame(GRect frame) {
+#ifndef PBL_ROUND
+  layer_set_frame(secondarySidebarLayer, frame);
+#endif
+}
+
+void Sidebar_setSecondaryHidden(bool hidden) {
+#ifndef PBL_ROUND
+  layer_set_hidden(secondarySidebarLayer, hidden);
+#endif
+}
