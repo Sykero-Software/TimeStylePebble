@@ -139,6 +139,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *widget1Id_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidget1ID);
   Tuple *widget2Id_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidget2ID);
 
+  Tuple *widget2_0Id_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidget2_0ID);
+  Tuple *widget2_1Id_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidget2_1ID);
+  Tuple *widget2_2Id_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidget2_2ID);
+
   Tuple *altclockName_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockName);
   Tuple *altclockOffset_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockOffset);
 
@@ -244,6 +248,21 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(widget2Id_tuple != NULL && widget2Id_tuple->value->int8 >= EMPTY
      && widget2Id_tuple->value->int8 <= BTC_PRICE) {
     settings.widgets[2] = widget2Id_tuple->value->int8;
+  }
+
+  if(widget2_0Id_tuple != NULL && widget2_0Id_tuple->value->int8 >= EMPTY
+     && widget2_0Id_tuple->value->int8 <= BTC_PRICE) {
+    settings.widgets2[0] = widget2_0Id_tuple->value->int8;
+  }
+
+  if(widget2_1Id_tuple != NULL && widget2_1Id_tuple->value->int8 >= EMPTY
+     && widget2_1Id_tuple->value->int8 <= BTC_PRICE) {
+    settings.widgets2[1] = widget2_1Id_tuple->value->int8;
+  }
+
+  if(widget2_2Id_tuple != NULL && widget2_2Id_tuple->value->int8 >= EMPTY
+     && widget2_2Id_tuple->value->int8 <= BTC_PRICE) {
+    settings.widgets2[2] = widget2_2Id_tuple->value->int8;
   }
 
   if(altclockName_tuple != NULL) {
