@@ -50,6 +50,7 @@ void Settings_loadFromStorage() {
   settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
   settings.showBigDate = false;   // opt-in default; appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
+  settings.twtTargetVibe = false;   // opt-in default; appended field, no settings-version bump
   settings.pollIntervalMin = 30;   // default; appended field, no settings-version bump
   settings.widgets2[0] = EMPTY;   // secondary panel off by default; appended field, no settings-version bump
   settings.widgets2[1] = EMPTY;
