@@ -1,7 +1,8 @@
 /* general utility stuff related to weather */
 
 var weatherProviders = {
-  'openmeteo': require('./weather_openmeteo')
+  'openmeteo': require('./weather_openmeteo'),
+  'fmi':       require('./weather_fmi')
 };
 
 var DEFAULT_WEATHER_PROVIDER = 'openmeteo';
