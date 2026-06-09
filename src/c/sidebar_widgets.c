@@ -7,6 +7,7 @@
 #include <math.h>
 #include <pebble.h>
 #include "electricity.h"
+#include "btc.h"
 
 bool SidebarWidgets_useCompactMode = false;
 int SidebarWidgets_xOffset;
@@ -129,6 +130,10 @@ void Beats_draw(GContext *ctx, int yPosition);
 SidebarWidget electricityWidget;
 int Electricity_getHeight();
 void Electricity_draw(GContext *ctx, int yPosition);
+
+SidebarWidget btcWidget;
+int BtcPrice_getHeight();
+void BtcPrice_draw(GContext *ctx, int yPosition);
 
 SidebarWidget uvIndexWidget;
 int UVIndex_getHeight();
@@ -278,6 +283,9 @@ void SidebarWidgets_init() {
 
   electricityWidget.getHeight = Electricity_getHeight;
   electricityWidget.draw = Electricity_draw;
+
+  btcWidget.getHeight = BtcPrice_getHeight;
+  btcWidget.draw = BtcPrice_draw;
 
   electricityBoltPath = gpath_create(&ELEC_BOLT_PATH_INFO);
 }
@@ -575,6 +583,8 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return uvIndexWidget;
   case ELECTRICITY:
     return electricityWidget;
+  case BTC_PRICE:
+    return btcWidget;
 #ifdef PBL_HEALTH
   case STEP_COUNTER:
     return stepCounterWidget;
@@ -1189,4 +1199,28 @@ void Electricity_draw(GContext *ctx, int yPosition) {
                            yPosition + layout.heartRateAgeY + elecYNudge,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
+
+/***** Bitcoin (BTC USD) widget *****/
+
+int BtcPrice_getHeight() { return layout.basicWidgetHeight; }
+
+void BtcPrice_draw(GContext *ctx, int yPosition) {
+  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+
+  char btcStr[8];
+  if (Btc_info.valid) {
+    snprintf(btcStr, sizeof(btcStr), "%d", Btc_info.priceThousands);
+  } else {
+    strcpy(btcStr, "--");
+  }
+
+  // "B" label on top, thousands value below (reuses the basic-widget layout).
+  draw_basic_widget(ctx, yPosition, "B", btcStr, layout.basicWidgetY);
+
+  // Vertical stroke through the "B" to suggest the ₿ glyph.
+  graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
+  int cx = layout.textRectX + SidebarWidgets_xOffset + (layout.textRectWidth / 2);
+  int ly = yPosition + layout.basicWidgetLabelY;
+  graphics_draw_line(ctx, GPoint(cx, ly + 2), GPoint(cx, ly + 18));
 }

@@ -5,6 +5,7 @@
 #include "midi_status.h"
 #include "messaging.h"
 #include "electricity.h"
+#include "btc.h"
 #include "languages.h"
 
 void (*message_processed_callback)(void);
@@ -106,6 +107,13 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   }
   if (electricityUpdated) {
     Electricity_saveData();
+  }
+
+  Tuple *btc_tuple = dict_find(iterator, MESSAGE_KEY_BtcPriceThousands);
+  if (btc_tuple != NULL) {
+    Btc_info.priceThousands = (int16_t)btc_tuple->value->int32;
+    Btc_info.valid = true;
+    Btc_saveData();
   }
 
   // does this message contain new config information?
@@ -218,17 +226,17 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   // mismatched config dict (e.g. from an app-message key-id change) writing
   // garbage widget types into settings.
   if(widget0Id_tuple != NULL && widget0Id_tuple->value->int8 >= EMPTY
-     && widget0Id_tuple->value->int8 <= ELECTRICITY) {
+     && widget0Id_tuple->value->int8 <= BTC_PRICE) {
     settings.widgets[0] = widget0Id_tuple->value->int8;
   }
 
   if(widget1Id_tuple != NULL && widget1Id_tuple->value->int8 >= EMPTY
-     && widget1Id_tuple->value->int8 <= ELECTRICITY) {
+     && widget1Id_tuple->value->int8 <= BTC_PRICE) {
     settings.widgets[1] = widget1Id_tuple->value->int8;
   }
 
   if(widget2Id_tuple != NULL && widget2Id_tuple->value->int8 >= EMPTY
-     && widget2Id_tuple->value->int8 <= ELECTRICITY) {
+     && widget2Id_tuple->value->int8 <= BTC_PRICE) {
     settings.widgets[2] = widget2Id_tuple->value->int8;
   }
 

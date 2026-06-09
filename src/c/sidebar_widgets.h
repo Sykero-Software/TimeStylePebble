@@ -33,7 +33,8 @@ typedef enum {
   BEATS                     = 11,
   HEARTRATE                 = 12,
   WEATHER_UV_INDEX          = 13,
-  ELECTRICITY               = 14
+  ELECTRICITY               = 14,
+  BTC_PRICE                 = 15
 } SidebarWidgetType;
 
 typedef struct {

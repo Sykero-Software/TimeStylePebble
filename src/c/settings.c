@@ -87,7 +87,7 @@ void Settings_loadFromStorage() {
   if (settings.clockFontId > FONT_SETTING_BOLD_M) { settings.clockFontId = FONT_SETTING_DEFAULT; clamped = true; }
   if (settings.hourlyVibe > VIBE_EVERY_HALF_HOUR) { settings.hourlyVibe = NO_VIBE; clamped = true; }
   for (int i = 0; i < 3; i++) {
-    if (settings.widgets[i] > ELECTRICITY) { settings.widgets[i] = EMPTY; clamped = true; }
+    if (settings.widgets[i] > BTC_PRICE) { settings.widgets[i] = EMPTY; clamped = true; }
   }
   if (settings.decimalSeparator != '.' && settings.decimalSeparator != ',') {
     settings.decimalSeparator = '.'; clamped = true;
