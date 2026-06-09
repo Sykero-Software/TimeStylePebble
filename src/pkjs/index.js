@@ -41,7 +41,12 @@ Pebble.addEventListener('ready',
       window.localStorage.setItem('disable_btc', 'yes');
     }
     if (window.localStorage.getItem('disable_btc') !== 'yes') {
-      btc.updateBtc();
+      // Force a send on (re)launch for the same reason as electricity above: the
+      // watch's persisted BTC value is wiped by a reinstall/reboot, but
+      // btc_last_thousands survives in phone localStorage, so a non-forced call
+      // would suppress the send as "unchanged" and leave the widget empty until
+      // the price next crosses a thousand-boundary.
+      btc.updateBtc(true);
       btc.setupBtcPolling();
     }
   }
