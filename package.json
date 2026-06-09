@@ -85,7 +85,9 @@
       "ElecStartEpoch",
       "ElecPrices",
       "TWT_TASK_WORKED_BEFORE_MIN",
-      "TWT_DAILY_TARGET_MIN"
+      "TWT_DAILY_TARGET_MIN",
+      "TWT_TASK_BUDGET_MIN",
+      "TWT_TASK_TOTAL_BEFORE_MIN"
     ],
     "resources": {
       "media": [
