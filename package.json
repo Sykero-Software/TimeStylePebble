@@ -88,7 +88,8 @@
       "TWT_DAILY_TARGET_MIN",
       "TWT_TASK_BUDGET_MIN",
       "TWT_TASK_TOTAL_BEFORE_MIN",
-      "BtcPriceThousands"
+      "BtcPriceThousands",
+      "SettingPollIntervalMin"
     ],
     "resources": {
       "media": [
