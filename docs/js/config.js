@@ -76,6 +76,7 @@ function loadPreviousSettings() {
       // alt timezone widget settings
       altclock_name: 'ALT',
       altclock_offset: 0,
+      btc_poll_interval: 30,
 
       // health widget settings
       health_use_distance: 'no',
@@ -152,6 +153,9 @@ function loadPreviousSettings() {
   $('#altclock_name').val(savedSettings.altclock_name);
   $('#altclock_offset_hour option[data-setting="' + savedSettings.altclock_offset + '"]').prop('selected', true);
   $('#altclock_offset_hour option[data-setting="' + savedSettings.altclock_offset + '"]').prop('selected', true);
+
+  // load btc widget settings
+  $('#btc_poll_interval').val(savedSettings.btc_poll_interval);
 
   // update the widget settings sections to only show ones that are relevant
   showOnlySelectedWidgetSettings();
@@ -286,6 +290,13 @@ function showOnlySelectedWidgetSettings() {
     $('#widget_sleep_settings').show();
   } else {
     $('#widget_sleep_settings').hide();
+  }
+
+  // btc widget = id 15
+  if(selections.indexOf('15') != -1) {
+    $('#widget_btc_settings').show();
+  } else {
+    $('#widget_btc_settings').hide();
   }
 }
 
@@ -596,6 +607,12 @@ function sendSettingsToWatch() {
   // alt clock widgets
   config.altclock_name = $('#altclock_name').val();
   config.altclock_offset = $('#altclock_offset_hour option:selected').data('setting');
+
+  // btc widget settings
+  var btcInterval = parseInt($('#btc_poll_interval').val(), 10);
+  if (isNaN(btcInterval)) { btcInterval = 30; }
+  else if (btcInterval < 5) { btcInterval = 5; }
+  config.btc_poll_interval = btcInterval;
 
   // add the version, in case we need to do more migrations
   config.settings_version = CURRENT_SETTINGS_VERSION;
