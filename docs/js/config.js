@@ -112,6 +112,7 @@ function loadPreviousSettings() {
   // load checkbox settings
   loadSettingCheckbox('sidebar_position_setting', savedSettings.sidebar_position);
   loadSettingCheckbox('units_setting', savedSettings.units);
+  loadSettingCheckbox('weather_datasource_setting', savedSettings.weather_datasource);
   loadSettingCheckbox('disconnect_icon_setting', savedSettings.disconnect_icon_setting);
   loadSettingCheckbox('bluetooth_vibe_setting', savedSettings.bluetooth_vibe_setting);
   loadSettingCheckbox('midi_vibe_setting', savedSettings.midi_vibe_setting);
@@ -567,6 +568,11 @@ function sendSettingsToWatch() {
   // weather widget settings
   if($('#units_setting .btn.active').size() > 0) {
     config.units = $('#units_setting .btn.active').data('setting');
+  }
+
+  if($('#weather_datasource_setting .btn.active').size() > 0) {
+    config.weather_datasource = $('#weather_datasource_setting .btn.active').data('setting');
+    config.weather_api_key = '';   // providers need no key; keep index.js happy
   }
 
   if($('#weather_setting .btn.active').size() > 0) {
