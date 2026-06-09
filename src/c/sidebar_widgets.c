@@ -1215,12 +1215,6 @@ void BtcPrice_draw(GContext *ctx, int yPosition) {
     strcpy(btcStr, "--");
   }
 
-  // "B" label on top, thousands value below (reuses the basic-widget layout).
-  draw_basic_widget(ctx, yPosition, "B", btcStr, layout.basicWidgetY);
-
-  // Vertical stroke through the "B" to suggest the ₿ glyph.
-  graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
-  int cx = layout.textRectX + SidebarWidgets_xOffset + (layout.textRectWidth / 2);
-  int ly = yPosition + layout.basicWidgetLabelY;
-  graphics_draw_line(ctx, GPoint(cx, ly + 2), GPoint(cx, ly + 18));
+  // "BTC" label on top, thousands value below (reuses the basic-widget layout).
+  draw_basic_widget(ctx, yPosition, "BTC", btcStr, layout.basicWidgetY);
 }
