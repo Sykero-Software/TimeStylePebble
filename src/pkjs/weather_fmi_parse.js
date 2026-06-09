@@ -11,7 +11,7 @@ var ELEMENT_RE =
 
 // Higher rank = more "notable" weather; used to pick the day's forecast symbol.
 function symbolRank(base) {
-  if (base >= 71) { return 9; }                                  // thundershowers
+  if (base >= 71 && base <= 77) { return 9; }                    // thundershowers
   if (base >= 61) { return 8; }                                  // hail showers
   if (base >= 51) { return 7; }                                  // snow
   if (base >= 41) { return 7; }                                  // sleet
@@ -74,7 +74,7 @@ function parseFmiForecast(xml, nowEpochSec) {
   return {
     ok: true,
     currentTemp: Math.round(curTemp.value),
-    currentSymbol: curSym ? curSym.value : null,
+    currentSymbol: curSym ? Math.round(curSym.value) : null,
     forecastSymbol: fcSym,
     forecastHigh: Math.round(high),
     forecastLow: Math.round(low),
@@ -98,6 +98,8 @@ function smartSymbolToIcon(code, icons) {
     case 9:
       return icons.CLOUDY_DAY;
   }
+  // night variants exist only for clear/partly-cloudy (handled in the switch);
+  // all precipitation/thunder conditions share a single day icon.
   if (base >= 71 && base <= 77) { return icons.THUNDERSTORM; }               // 71-77 thunder
   if (base >= 61 && base <= 67) { return icons.RAINING_AND_SNOWING; }        // 61-67 hail (no hail icon)
   if (base >= 51 && base <= 59) { return base >= 56 ? icons.HEAVY_SNOW : icons.LIGHT_SNOW; } // 51-59

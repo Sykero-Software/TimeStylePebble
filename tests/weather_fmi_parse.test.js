@@ -73,8 +73,10 @@ test('smartSymbolToIcon maps day/night and severities', () => {
     RAINING_AND_SNOWING: 9, THUNDERSTORM: 10, WEATHER_GENERIC: 11
   };
   assert.strictEqual(smartSymbolToIcon(1, I), I.CLEAR_DAY);
+  assert.strictEqual(smartSymbolToIcon(2, I), I.CLEAR_DAY);
   assert.strictEqual(smartSymbolToIcon(101, I), I.CLEAR_NIGHT);
   assert.strictEqual(smartSymbolToIcon(4, I), I.PARTLY_CLOUDY);
+  assert.strictEqual(smartSymbolToIcon(6, I), I.PARTLY_CLOUDY);
   assert.strictEqual(smartSymbolToIcon(104, I), I.PARTLY_CLOUDY_NIGHT);
   assert.strictEqual(smartSymbolToIcon(7, I), I.CLOUDY_DAY);
   assert.strictEqual(smartSymbolToIcon(9, I), I.CLOUDY_DAY);
@@ -86,5 +88,6 @@ test('smartSymbolToIcon maps day/night and severities', () => {
   assert.strictEqual(smartSymbolToIcon(64, I), I.RAINING_AND_SNOWING); // hail
   assert.strictEqual(smartSymbolToIcon(71, I), I.THUNDERSTORM);
   assert.strictEqual(smartSymbolToIcon(999, I), I.WEATHER_GENERIC);
+  assert.strictEqual(smartSymbolToIcon(NaN, I), I.WEATHER_GENERIC);
   assert.strictEqual(smartSymbolToIcon(null, I), I.WEATHER_GENERIC);
 });
