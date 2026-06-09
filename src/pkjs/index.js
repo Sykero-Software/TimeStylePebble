@@ -3,7 +3,7 @@ var weather = require('./weather');
 var electricity = require('./electricity');
 var btc = require('./btc');
 
-var CONFIG_VERSION = 11;
+var CONFIG_VERSION = 12;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
 var BASE_CONFIG_URL = 'https://sykero-software.github.io/TimeStylePebble/';
 
@@ -216,6 +216,9 @@ Pebble.addEventListener('webviewclosed', function (e) {
     dict.SettingWidget0ID = configData.widget_0_id;
     dict.SettingWidget1ID = configData.widget_1_id;
     dict.SettingWidget2ID = configData.widget_2_id;
+    dict.SettingWidget2_0ID = configData.widget2_0_id;
+    dict.SettingWidget2_1ID = configData.widget2_1_id;
+    dict.SettingWidget2_2ID = configData.widget2_2_id;
 
     if (configData.sidebar_position) {
       if (configData.sidebar_position == 'right') {
@@ -304,7 +307,8 @@ Pebble.addEventListener('webviewclosed', function (e) {
     // determine whether or not the weather checking should be enabled
     var disableWeather;
 
-    var widgetIDs = [configData.widget_0_id, configData.widget_1_id, configData.widget_2_id];
+    var widgetIDs = [configData.widget_0_id, configData.widget_1_id, configData.widget_2_id,
+                     configData.widget2_0_id, configData.widget2_1_id, configData.widget2_2_id];
 
     // if none of the weather widgets are present, disable the weather
     if (widgetIDs.indexOf(7) != -1 || widgetIDs.indexOf(8) != -1 || widgetIDs.indexOf(13) != -1) {

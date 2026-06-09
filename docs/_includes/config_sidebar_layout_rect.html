@@ -28,6 +28,22 @@
   </div>
 </div>
 <hr>
+<label>Secondary Panel Widgets</label>
+<p class="subtle">Shown on the opposite side of the sidebar, but only while a status strip (e.g. work-time tracking) is on screen. A side with 3 widgets stays full height; with 2 or fewer the status strip widens into that side. Leave all empty to disable.</p>
+<div id="secondary_layout_section" class="rect">
+  <div class="col">
+    <select class="form-control" id="widget2_0_selector">
+      {% include widget_selector.html %}
+    </select>
+    <select class="form-control" id="widget2_1_selector">
+      {% include widget_selector.html %}
+    </select>
+    <select class="form-control" id="widget2_2_selector">
+      {% include widget_selector.html %}
+    </select>
+  </div>
+</div>
+<hr>
 <label>Sidebar Display</label><br>
 <label class="subtle">Position</label>
 <div id="sidebar_position_setting" class="form-group">

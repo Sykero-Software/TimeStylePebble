@@ -59,6 +59,9 @@ function loadPreviousSettings() {
       widget_0_id: '7', // current weather
       widget_1_id: '0', // empty
       widget_2_id: '4', // today's date
+      widget2_0_id: '0', // secondary panel: empty
+      widget2_1_id: '0', // secondary panel: empty
+      widget2_2_id: '0', // secondary panel: empty
       sidebar_position: 'right',
       use_large_sidebar_font_setting: 'no',
 
@@ -151,6 +154,11 @@ function loadPreviousSettings() {
   $('#widget_0_selector').val(savedSettings.widget_0_id);
   $('#widget_1_selector').val(savedSettings.widget_1_id);
   $('#widget_2_selector').val(savedSettings.widget_2_id);
+
+  // load secondary panel widget settings
+  $('#widget2_0_selector').val(savedSettings.widget2_0_id);
+  $('#widget2_1_selector').val(savedSettings.widget2_1_id);
+  $('#widget2_2_selector').val(savedSettings.widget2_2_id);
 
   // load alt timezone widget settings
   $('#altclock_name').val(savedSettings.altclock_name);
@@ -558,6 +566,11 @@ function sendSettingsToWatch() {
   config.widget_0_id = parseInt($('#widget_0_selector').val(), 10);
   config.widget_1_id = parseInt($('#widget_1_selector').val(), 10);
   config.widget_2_id = parseInt($('#widget_2_selector').val(), 10);
+
+  // secondary panel settings
+  config.widget2_0_id = parseInt($('#widget2_0_selector').val(), 10);
+  config.widget2_1_id = parseInt($('#widget2_1_selector').val(), 10);
+  config.widget2_2_id = parseInt($('#widget2_2_selector').val(), 10);
 
   if($('#sidebar_position_setting .btn.active').size() > 0) {
     config.sidebar_position = $('#sidebar_position_setting .btn.active').data('setting');
