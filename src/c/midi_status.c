@@ -2,12 +2,12 @@
 // Copyright (c) 2026 Tuomas Airaksinen
 
 #include "midi_status.h"
-#include "twt_status.h"   // reuse TwtStatus_isSupported() for the rect/non-aplite gate
+#include "twt_status.h"   // reuse TwtStatus_isSupported() + TWT_STATUS_HEIGHT
 #include "settings.h"
 
 MidiStatus midi_status;
 
-static TextLayer* s_status_text_layer;
+static Layer* s_status_layer;
 static char s_status_buffer[MIDI_DEVICE_NAME_LEN + 24];
 
 void MidiStatus_load() {
@@ -26,7 +26,10 @@ void MidiStatus_save() {
   persist_write_data(MIDI_STATUS_PERSIST_KEY, &midi_status, sizeof(MidiStatus));
 }
 
-// Compose "● m:ss  DeviceName" (h:mm:ss past an hour). Bullet glyph acts as the REC dot.
+// Compose "m:ss  DeviceName" (h:mm:ss past an hour). The recording indicator is a
+// drawn red dot (see status_update_proc), not text — the Pebble GOTHIC system fonts
+// only cover Latin-1 + limited Latin-Extended, so a U+25CF BLACK CIRCLE (●) would
+// render as a missing-glyph box.
 static void build_status_text() {
   int32_t elapsed = 0;
   if (midi_status.isRecording && midi_status.recStartEpoch > 0) {
@@ -37,57 +40,68 @@ static void build_status_text() {
   int m = (elapsed % 3600) / 60;
   int s = elapsed % 60;
   if (h > 0) {
-    snprintf(s_status_buffer, sizeof(s_status_buffer), "\xe2\x97\x8f %d:%02d:%02d  %s",
+    snprintf(s_status_buffer, sizeof(s_status_buffer), "%d:%02d:%02d  %s",
              h, m, s, midi_status.deviceName);
   } else {
-    snprintf(s_status_buffer, sizeof(s_status_buffer), "\xe2\x97\x8f %d:%02d  %s",
+    snprintf(s_status_buffer, sizeof(s_status_buffer), "%d:%02d  %s",
              m, s, midi_status.deviceName);
   }
 }
 
-void MidiStatus_redraw() {
-  if (!s_status_text_layer) return;
+static void status_update_proc(Layer* layer, GContext* ctx) {
+  GRect b = layer_get_bounds(layer);
   build_status_text();
-  text_layer_set_text_color(s_status_text_layer, settings.timeColor);
-  text_layer_set_text(s_status_text_layer, s_status_buffer);
-  layer_mark_dirty(text_layer_get_layer(s_status_text_layer));
+
+  GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
+
+  // main.c reserves a fixed (2-line) status height so the clock size is consistent
+  // across status types. MIDI is a single line, so center it vertically within that
+  // taller area instead of letting it float at the top.
+  int lineH = TWT_STATUS_HEIGHT;        // single-line height
+  int top = (b.size.h - lineH) / 2;
+  if (top < 0) top = 0;
+
+  // Recording indicator: a filled red dot (the classic REC dot), drawn rather than
+  // typeset so it always renders (the system font has no ● glyph). Falls back to the
+  // theme time color on b&w platforms where GColorRed has no distinct shade.
+  int r = 6;
+  int leftPad = 8;                      // gap from the strip's left edge to the dot
+  int cx = leftPad + r;
+  int cy = top + lineH / 2;
+  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorRed, settings.timeColor));
+  graphics_fill_circle(ctx, GPoint(cx, cy), r);
+
+  // Elapsed time + device name, after the dot, truncated with an ellipsis if long.
+  int textX = cx + r + 6;
+  graphics_context_set_text_color(ctx, settings.timeColor);
+  graphics_draw_text(ctx, s_status_buffer, font,
+      GRect(textX, top - 2, b.size.w - textX, lineH),
+      GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+}
+
+void MidiStatus_redraw() {
+  if (s_status_layer) layer_mark_dirty(s_status_layer);
 }
 
 void MidiStatus_setFrame(GRect frame) {
-  if (s_status_text_layer) {
-    // main.c reserves a fixed (2-line) status height so the clock size is
-    // consistent across status types. MIDI is a single line, so center it
-    // vertically within that taller area instead of letting it float at the top.
-    int lineH = TWT_STATUS_HEIGHT;   // single-line height
-    int dy = (frame.size.h - lineH) / 2;
-    if (dy < 0) dy = 0;
-    layer_set_frame(text_layer_get_layer(s_status_text_layer),
-                    GRect(frame.origin.x, frame.origin.y + dy, frame.size.w, lineH));
-  }
+  if (s_status_layer) layer_set_frame(s_status_layer, frame);
 }
 
 void MidiStatus_initLayer(Layer* parent, GRect frame) {
   if (!TwtStatus_isSupported()) return;
-  s_status_text_layer = text_layer_create(frame);
-  text_layer_set_background_color(s_status_text_layer, GColorClear);
-  text_layer_set_text_color(s_status_text_layer, settings.timeColor);
-  text_layer_set_font(s_status_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
-  text_layer_set_text_alignment(s_status_text_layer, GTextAlignmentLeft);
-  text_layer_set_overflow_mode(s_status_text_layer, GTextOverflowModeTrailingEllipsis);
-  layer_add_child(parent, text_layer_get_layer(s_status_text_layer));
-  layer_set_hidden(text_layer_get_layer(s_status_text_layer), true);
-  MidiStatus_redraw();
+  s_status_layer = layer_create(frame);
+  layer_set_update_proc(s_status_layer, status_update_proc);
+  layer_add_child(parent, s_status_layer);
+  layer_set_hidden(s_status_layer, true); // shown by main.c only while recording
 }
 
 void MidiStatus_setHidden(bool hidden) {
-  if (s_status_text_layer) {
-    layer_set_hidden(text_layer_get_layer(s_status_text_layer), hidden);
-  }
+  if (s_status_layer) layer_set_hidden(s_status_layer, hidden);
 }
 
 void MidiStatus_deinitLayer() {
-  if (s_status_text_layer) {
-    text_layer_destroy(s_status_text_layer);
-    s_status_text_layer = NULL;
+  if (s_status_layer) {
+    layer_destroy(s_status_layer);
+    s_status_layer = NULL;
   }
 }
