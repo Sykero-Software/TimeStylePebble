@@ -101,12 +101,12 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
       h_adjust = -1;
     }
   #else
-    // for rectangular watches, adjust X position based on sidebar position
-    if(settings.sidebarOnLeft) {
-      h_adjust += sidebarWidth / 2;
-    } else {
-      h_adjust -= sidebarWidth / 2 + 1;
-    }
+    // apply_twt_layout() owns the clock frame on rectangular (non-aplite)
+    // platforms, insetting it horizontally between the sidebar(s). FCTX ignores
+    // the layer frame origin, so add it back manually (mirrors the vertical
+    // shift below). No per-sidebar nudge is needed — the frame already excludes
+    // the sidebar(s), including the optional secondary panel.
+    h_adjust += layer_get_frame(l).origin.x;
   #endif
 
   // FCTX rasterises directly into the framebuffer using absolute screen
