@@ -14,6 +14,8 @@ int main(void) {
   assert(twt_percent(100, 0)   == -1);   // base 0 -> hidden
   assert(twt_percent(100, -5)  == -1);   // negative base -> hidden
   assert(twt_percent(-10, 450) == 0);    // negative value clamped to 0
+  assert(twt_percent(1200, 1200) == 100);  // task at budget
+  assert(twt_percent(1500, 1200) == 125);  // over budget allowed
 
   // --- twt_bar_fill_px (filled width for value/base over width_px, clamped) ---
   assert(twt_bar_fill_px(225, 450, 100) == 50);

@@ -49,10 +49,19 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
     if (running < 0) running = 0;
   }
   int32_t total = twt_status.workedBeforeMin + running;
-  int32_t task = twt_status.taskWorkedBeforeMin + running;
+  int32_t task_today = twt_status.taskWorkedBeforeMin + running;   // today's task time
+  int32_t task_total = twt_status.taskTotalBeforeMin + running;    // all-time task time
 
-  int day_pct = twt_percent(total, twt_status.dailyTargetMin);  // -1 -> hide
-  int task_pct = twt_percent(task, total);                      // -1 -> hide
+  int day_pct = twt_percent(total, twt_status.dailyTargetMin);     // -1 -> hide
+  int32_t task_shown;
+  int task_pct;
+  if (twt_status.taskBudgetMin > 0) {
+    task_shown = task_total;                                       // budgeted: all-time total
+    task_pct = twt_percent(task_total, twt_status.taskBudgetMin);  // % of budget (may exceed 100)
+  } else {
+    task_shown = task_today;                                       // unchanged: today's time
+    task_pct = twt_percent(task_today, total);                     // % of day total
+  }
 
   char total_buf[12];
   char task_buf[12];
@@ -63,7 +72,7 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
     shown_total = twt_status.dailyTargetMin - total; // remaining; negative on overtime
   }
   twt_fmt_hhmm_signed(total_buf, sizeof(total_buf), shown_total);
-  snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task / 60), (int)(task % 60));
+  snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task_shown / 60), (int)(task_shown % 60));
   if (day_pct >= 0)  snprintf(day_pct_buf, sizeof(day_pct_buf), "(%d%%)", day_pct > 999 ? 999 : day_pct);
   if (task_pct >= 0) snprintf(task_pct_buf, sizeof(task_pct_buf), "(%d%%)", task_pct > 999 ? 999 : task_pct);
 

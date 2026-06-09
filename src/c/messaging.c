@@ -302,6 +302,22 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     twt_status.dailyTargetMin = t;
     twtUpdated = true;
   }
+  Tuple *twtTaskBudget_tuple = dict_find(iterator, MESSAGE_KEY_TWT_TASK_BUDGET_MIN);
+  if (twtTaskBudget_tuple != NULL) {
+    int32_t b = twtTaskBudget_tuple->value->int32;
+    // defence-in-depth: clamp to a sane range (0 .. 100000 min ≈ 1666h). 0 = no budget.
+    if (b < 0) b = 0;
+    if (b > 100000) b = 100000;
+    twt_status.taskBudgetMin = b;
+    twtUpdated = true;
+  }
+  Tuple *twtTaskTotal_tuple = dict_find(iterator, MESSAGE_KEY_TWT_TASK_TOTAL_BEFORE_MIN);
+  if (twtTaskTotal_tuple != NULL) {
+    int32_t v = twtTaskTotal_tuple->value->int32;
+    if (v < 0) v = 0;
+    twt_status.taskTotalBeforeMin = v;
+    twtUpdated = true;
+  }
   if (twtUpdated) {
     TwtStatus_save();
     // the redraw + layout happen via message_processed_callback() (redrawScreen -> apply_twt_layout)
