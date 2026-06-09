@@ -196,7 +196,10 @@ static void main_window_unload(Window *window) {
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // every 30 minutes, request fresh phone data if weather OR the electricity
-  // widget needs it (the JS side throttles the actual API call to ~2/day)
+  // widget needs it (the JS side throttles the actual API call to ~2/day).
+  // NOTE: the BTC widget is intentionally NOT listed here -- it self-polls on
+  // its own JS setInterval, so requesting it from the watch tick too would
+  // cause redundant double-fetching.
   bool needsPhoneData = !dynamicSettings.disableWeather;
   for (int i = 0; i < 3; i++) {
     if (settings.widgets[i] == ELECTRICITY) {
