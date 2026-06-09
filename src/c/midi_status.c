@@ -55,7 +55,14 @@ void MidiStatus_redraw() {
 
 void MidiStatus_setFrame(GRect frame) {
   if (s_status_text_layer) {
-    layer_set_frame(text_layer_get_layer(s_status_text_layer), frame);
+    // main.c reserves a fixed (2-line) status height so the clock size is
+    // consistent across status types. MIDI is a single line, so center it
+    // vertically within that taller area instead of letting it float at the top.
+    int lineH = TWT_STATUS_HEIGHT;   // single-line height
+    int dy = (frame.size.h - lineH) / 2;
+    if (dy < 0) dy = 0;
+    layer_set_frame(text_layer_get_layer(s_status_text_layer),
+                    GRect(frame.origin.x, frame.origin.y + dy, frame.size.w, lineH));
   }
 }
 

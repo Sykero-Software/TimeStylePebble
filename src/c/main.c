@@ -86,7 +86,11 @@ static void apply_twt_layout() {
   bool showMidi = !obstructed && midi_status.isRecording;
   bool showTwt  = !obstructed && !showMidi && twt_status.isTracking;
   bool statusVisible = showMidi || showTwt;
-  int statusHeight = !statusVisible ? 0 : (showTwt ? TWT_STATUS_HEIGHT_2LINE : TWT_STATUS_HEIGHT);
+  // All status displays reserve the SAME fixed height (the 2-line TWT height), so
+  // the clock stays the same size regardless of which status is showing. A
+  // single-line status (MIDI) is vertically centered within this area by its own
+  // setFrame.
+  int statusHeight = statusVisible ? TWT_STATUS_HEIGHT_2LINE : 0;
 
   int topReserved = settings.showBigDate ? BIG_DATE_HEIGHT : 0;
   int statusTop = root.size.h - statusHeight;   // == root.size.h when no status
