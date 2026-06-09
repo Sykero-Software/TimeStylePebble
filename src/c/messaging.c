@@ -127,6 +127,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *midiVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingMidiVibe);
   Tuple *bigDate_tuple = dict_find(iterator, MESSAGE_KEY_SettingBigDate);
   Tuple *twtShowRemaining_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtShowRemaining);
+  Tuple *pollInterval_tuple = dict_find(iterator, MESSAGE_KEY_SettingPollIntervalMin);
   Tuple *language_tuple = dict_find(iterator, MESSAGE_KEY_SettingLanguageID);
   Tuple *leadingZero_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowLeadingZero);
   Tuple *batteryPct_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowBatteryPct);
@@ -189,6 +190,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   if(twtShowRemaining_tuple != NULL) {
     settings.twtShowRemaining = (bool)twtShowRemaining_tuple->value->int8;
+  }
+
+  if(pollInterval_tuple != NULL) {
+    int v = pollInterval_tuple->value->int32;
+    if (v >= 5 && v <= 240) { settings.pollIntervalMin = (uint8_t)v; }
   }
 
   if(leadingZero_tuple != NULL) {

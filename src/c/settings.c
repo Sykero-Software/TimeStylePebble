@@ -50,6 +50,7 @@ void Settings_loadFromStorage() {
   settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
   settings.showBigDate = false;   // opt-in default; appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
+  settings.pollIntervalMin = 30;   // default; appended field, no settings-version bump
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
@@ -93,6 +94,9 @@ void Settings_loadFromStorage() {
     settings.decimalSeparator = '.'; clamped = true;
   }
   settings.altclockName[sizeof(settings.altclockName) - 1] = '\0';
+  if (settings.pollIntervalMin < 5 || settings.pollIntervalMin > 240) {
+    settings.pollIntervalMin = 30; clamped = true;
+  }
 
   if (clamped) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, reset to defaults");

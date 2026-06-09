@@ -22,8 +22,7 @@ static bool isPhoneConnected;
 // current time service subscription
 static bool updatingEverySecond;
 
-// try to randomize when watches call the weather API
-static uint8_t weatherRefreshMinute;
+static time_t lastDataRequest = 0;   // epoch of the last watch->phone data request
 
 void update_clock();
 void redrawScreen();
@@ -195,20 +194,24 @@ static void main_window_unload(Window *window) {
 
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  // every 30 minutes, request fresh phone data if weather OR the electricity
-  // widget needs it (the JS side throttles the actual API call to ~2/day).
-  // NOTE: the BTC widget is intentionally NOT listed here -- it self-polls on
-  // its own JS setInterval, so requesting it from the watch tick too would
-  // cause redundant double-fetching.
+  // One watch-driven request per configured interval serves ALL phone-fetched
+  // data (weather, electricity, BTC). This is the documented Pebble pattern: the
+  // tick service is always running and the AppMessage wakes the phone JS out of
+  // power-save. The JS side throttles per source (electricity ~2/day; BTC sends
+  // only on change), so a short interval does not over-fetch slow sources.
   bool needsPhoneData = !dynamicSettings.disableWeather;
   for (int i = 0; i < 3; i++) {
-    if (settings.widgets[i] == ELECTRICITY) {
+    if (settings.widgets[i] == ELECTRICITY || settings.widgets[i] == BTC_PRICE) {
       needsPhoneData = true;
     }
   }
-  if (needsPhoneData) {
-    if (tick_time->tm_min == weatherRefreshMinute && tick_time->tm_sec == 0) {
+  if (needsPhoneData && tick_time->tm_sec == 0) {
+    int intervalSec = (int)settings.pollIntervalMin * 60;
+    if (intervalSec < 300) { intervalSec = 300; }   // floor 5 min
+    time_t now = time(NULL);
+    if (lastDataRequest == 0 || (now - lastDataRequest) >= intervalSec) {
       messaging_requestNewWeatherData();
+      lastDataRequest = now;
     }
   }
 
@@ -284,7 +287,7 @@ static void init() {
 
   srand(time(NULL));
 
-  weatherRefreshMinute = rand() % 60;
+  lastDataRequest = time(NULL);   // first periodic request fires one interval after launch
 
   // init settings
   Settings_init();
