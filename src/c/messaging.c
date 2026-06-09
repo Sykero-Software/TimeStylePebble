@@ -314,7 +314,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *twtTaskTotal_tuple = dict_find(iterator, MESSAGE_KEY_TWT_TASK_TOTAL_BEFORE_MIN);
   if (twtTaskTotal_tuple != NULL) {
     int32_t v = twtTaskTotal_tuple->value->int32;
+    // clamp to the same sane range as the budget so a garbled dict can't overflow task_total
     if (v < 0) v = 0;
+    if (v > 100000) v = 100000;
     twt_status.taskTotalBeforeMin = v;
     twtUpdated = true;
   }
