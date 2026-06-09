@@ -69,6 +69,10 @@ typedef struct {
 
   // polling
   uint8_t pollIntervalMin;   // shared watch->phone data request interval (min); appended field
+
+  // secondary widget panel (shown opposite the primary sidebar while a bottom
+  // status display is visible); EMPTY x3 = feature off. Appended field.
+  SidebarWidgetType widgets2[3];
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

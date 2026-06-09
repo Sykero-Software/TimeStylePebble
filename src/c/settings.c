@@ -51,6 +51,9 @@ void Settings_loadFromStorage() {
   settings.showBigDate = false;   // opt-in default; appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
   settings.pollIntervalMin = 30;   // default; appended field, no settings-version bump
+  settings.widgets2[0] = EMPTY;   // secondary panel off by default; appended field, no settings-version bump
+  settings.widgets2[1] = EMPTY;
+  settings.widgets2[2] = EMPTY;
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
@@ -89,6 +92,7 @@ void Settings_loadFromStorage() {
   if (settings.hourlyVibe > VIBE_EVERY_HALF_HOUR) { settings.hourlyVibe = NO_VIBE; clamped = true; }
   for (int i = 0; i < 3; i++) {
     if (settings.widgets[i] > BTC_PRICE) { settings.widgets[i] = EMPTY; clamped = true; }
+    if (settings.widgets2[i] > BTC_PRICE) { settings.widgets2[i] = EMPTY; clamped = true; }
   }
   if (settings.decimalSeparator != '.' && settings.decimalSeparator != ',') {
     settings.decimalSeparator = '.'; clamped = true;
@@ -127,32 +131,37 @@ void Settings_updateDynamicSettings() {
   dynamicSettings.enableBeats = false;
   dynamicSettings.enableAltTimeZone = false;
 
-  for (int i = 0; i < 3; i++) {
-    // if there are any weather widgets, enable weather checking
-    if (settings.widgets[i] == WEATHER_CURRENT ||
-        settings.widgets[i] == WEATHER_FORECAST_TODAY ||
-        settings.widgets[i] == WEATHER_UV_INDEX) {
-      dynamicSettings.disableWeather = false;
-    }
+  // Scan both panels: a widget in either the primary sidebar or the secondary
+  // panel should toggle its corresponding dynamic flag / fetcher.
+  for (int pass = 0; pass < 2; pass++) {
+    const SidebarWidgetType *w = (pass == 0) ? settings.widgets : settings.widgets2;
+    for (int i = 0; i < 3; i++) {
+      // if there are any weather widgets, enable weather checking
+      if (w[i] == WEATHER_CURRENT ||
+          w[i] == WEATHER_FORECAST_TODAY ||
+          w[i] == WEATHER_UV_INDEX) {
+        dynamicSettings.disableWeather = false;
+      }
 
-    // if any widget is "seconds", we'll need to update the sidebar every second
-    if (settings.widgets[i] == SECONDS) {
-      dynamicSettings.updateScreenEverySecond = true;
-    }
+      // if any widget is "seconds", we'll need to update the sidebar every second
+      if (w[i] == SECONDS) {
+        dynamicSettings.updateScreenEverySecond = true;
+      }
 
-    // if any widget is "battery", disable the automatic battery indication
-    if (settings.widgets[i] == BATTERY_METER) {
-      dynamicSettings.enableAutoBatteryWidget = false;
-    }
+      // if any widget is "battery", disable the automatic battery indication
+      if (w[i] == BATTERY_METER) {
+        dynamicSettings.enableAutoBatteryWidget = false;
+      }
 
-    // if any widget is "beats", enable the beats calculation
-    if (settings.widgets[i] == BEATS) {
-      dynamicSettings.enableBeats = true;
-    }
+      // if any widget is "beats", enable the beats calculation
+      if (w[i] == BEATS) {
+        dynamicSettings.enableBeats = true;
+      }
 
-    // if any widget is "alt_time_zone", enable the alternative time calculation
-    if (settings.widgets[i] == ALT_TIME_ZONE) {
-      dynamicSettings.enableAltTimeZone = true;
+      // if any widget is "alt_time_zone", enable the alternative time calculation
+      if (w[i] == ALT_TIME_ZONE) {
+        dynamicSettings.enableAltTimeZone = true;
+      }
     }
   }
 
