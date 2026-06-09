@@ -30,6 +30,14 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 void bluetoothStateChanged(bool newConnectionState);
 static void apply_twt_layout();
 
+static int count_widgets(const SidebarWidgetType w[3]) {
+  int n = 0;
+  for (int i = 0; i < 3; i++) {
+    if (w[i] != EMPTY) n++;
+  }
+  return n;
+}
+
 
 void update_clock() {
   time_t rawTime;
@@ -60,7 +68,7 @@ void update_clock() {
 // status line and show it. When not tracking, restore the original full-size clock and hide
 // the line, so the watchface looks exactly as it did before the integration.
 static void apply_twt_layout() {
-  if (!TwtStatus_isSupported()) return;  // same support gate as DateHeader
+  if (!TwtStatus_isSupported()) return;  // rect, non-aplite only
 
   // The system timeline-peek banner (upcoming calendar event) eats screen
   // space. Rather than cram the bottom status strip into what's left, drop it
@@ -72,41 +80,82 @@ static void apply_twt_layout() {
   GRect root = layer_get_unobstructed_bounds(root_layer);
   bool obstructed = root.size.h < full.size.h;
 
+  // Generic "active bottom status" resolution: {visible, height}. MIDI wins over
+  // TWT when both active. A future status display adds another case here; the
+  // panel/status geometry below is status-type agnostic.
   bool showMidi = !obstructed && midi_status.isRecording;
   bool showTwt  = !obstructed && !showMidi && twt_status.isTracking;
+  bool statusVisible = showMidi || showTwt;
+  int statusHeight = !statusVisible ? 0 : (showTwt ? TWT_STATUS_HEIGHT_2LINE : TWT_STATUS_HEIGHT);
 
-  // Top strip: large date header (independent of tracking state).
   int topReserved = settings.showBigDate ? BIG_DATE_HEIGHT : 0;
+  int statusTop = root.size.h - statusHeight;   // == root.size.h when no status
 
-  // Bottom strip: TWT (two lines) or MIDI (one line) status.
-  int bottomReserved = 0;
-  if (showMidi || showTwt) {
-    bottomReserved = showTwt ? TWT_STATUS_HEIGHT_2LINE : TWT_STATUS_HEIGHT;
+  bool primaryOnLeft = settings.sidebarOnLeft;
+  int primaryCount = count_widgets(settings.widgets);
+  int secondaryCount = count_widgets(settings.widgets2);
+  bool showSecondary = statusVisible && secondaryCount >= 1;
+
+  // A side with exactly 3 widgets stays full height (blocks the status strip on
+  // that side); a side with <=2 widgets is shortened to the status-strip top so
+  // the status strip flows under it to the screen edge. The primary is full
+  // height whenever no status is visible.
+  int primaryHeight   = (primaryCount == 3) ? root.size.h
+                                            : (statusVisible ? statusTop : root.size.h);
+  int secondaryHeight = (secondaryCount == 3) ? root.size.h : statusTop;
+
+  // Primary sidebar frame (always present).
+  int primaryX = primaryOnLeft ? 0 : (root.size.w - sidebarWidth);
+  Sidebar_setPrimaryFrame(GRect(primaryX, 0, sidebarWidth, primaryHeight));
+
+  // Secondary panel frame (opposite side), shown only while a status is visible.
+  if (showSecondary) {
+    int secondaryX = primaryOnLeft ? (root.size.w - sidebarWidth) : 0;
+    Sidebar_setSecondaryFrame(GRect(secondaryX, 0, sidebarWidth, secondaryHeight));
+    Sidebar_setSecondaryHidden(false);
+  } else {
+    Sidebar_setSecondaryHidden(true);
   }
 
-  // Shrink the clock to fit between the two strips; the clock font rescales
-  // automatically from the layer height. The clock draws via FCTX in absolute
-  // screen coordinates, so update_clock_area_layer() adds the frame's top
-  // offset back in manually to follow this move down (see clock_area.c).
-  layer_set_frame(clock_area_layer,
-      GRect(0, topReserved, root.size.w, root.size.h - topReserved - bottomReserved));
+  // Horizontal insets for the clock/date: always inset by the primary; inset the
+  // opposite side too when the secondary is shown.
+  int leftInset = 0, rightInset = 0;
+  if (primaryOnLeft) { leftInset = sidebarWidth; } else { rightInset = sidebarWidth; }
+  if (showSecondary) {
+    if (primaryOnLeft) { rightInset = sidebarWidth; } else { leftInset = sidebarWidth; }
+  }
+  int contentX = leftInset;
+  int contentW = root.size.w - leftInset - rightInset;
 
-  // Date header: centered in the non-sidebar area of the top strip.
+  // Clock between the panels, between the top strip and the status strip.
+  layer_set_frame(clock_area_layer,
+      GRect(contentX, topReserved, contentW, statusTop - topReserved));
+
+  // Date header in the top strip, between the panels.
   if (topReserved) {
-    int dateX = settings.sidebarOnLeft ? sidebarWidth : 0;
-    int dateW = root.size.w - sidebarWidth;
-    DateHeader_setFrame(GRect(dateX, 0, dateW, BIG_DATE_HEIGHT));
+    DateHeader_setFrame(GRect(contentX, 0, contentW, BIG_DATE_HEIGHT));
     DateHeader_setHidden(false);
     DateHeader_redraw();
   } else {
     DateHeader_setHidden(true);
   }
 
-  // Bottom status line (unchanged behavior).
-  if (showMidi || showTwt) {
-    int statusX = settings.sidebarOnLeft ? sidebarWidth : 0;
-    int statusW = root.size.w - sidebarWidth;
-    GRect statusFrame = GRect(statusX, root.size.h - bottomReserved, statusW, bottomReserved);
+  // Status strip span: reaches the screen edge on a side unless a FULL-HEIGHT
+  // panel sits there. Determine per physical side which panel is present and
+  // whether it is full height.
+  if (statusVisible) {
+    bool leftFull, rightFull;
+    if (primaryOnLeft) {
+      leftFull  = (primaryCount == 3);
+      rightFull = showSecondary && (secondaryCount == 3);
+    } else {
+      rightFull = (primaryCount == 3);
+      leftFull  = showSecondary && (secondaryCount == 3);
+    }
+    int statusLeft  = leftFull  ? sidebarWidth : 0;
+    int statusRight = rightFull ? (root.size.w - sidebarWidth) : root.size.w;
+    GRect statusFrame = GRect(statusLeft, statusTop, statusRight - statusLeft, statusHeight);
+
     if (showMidi) {
       MidiStatus_setFrame(statusFrame);
       MidiStatus_setHidden(false); MidiStatus_redraw();
@@ -260,11 +309,13 @@ void bluetoothStateChanged(bool newConnectionState) {
   isPhoneConnected = newConnectionState;
 
   Sidebar_redraw();
+  if (TwtStatus_isSupported()) { apply_twt_layout(); }
 }
 
 // force the sidebar to redraw any time the battery state changes
 void batteryStateChanged(BatteryChargeState charge_state) {
   Sidebar_redraw();
+  if (TwtStatus_isSupported()) { apply_twt_layout(); }
 }
 
 // fixes for disappearing elements after notifications
