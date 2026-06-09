@@ -45,9 +45,10 @@ Pebble.addEventListener('ready',
       // watch's persisted BTC value is wiped by a reinstall/reboot, but
       // btc_last_thousands survives in phone localStorage, so a non-forced call
       // would suppress the send as "unchanged" and leave the widget empty until
-      // the price next crosses a thousand-boundary.
+      // the price next crosses a thousand-boundary. Periodic refresh is now
+      // driven by the watch's data request (see the appmessage handler), not a
+      // JS timer.
       btc.updateBtc(true);
-      btc.setupBtcPolling();
     }
   }
 );
@@ -320,7 +321,11 @@ Pebble.addEventListener('webviewclosed', function (e) {
     // btc widget = id 15; enable the fetcher only when it's selected
     var disableBtc = (widgetIDs.indexOf(15) != -1) ? 'no' : 'yes';
     window.localStorage.setItem('disable_btc', disableBtc);
-    window.localStorage.setItem('btc_poll_interval_min', String(configData.btc_poll_interval));
+
+    // shared, watch-driven poll interval (drives weather + electricity + BTC)
+    var pollInterval = parseInt(configData.poll_interval, 10);
+    if (isNaN(pollInterval)) { pollInterval = 30; }
+    dict.SettingPollIntervalMin = pollInterval;
 
     console.log('Preparing message: ', JSON.stringify(dict));
 
@@ -328,11 +333,12 @@ Pebble.addEventListener('webviewclosed', function (e) {
     Pebble.sendAppMessage(dict, function () {
       console.log('Sent config data to Pebble, now trying to get weather');
 
-      // after sending config data, force a weather refresh in case that changed
+      // after sending config data, force a refresh in case settings changed.
+      // Periodic polling is now watch-driven (the tick handler requests on the
+      // configured interval), so there is no JS timer to (re)start here.
       weather.updateWeather(true);
       electricity.updateElectricity(true);
       btc.updateBtc(true);
-      btc.setupBtcPolling();
     }, function () {
       console.log('Failed to send config data!');
     });
