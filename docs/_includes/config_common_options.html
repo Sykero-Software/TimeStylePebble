@@ -171,11 +171,19 @@
 <div id="widget_btc_settings">
   <label>Bitcoin (BTC)</label>
   <br>
-  <label class="subtle">Pollausväli (min, väh. 5)</label>
-  <input type="number" class="form-control" id="btc_poll_interval"
-         min="5" max="1440" step="1" value="30">
+  <div class="alert alert-info" role="alert">
+    BTC price refreshes on the shared data refresh interval set above.
+  </div>
   <hr>
 </div>
+<label class="subtle">Data refresh interval (min)</label>
+<div class="alert alert-info" role="alert">
+  How often the watch asks the phone for new weather, electricity and BTC data.
+  Higher = fewer phone/Bluetooth wakeups (saves battery). Range 5–240.
+</div>
+<input type="number" class="form-control" id="poll_interval"
+       min="5" max="240" step="1" value="30">
+<hr>
 <label>Time Display</label><br>
 <div class="alert alert-info" role="alert">
   To change between 12 hour and 24 hour mode, use the setting on your watch,
