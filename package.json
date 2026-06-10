@@ -95,7 +95,9 @@
       "SettingWidget2_2ID",
       "SettingTwtTargetVibe",
       "WeatherStationName",
-      "SettingSecondaryAlwaysOn"
+      "SettingSecondaryAlwaysOn",
+      "XmrPriceDollars",
+      "EurUsdMilli"
     ],
     "resources": {
       "media": [
