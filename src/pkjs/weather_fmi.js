@@ -17,9 +17,9 @@ var parser = require('./weather_fmi_fc_parse');
 
 var STORED_QUERY = 'fmi::forecast::edited::weather::scandinavia::point::timevaluepair';
 
-// Cap the location name sent to the watch (the watch's small font + narrow
-// sidebar fit ~4 chars; truncated plainly, no ellipsis, first char uppercased).
-var LOCATION_NAME_MAXLEN = 4;
+// Cap the location name sent to the watch; the C side stacks it as two 4-char
+// lines (8 chars total). Truncated plainly, no ellipsis, first char uppercased.
+var LOCATION_NAME_MAXLEN = 8;
 
 module.exports.getWeatherFromCoords = getWeatherFromCoords;
 

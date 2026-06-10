@@ -768,10 +768,14 @@ void DateWidget_draw(GContext *ctx, int yPosition) {
 /********** current weather widget **********/
 
 int CurrentWeather_getHeight() {
-  // reserve room for the station-name line only when there is one (so the
-  // Open-Meteo / no-name case is laid out exactly as before)
+  // reserve room for the location-name line(s) only when there is a name (so the
+  // Open-Meteo / no-name case is laid out exactly as before). Names longer than
+  // 4 chars wrap to a second stacked line.
   if (Weather_weatherInfo.stationName[0] != '\0') {
-    return layout.weatherStationY + 16;
+    // wrap to a second line only when it would hold >= 3 chars (a lone 1-2 char
+    // tail looks worse than just truncating to the first line)
+    int extra = strlen(Weather_weatherInfo.stationName) >= 7 ? 27 : 16;
+    return layout.weatherStationY + extra;
   }
   return layout.weatherHeight;
 }
@@ -810,16 +814,28 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
-    // observation-station name (small font, below the temperature; FMI only).
-    // Smallest bold gothic, left-aligned and indented to the widget's left edge
-    // (same 3px inset as the icon); JS caps it to a few chars so it fits flush.
+    // location name (FMI only), small bold gothic, left-aligned and indented to
+    // the widget's left edge (same 3px inset as the icon). JS sends up to 8
+    // chars; we stack them as two 4-char lines below the temperature.
     if (Weather_weatherInfo.stationName[0] != '\0') {
-      graphics_draw_text(ctx, Weather_weatherInfo.stationName,
-                         fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
-                         GRect(3 + SidebarWidgets_xOffset,
-                               yPosition + layout.weatherStationY,
+      GFont nameFont = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
+      int nameX = 3 + SidebarWidgets_xOffset;
+      char line1[5] = {0}, line2[5] = {0};
+      size_t nlen = strlen(Weather_weatherInfo.stationName);
+      size_t n1 = nlen < 4 ? nlen : 4;
+      memcpy(line1, Weather_weatherInfo.stationName, n1);
+      graphics_draw_text(ctx, line1, nameFont,
+                         GRect(nameX, yPosition + layout.weatherStationY,
                                layout.textRectWidth, 16),
                          GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+      if (nlen >= 7) {   // only show line 2 if it holds >= 3 chars
+        size_t n2 = (nlen - 4) < 4 ? (nlen - 4) : 4;
+        memcpy(line2, Weather_weatherInfo.stationName + 4, n2);
+        graphics_draw_text(ctx, line2, nameFont,
+                           GRect(nameX, yPosition + layout.weatherStationY + 13,
+                                 layout.textRectWidth, 16),
+                           GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+      }
     }
   } else {
     // if the weather data isn't set, draw a loading indication

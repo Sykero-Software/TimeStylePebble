@@ -93,3 +93,10 @@ test('abbreviateLocationName: drop municipality, cap to 4, capitalize first char
   assert.strictEqual(abbreviateLocationName('', 4), '');
   assert.strictEqual(abbreviateLocationName(null, 4), '');
 });
+
+test('abbreviateLocationName with maxLen 8 keeps up to 8 chars (C stacks 4+4)', () => {
+  assert.strictEqual(abbreviateLocationName('Asmalampi', 8), 'Asmalamp');
+  assert.strictEqual(abbreviateLocationName('Jyväskylä keskus', 8), 'Keskus');
+  assert.strictEqual(abbreviateLocationName('Jyskä', 8), 'Jyskä');
+  assert.strictEqual(abbreviateLocationName('Helsinki Kaisaniemi', 8), 'Kaisanie');
+});
