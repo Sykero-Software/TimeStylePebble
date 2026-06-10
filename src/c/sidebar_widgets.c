@@ -1310,5 +1310,17 @@ void EurUsd_draw(GContext *ctx, int yPosition) {
     strcpy(eurStr, "--");
   }
 
-  draw_basic_widget(ctx, yPosition, "EUR", eurStr, layout.basicWidgetY);
+  // "1.155" overflows the sidebar in currentSidebarFont on every board
+  // (verified via emery + diorite screenshots), so the value uses the small
+  // font on a single line instead of the basic-widget value font.
+  graphics_draw_text(ctx, "EUR", smSidebarFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           yPosition + layout.basicWidgetLabelY,
+                           layout.textRectWidth, 20),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  graphics_draw_text(ctx, eurStr, smSidebarFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           yPosition + layout.basicWidgetY + 3,
+                           layout.textRectWidth, 20),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
