@@ -810,9 +810,11 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
-    // observation-station name (small font, below the temperature; FMI only)
+    // observation-station name (small font, below the temperature; FMI only).
+    // Always the smallest bold gothic so a few name chars fit the narrow rect.
     if (Weather_weatherInfo.stationName[0] != '\0') {
-      graphics_draw_text(ctx, Weather_weatherInfo.stationName, smSidebarFont,
+      graphics_draw_text(ctx, Weather_weatherInfo.stationName,
+                         fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
                          GRect(layout.textRectX + SidebarWidgets_xOffset,
                                yPosition + layout.weatherStationY,
                                layout.textRectWidth, 16),
