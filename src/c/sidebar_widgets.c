@@ -337,7 +337,7 @@ void SidebarWidgets_updateFonts() {
         .dateBgRectHeight = 22,
         .weatherHeight = 44,
         .weatherTempY = 20,
-        .weatherStationY = 39,
+        .weatherStationY = 42,
         .textRectX = -5,
         .textRectWidth = 40,
         .weatherForecastHeight = 63,
@@ -379,7 +379,7 @@ void SidebarWidgets_updateFonts() {
         .dateBgRectHeight = 22,
         .weatherHeight = 42,
         .weatherTempY = 24,
-        .weatherStationY = 43,
+        .weatherStationY = 46,
         .textRectX = -5,
         .textRectWidth = 40,
         .weatherForecastHeight = 60,
@@ -425,7 +425,7 @@ void SidebarWidgets_updateFonts() {
     layout.dateBgRectHeight = 26;
     layout.weatherHeight = 49;
     layout.weatherTempY = 21;
-    layout.weatherStationY = 43;
+    layout.weatherStationY = 46;
     layout.textRectX = -10;
     layout.textRectWidth = 50;
     layout.weatherForecastHeight = 76;
@@ -464,7 +464,7 @@ void SidebarWidgets_updateFonts() {
     layout.dateBgRectHeight = 26;
     layout.weatherHeight = 46;
     layout.weatherTempY = 22;
-    layout.weatherStationY = 44;
+    layout.weatherStationY = 47;
     layout.textRectX = -9;
     layout.textRectWidth = 48;
     layout.weatherForecastHeight = 69;
@@ -811,14 +811,15 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
     // observation-station name (small font, below the temperature; FMI only).
-    // Always the smallest bold gothic so a few name chars fit the narrow rect.
+    // Smallest bold gothic, left-aligned and indented to the widget's left edge
+    // (same 3px inset as the icon); JS caps it to a few chars so it fits flush.
     if (Weather_weatherInfo.stationName[0] != '\0') {
       graphics_draw_text(ctx, Weather_weatherInfo.stationName,
                          fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
-                         GRect(layout.textRectX + SidebarWidgets_xOffset,
+                         GRect(3 + SidebarWidgets_xOffset,
                                yPosition + layout.weatherStationY,
                                layout.textRectWidth, 16),
-                         GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+                         GTextOverflowModeFill, GTextAlignmentLeft, NULL);
     }
   } else {
     // if the weather data isn't set, draw a loading indication

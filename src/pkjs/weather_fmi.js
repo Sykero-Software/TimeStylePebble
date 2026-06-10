@@ -23,8 +23,8 @@ var OBS_STORED_QUERY = 'fmi::observations::weather::timevaluepair';
 // station even where the network is sparse (~78 km N-S).
 var OBS_BBOX_HALF = 0.7;
 // Cap the station name sent to the watch (the watch's small font + narrow
-// sidebar fit only a few chars; the C side ellipsises any remainder).
-var STATION_NAME_MAXLEN = 12;
+// sidebar fit only a few chars; truncated plainly, no ellipsis).
+var STATION_NAME_MAXLEN = 5;
 
 module.exports.getWeatherFromCoords = getWeatherFromCoords;
 
