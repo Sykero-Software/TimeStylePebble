@@ -132,6 +132,14 @@ SidebarWidget electricityWidget;
 int Electricity_getHeight();
 void Electricity_draw(GContext *ctx, int yPosition);
 
+SidebarWidget nextCheapWidget;
+int NextCheap_getHeight();
+void NextCheap_draw(GContext *ctx, int yPosition);
+
+SidebarWidget cheapestHourWidget;
+int CheapestHour_getHeight();
+void CheapestHour_draw(GContext *ctx, int yPosition);
+
 SidebarWidget btcWidget;
 int BtcPrice_getHeight();
 void BtcPrice_draw(GContext *ctx, int yPosition);
@@ -292,6 +300,12 @@ void SidebarWidgets_init() {
 
   electricityWidget.getHeight = Electricity_getHeight;
   electricityWidget.draw = Electricity_draw;
+
+  nextCheapWidget.getHeight = NextCheap_getHeight;
+  nextCheapWidget.draw = NextCheap_draw;
+
+  cheapestHourWidget.getHeight = CheapestHour_getHeight;
+  cheapestHourWidget.draw = CheapestHour_draw;
 
   btcWidget.getHeight = BtcPrice_getHeight;
   btcWidget.draw = BtcPrice_draw;
@@ -602,6 +616,10 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return uvIndexWidget;
   case ELECTRICITY:
     return electricityWidget;
+  case NEXT_CHEAP_ELEC:
+    return nextCheapWidget;
+  case CHEAPEST_ELEC_HOUR:
+    return cheapestHourWidget;
   case BTC_PRICE:
     return btcWidget;
   case XMR_PRICE:
@@ -1210,53 +1228,92 @@ void Beats_draw(GContext *ctx, int yPosition) {
   draw_basic_widget(ctx, yPosition, "@", currentBeats, layout.basicWidgetY - 1);
 }
 
-/***** Electricity (pörssisähkö) widget *****/
+/***** Electricity widgets (current price / next cheap / cheapest hour) *****/
 
-int Electricity_getHeight() { return layout.heartRateHeight; }
-
-void Electricity_draw(GContext *ctx, int yPosition) {
-  // lightning bolt icon (vector)
+// Shared renderer: lightning bolt + a large line and a small line below it.
+static void elec_draw_two_line(GContext *ctx, int yPosition,
+                               const char *big, const char *small) {
   if (electricityBoltPath) {
     gpath_move_to(electricityBoltPath,
                   GPoint(9 + SidebarWidgets_xOffset, yPosition));
     graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
     gpath_draw_filled(ctx, electricityBoltPath);
   }
-
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
-
-  // The lightning bolt icon is shorter than the heart-rate icon this widget
-  // borrows its layout from, so the reused heartRateValueY/heartRateAgeY leave
-  // too big a gap under the icon. Pull the whole number block up a few px.
+  // The bolt is shorter than the heart-rate icon this layout borrows from;
+  // pull the number block up a few px.
   const int elecYNudge = -6;
-
-  // current price (large)
-  char nowStr[12];
-  int16_t nowVal;
-  if (Electricity_getCurrentPrice(&nowVal)) {
-    elec_format_price(nowVal, settings.decimalSeparator, nowStr, sizeof(nowStr));
-  } else {
-    strcpy(nowStr, "--");
-  }
-  graphics_draw_text(ctx, nowStr, currentSidebarFont,
+  graphics_draw_text(ctx, big, currentSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
                            yPosition + layout.heartRateValueY + elecYNudge,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-
-  // today's average (small)
-  char avgStr[12];
-  int16_t avgVal;
-  if (Electricity_getTodayAverage(&avgVal)) {
-    elec_format_price(avgVal, settings.decimalSeparator, avgStr, sizeof(avgStr));
-  } else {
-    strcpy(avgStr, "--");
-  }
-  graphics_draw_text(ctx, avgStr, smSidebarFont,
+  graphics_draw_text(ctx, small, smSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
                            yPosition + layout.heartRateAgeY + elecYNudge,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
+
+int Electricity_getHeight() { return layout.heartRateHeight; }
+
+void Electricity_draw(GContext *ctx, int yPosition) {
+  char nowStr[12], avgStr[12];
+  int16_t v;
+  if (Electricity_getCurrentPrice(&v)) {
+    elec_format_price(v, settings.decimalSeparator, nowStr, sizeof(nowStr));
+  } else {
+    strcpy(nowStr, "--");
+  }
+  if (Electricity_getTodayAverage(&v)) {
+    elec_format_price(v, settings.decimalSeparator, avgStr, sizeof(avgStr));
+  } else {
+    strcpy(avgStr, "--");
+  }
+  elec_draw_two_line(ctx, yPosition, nowStr, avgStr);
+}
+
+// Formats an ElecDisplay into a big "hour" line ("14", or "14+" when the window
+// is on a later day) and a small price line.
+static void elec_format_window(const ElecDisplay *d, char *bigStr, size_t bigLen,
+                               char *smallStr, size_t smallLen) {
+  if (d->today) {
+    snprintf(bigStr, bigLen, "%d", d->startHour);
+  } else {
+    snprintf(bigStr, bigLen, "%d+", d->startHour);
+  }
+  elec_format_price(d->avgCenti, settings.decimalSeparator, smallStr, smallLen);
+}
+
+int NextCheap_getHeight() { return layout.heartRateHeight; }
+
+void NextCheap_draw(GContext *ctx, int yPosition) {
+  char bigStr[8], smallStr[12];
+  ElecDisplay d;
+  if (Electricity_getNextCheap(settings.elecQuietStart, settings.elecQuietEnd,
+                               settings.elecCheapFactorPct,
+                               settings.elecCheapFloorCenti,
+                               settings.elecCheapCeilingCenti, &d)) {
+    elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
+  } else {
+    strcpy(bigStr, "--");
+    strcpy(smallStr, "--");
+  }
+  elec_draw_two_line(ctx, yPosition, bigStr, smallStr);
+}
+
+int CheapestHour_getHeight() { return layout.heartRateHeight; }
+
+void CheapestHour_draw(GContext *ctx, int yPosition) {
+  char bigStr[8], smallStr[12];
+  ElecDisplay d;
+  if (Electricity_getCheapestHour(settings.elecQuietStart, settings.elecQuietEnd, &d)) {
+    elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
+  } else {
+    strcpy(bigStr, "--");
+    strcpy(smallStr, "--");
+  }
+  elec_draw_two_line(ctx, yPosition, bigStr, smallStr);
 }
 
 /***** Bitcoin (BTC USD) widget *****/
