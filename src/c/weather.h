@@ -14,6 +14,9 @@ typedef struct {
   int todaysHighTemp;
   int todaysLowTemp;
   uint32_t forecastIconResourceID;
+
+  // nearest observation station name (FMI only; empty otherwise)
+  char stationName[24];
 } WeatherInfo;
 
 typedef enum {

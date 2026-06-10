@@ -84,7 +84,11 @@ void Weather_init() {
     persist_read_data(WEATHER_PERSIST_KEY, &storedWeather, sizeof(storedWeather));
     memcpy(&Weather_weatherInfo, &storedWeather, sizeof(storedWeather));
   }
-  
+
+  // stationName is not relied on from persistence (older blobs lack it; it is
+  // re-sent on the next FMI update) -- always start empty to avoid garbage.
+  Weather_weatherInfo.stationName[0] = '\0';
+
   // load icon if needed
   if (Weather_weatherInfo.currentIconResourceID > 0) {
     Weather_currentWeatherIcon = gdraw_command_image_create_with_resource(Weather_weatherInfo.currentIconResourceID);

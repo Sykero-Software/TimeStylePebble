@@ -51,6 +51,20 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     weatherDataUpdated = true;
   }
 
+  // station name accompanies an observation-station temperature (FMI). A
+  // temperature update WITHOUT a name (Open-Meteo, or the FMI forecast
+  // fallback) clears any stale name so it isn't shown for the wrong source.
+  Tuple *weatherStation_tuple = dict_find(iterator, MESSAGE_KEY_WeatherStationName);
+  if (weatherStation_tuple != NULL) {
+    strncpy(Weather_weatherInfo.stationName, weatherStation_tuple->value->cstring,
+            sizeof(Weather_weatherInfo.stationName) - 1);
+    Weather_weatherInfo.stationName[sizeof(Weather_weatherInfo.stationName) - 1] = '\0';
+    weatherDataUpdated = true;
+  } else if (weatherTemp_tuple != NULL) {
+    Weather_weatherInfo.stationName[0] = '\0';
+    weatherDataUpdated = true;
+  }
+
   Tuple *weatherConditions_tuple = dict_find(iterator, MESSAGE_KEY_WeatherCondition);
   if(weatherConditions_tuple != NULL) {
     Weather_setCurrentCondition(weatherConditions_tuple->value->int32);

@@ -93,7 +93,8 @@
       "SettingWidget2_0ID",
       "SettingWidget2_1ID",
       "SettingWidget2_2ID",
-      "SettingTwtTargetVibe"
+      "SettingTwtTargetVibe",
+      "WeatherStationName"
     ],
     "resources": {
       "media": [
