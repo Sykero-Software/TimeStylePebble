@@ -193,7 +193,7 @@ function loadPreviousSettings() {
 }
 
 function loadLastUsedColors() {
-  // try to load each of the four colors
+  // try to load each of the eight colors
   var colorNames = ['time-color', 'time-bg-color', 'sidebar-color', 'sidebar-text-color',
                     'twt-status-bg-color', 'date-bg-color',
                     'sidebar-bg-color-left', 'sidebar-bg-color-right'];
@@ -219,6 +219,10 @@ $('#time-color').on('change', customColorChanged);
 $('#time-bg-color').on('change', customColorChanged);
 $('#sidebar-color').on('change', customColorChanged);
 $('#sidebar-text-color').on('change', customColorChanged);
+$('#twt-status-bg-color').on('change', customColorChanged);
+$('#date-bg-color').on('change', customColorChanged);
+$('#sidebar-bg-color-left').on('change', customColorChanged);
+$('#sidebar-bg-color-right').on('change', customColorChanged);
 
 $('label.btn').on('change', setFormHasChanges);
 $('select').on('change', setFormHasChanges);
