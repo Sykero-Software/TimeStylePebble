@@ -11,6 +11,11 @@ int twt_percent(int32_t value, int32_t base) {
   return (int)(((int64_t)value * 100 + base / 2) / base);
 }
 
+int32_t twt_task_pct_base(int32_t gross_before, int32_t running, int32_t net_total) {
+  if (gross_before <= 0) return net_total;
+  return gross_before + running;
+}
+
 int twt_bar_fill_px(int32_t value, int32_t base, int width_px) {
   if (base <= 0 || value <= 0 || width_px <= 0) return 0;
   if (value >= base) return width_px;

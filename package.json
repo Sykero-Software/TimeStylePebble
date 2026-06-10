@@ -97,7 +97,8 @@
       "WeatherStationName",
       "SettingSecondaryAlwaysOn",
       "XmrPriceDollars",
-      "EurUsdMilli"
+      "EurUsdMilli",
+      "TWT_DAY_GROSS_BEFORE_MIN"
     ],
     "resources": {
       "media": [

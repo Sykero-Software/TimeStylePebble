@@ -387,6 +387,15 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     twt_status.taskTotalBeforeMin = v;
     twtUpdated = true;
   }
+  Tuple *twtDayGross_tuple = dict_find(iterator, MESSAGE_KEY_TWT_DAY_GROSS_BEFORE_MIN);
+  if (twtDayGross_tuple != NULL) {
+    int32_t g = twtDayGross_tuple->value->int32;
+    // defence-in-depth: clamp to a sane range (0 .. 24h) like the daily target
+    if (g < 0) g = 0;
+    if (g > 1440) g = 1440;
+    twt_status.dayGrossBeforeMin = g;
+    twtUpdated = true;
+  }
   if (twtUpdated) {
     TwtStatus_save();
     // the redraw + layout happen via message_processed_callback() (redrawScreen -> apply_twt_layout)

@@ -9,6 +9,14 @@
 // percent). value < 0 is clamped to 0. The result MAY exceed 100 (overtime).
 int twt_percent(int32_t value, int32_t base);
 
+// Denominator for the unbudgeted task percent. The phone's per-task minutes are
+// GROSS (no auto-pause deduction) while its day total is NET, so dividing the task
+// time by the net total overshoots 100% on a single-task day. When the phone sent a
+// gross day total (gross_before > 0), use it plus the live running segment
+// (gross/gross). Otherwise (older phone app -> field is 0/garbled) fall back to the
+// net day total — never to 0 + running, which would wildly inflate the percent.
+int32_t twt_task_pct_base(int32_t gross_before, int32_t running, int32_t net_total);
+
 // Filled width in pixels for a progress bar of total width `width_px` representing
 // value/base, clamped to [0, width_px]. Returns 0 when base <= 0, value <= 0, or
 // width_px <= 0.

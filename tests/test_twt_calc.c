@@ -20,6 +20,16 @@ int main(void) {
   assert(twt_percent(1200, 1200) == 100);  // task at budget
   assert(twt_percent(1500, 1200) == 125);  // over budget allowed
 
+  // --- twt_task_pct_base (denominator for the unbudgeted task percent) ---
+  // Phone sent a gross day total -> use it (plus the live running segment), so the
+  // percent is gross/gross and a single-task day reads exactly 100%.
+  assert(twt_task_pct_base(168, 30, 228) == 198);  // gross 168 + running 30
+  // No gross value (older phone app sends nothing -> field stays 0): fall back to
+  // the net day total. NOT to 0+running, which would wildly inflate the percent.
+  assert(twt_task_pct_base(0, 30, 228) == 228);
+  assert(twt_task_pct_base(0, 0, 0) == 0);         // day's first second, nothing anywhere
+  assert(twt_task_pct_base(-5, 30, 228) == 228);   // garbled negative gross -> fallback
+
   // --- twt_bar_fill_px (filled width for value/base over width_px, clamped) ---
   assert(twt_bar_fill_px(225, 450, 100) == 50);
   assert(twt_bar_fill_px(0,   450, 100) == 0);

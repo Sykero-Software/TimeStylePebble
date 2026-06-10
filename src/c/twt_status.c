@@ -68,7 +68,10 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
     task_pct = twt_percent(task_total, twt_status.taskBudgetMin);  // % of budget (may exceed 100)
   } else {
     task_shown = task_today;                                       // unchanged: today's time
-    task_pct = twt_percent(task_today, total);                     // % of day total
+    // % of the day total, gross/gross when the phone sent a gross day sum (the
+    // per-task numerator is gross, so a net denominator would overshoot 100%)
+    task_pct = twt_percent(task_today,
+        twt_task_pct_base(twt_status.dayGrossBeforeMin, running, total));
   }
 
   char total_buf[12];
