@@ -5,7 +5,9 @@
 #include "settings.h"
 #include "languages.h"
 
-// One centered line, e.g. "Ti 6.6." — weekday (title-cased) + day.month.
+// One centered line, e.g. "Ti 6.6" — weekday (title-cased) + day.month. No
+// trailing period: the longest date ("Su 31.12") only fits the BITHAM_30_BLACK
+// line on emery with two panels + large fonts (122px) without it.
 static TextLayer* s_date_layer;
 static char s_date_buffer[24];
 
@@ -29,8 +31,8 @@ void DateHeader_updateTime(struct tm* timeInfo) {
       day[i] = day[i] - 'A' + 'a';
     }
   }
-  // day-of-month and month with no leading zeros, each followed by a period
-  snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d.%d.",
+  // day-of-month and month with no leading zeros
+  snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d.%d",
            day, timeInfo->tm_mday, timeInfo->tm_mon + 1);
 }
 
