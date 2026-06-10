@@ -120,6 +120,10 @@ void Sidebar_redraw() {
   // (apply_twt_layout); don't fight it here. Elsewhere, keep positioning the
   // primary ourselves.
   if (!TwtStatus_isSupported()) {
+    // No status layout here (aplite): the primary always shows the list head;
+    // the secondary panel stays hidden (always-on needs the status layout's
+    // clock-inset machinery, which doesn't run on this platform).
+    Sidebar_distributeWidgets(false, NULL, NULL);
     if (!settings.sidebarOnLeft) {
       layer_set_frame(sidebarLayer, GRect(screen_rect.size.w - sidebarWidth, 0,
                                           sidebarWidth, screen_rect.size.h));
@@ -184,10 +188,10 @@ int getReplacableWidget() {
 
 // returns the best candidate widget for replacement by the auto battery
 // or the disconnection icon
-int getReplacableWidget() {
+static int getReplacableWidget(const SidebarWidgetType widgetTypes[3]) {
   // if any widgets are empty, it's an obvious choice
   for (int i = 0; i < 3; i++) {
-    if (settings.widgets[i] == EMPTY) {
+    if (widgetTypes[i] == EMPTY) {
       return i;
     }
   }
@@ -195,8 +199,8 @@ int getReplacableWidget() {
   // are there any bluetooth-enabled widgets? if so, they're the second-best
   // candidates
   for (int i = 0; i < 3; i++) {
-    if (settings.widgets[i] == WEATHER_CURRENT ||
-        settings.widgets[i] == WEATHER_FORECAST_TODAY) {
+    if (widgetTypes[i] == WEATHER_CURRENT ||
+        widgetTypes[i] == WEATHER_FORECAST_TODAY) {
       return i;
     }
   }
@@ -251,6 +255,13 @@ void updateRoundSidebarLeft(Layer *l, GContext *ctx) {
   drawRoundSidebar(ctx, bgBounds, displayWidget, 7);
 }
 
+void Sidebar_distributeWidgets(bool secondaryWanted, int *primaryCountOut, int *secondaryCountOut) {
+  // Round keeps its fixed two-widget rendering (settings.widgets[0]/[2]).
+  (void)secondaryWanted;
+  if (primaryCountOut) *primaryCountOut = 0;
+  if (secondaryCountOut) *secondaryCountOut = 0;
+}
+
 void drawRoundSidebar(GContext *ctx, GRect bgBounds,
                       SidebarWidgetType widgetType, int widgetXOffset) {
   SidebarWidgets_updateFonts();
@@ -269,6 +280,41 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
 }
 
 #else
+
+// Display columns computed from the widget priority list by
+// Sidebar_distributeWidgets(); the rect update procs draw these instead of
+// reading the settings arrays directly.
+static SidebarWidgetType primaryColumn[3] = {EMPTY, EMPTY, EMPTY};
+static SidebarWidgetType secondaryColumn[3] = {EMPTY, EMPTY, EMPTY};
+
+void Sidebar_distributeWidgets(bool secondaryWanted, int *primaryCountOut, int *secondaryCountOut) {
+  // Compact: the list is settings.widgets followed by settings.widgets2, EMPTY
+  // slots skipped, in priority order.
+  SidebarWidgetType list[6];
+  int n = 0;
+  for (int i = 0; i < 3; i++) {
+    if (settings.widgets[i] != EMPTY) list[n++] = settings.widgets[i];
+  }
+  for (int i = 0; i < 3; i++) {
+    if (settings.widgets2[i] != EMPTY) list[n++] = settings.widgets2[i];
+  }
+
+  // Even split when the secondary panel may show (extra widget to the primary):
+  // N=2 -> 1+1, 3 -> 2+1, 4 -> 2+2, 5 -> 3+2, 6 -> 3+3. Otherwise the primary
+  // takes the head and anything past 3 stays hidden (priority order).
+  int secondaryCount = secondaryWanted ? n / 2 : 0;
+  if (secondaryCount > 3) secondaryCount = 3;
+  int primaryCount = n - secondaryCount;
+  if (primaryCount > 3) primaryCount = 3;
+
+  for (int i = 0; i < 3; i++) {
+    primaryColumn[i]   = (i < primaryCount)   ? list[i]                : EMPTY;
+    secondaryColumn[i] = (i < secondaryCount) ? list[primaryCount + i] : EMPTY;
+  }
+
+  if (primaryCountOut) *primaryCountOut = primaryCount;
+  if (secondaryCountOut) *secondaryCountOut = secondaryCount;
+}
 
 // Draw a column of three widgets into the layer's frame. Shared by the primary
 // sidebar and the secondary panel. `allowReplacement` enables the auto-battery /
@@ -307,7 +353,7 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
     // do we need to replace a widget?
     // if so, determine which widget should be replaced
     if (showAutoBattery || showDisconnectIcon) {
-      int widget_to_replace = getReplacableWidget();
+      int widget_to_replace = getReplacableWidget(widgetTypes);
 
       if (showAutoBattery) {
         displayWidgets[widget_to_replace] = getSidebarWidgetByType(BATTERY_METER);
@@ -364,11 +410,11 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 }
 
 void updateRectSidebar(Layer *l, GContext *ctx) {
-  drawWidgetColumn(l, ctx, settings.widgets, true);
+  drawWidgetColumn(l, ctx, primaryColumn, true);
 }
 
 void updateRectSecondarySidebar(Layer *l, GContext *ctx) {
-  drawWidgetColumn(l, ctx, settings.widgets2, false);
+  drawWidgetColumn(l, ctx, secondaryColumn, false);
 }
 
 #endif
