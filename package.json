@@ -103,7 +103,11 @@
       "SettingElecQuietEnd",
       "SettingElecCheapFactorPct",
       "SettingElecCheapFloorCenti",
-      "SettingElecCheapCeilingCenti"
+      "SettingElecCheapCeilingCenti",
+      "SettingTwtStatusBgColor",
+      "SettingDateBgColor",
+      "SettingSidebarBgColorLeft",
+      "SettingSidebarBgColorRight"
     ],
     "resources": {
       "media": [
