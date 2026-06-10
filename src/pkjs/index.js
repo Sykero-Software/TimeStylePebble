@@ -354,6 +354,23 @@ Pebble.addEventListener('webviewclosed', function (e) {
     if (isNaN(pollInterval)) { pollInterval = 30; }
     dict.SettingPollIntervalMin = pollInterval;
 
+    // cheap-electricity widget tuning (prices entered in snt/kWh -> 0.01 snt centi)
+    if (configData.elec_quiet_start !== undefined && configData.elec_quiet_start !== null) {
+      dict.SettingElecQuietStart = parseInt(configData.elec_quiet_start, 10);
+    }
+    if (configData.elec_quiet_end !== undefined && configData.elec_quiet_end !== null) {
+      dict.SettingElecQuietEnd = parseInt(configData.elec_quiet_end, 10);
+    }
+    if (configData.elec_cheap_factor !== undefined && configData.elec_cheap_factor !== null) {
+      dict.SettingElecCheapFactorPct = parseInt(configData.elec_cheap_factor, 10);
+    }
+    if (configData.elec_cheap_floor !== undefined && configData.elec_cheap_floor !== null) {
+      dict.SettingElecCheapFloorCenti = Math.round(parseFloat(configData.elec_cheap_floor) * 100);
+    }
+    if (configData.elec_cheap_ceiling !== undefined && configData.elec_cheap_ceiling !== null) {
+      dict.SettingElecCheapCeilingCenti = Math.round(parseFloat(configData.elec_cheap_ceiling) * 100);
+    }
+
     console.log('Preparing message: ', JSON.stringify(dict));
 
     // Send settings to Pebble watchapp

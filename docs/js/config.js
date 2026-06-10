@@ -85,6 +85,13 @@ function loadPreviousSettings() {
       // shared data refresh interval (weather, electricity, BTC)
       poll_interval: 30,
 
+      // cheap-electricity widget tuning
+      elec_quiet_start: 23,
+      elec_quiet_end: 7,
+      elec_cheap_factor: 70,
+      elec_cheap_floor: 2.0,
+      elec_cheap_ceiling: 8.0,
+
       // health widget settings
       health_use_distance: 'no',
       health_use_restful_sleep: 'no',
@@ -173,6 +180,13 @@ function loadPreviousSettings() {
 
   // load poll interval setting
   $('#poll_interval').val(savedSettings.poll_interval);
+
+  // load cheap-electricity widget tuning
+  $('#elec_quiet_start').val(savedSettings.elec_quiet_start);
+  $('#elec_quiet_end').val(savedSettings.elec_quiet_end);
+  $('#elec_cheap_factor').val(savedSettings.elec_cheap_factor);
+  $('#elec_cheap_floor').val(savedSettings.elec_cheap_floor);
+  $('#elec_cheap_ceiling').val(savedSettings.elec_cheap_ceiling);
 
   // update the widget settings sections to only show ones that are relevant
   showOnlySelectedWidgetSettings();
@@ -686,6 +700,27 @@ function sendSettingsToWatch() {
   else if (pollInterval < 5) { pollInterval = 5; }
   else if (pollInterval > 240) { pollInterval = 240; }
   config.poll_interval = pollInterval;
+
+  // cheap-electricity widget tuning
+  function clampInt(v, lo, hi, dflt) {
+    v = parseInt(v, 10);
+    if (isNaN(v)) { return dflt; }
+    if (v < lo) { return lo; }
+    if (v > hi) { return hi; }
+    return v;
+  }
+  function clampFloat(v, lo, hi, dflt) {
+    v = parseFloat(v);
+    if (isNaN(v)) { return dflt; }
+    if (v < lo) { return lo; }
+    if (v > hi) { return hi; }
+    return v;
+  }
+  config.elec_quiet_start = clampInt($('#elec_quiet_start').val(), 0, 23, 23);
+  config.elec_quiet_end = clampInt($('#elec_quiet_end').val(), 0, 23, 7);
+  config.elec_cheap_factor = clampInt($('#elec_cheap_factor').val(), 1, 100, 70);
+  config.elec_cheap_floor = clampFloat($('#elec_cheap_floor').val(), -300, 300, 2.0);
+  config.elec_cheap_ceiling = clampFloat($('#elec_cheap_ceiling').val(), -300, 300, 8.0);
 
   // add the version, in case we need to do more migrations
   config.settings_version = CURRENT_SETTINGS_VERSION;

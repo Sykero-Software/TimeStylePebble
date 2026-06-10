@@ -185,6 +185,28 @@
 <input type="number" class="form-control" id="poll_interval"
        min="5" max="240" step="1" value="30">
 <hr>
+<label>Cheap Electricity Widgets</label><br>
+<div class="alert alert-info" role="alert">
+  Settings for the "Seuraava halpa" / "Halvin sähkötunti" widgets. Quiet hours are
+  excluded from the suggested windows. "Cheap" = below max(floor, average × factor%),
+  capped at the ceiling.
+</div>
+<label class="subtle">Quiet hours start (0–23)</label>
+<input type="number" class="form-control" id="elec_quiet_start"
+       min="0" max="23" step="1" value="23">
+<label class="subtle">Quiet hours end (0–23)</label>
+<input type="number" class="form-control" id="elec_quiet_end"
+       min="0" max="23" step="1" value="7">
+<label class="subtle">Cheap factor (% of average)</label>
+<input type="number" class="form-control" id="elec_cheap_factor"
+       min="1" max="100" step="1" value="70">
+<label class="subtle">Cheap floor (snt/kWh)</label>
+<input type="number" class="form-control" id="elec_cheap_floor"
+       min="-300" max="300" step="0.1" value="2.0">
+<label class="subtle">Cheap ceiling (snt/kWh)</label>
+<input type="number" class="form-control" id="elec_cheap_ceiling"
+       min="-300" max="300" step="0.1" value="8.0">
+<hr>
 <label>Time Display</label><br>
 <div class="alert alert-info" role="alert">
   To change between 12 hour and 24 hour mode, use the setting on your watch,
