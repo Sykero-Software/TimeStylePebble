@@ -311,6 +311,10 @@ void Sidebar_distributeWidgets(bool secondaryWanted, int *primaryCountOut, int *
     primaryColumn[i]   = (i < primaryCount)   ? list[i]                : EMPTY;
     secondaryColumn[i] = (i < secondaryCount) ? list[primaryCount + i] : EMPTY;
   }
+  // A column of exactly 2 looks better split top + bottom (also matches the
+  // classic TimeStyle default of date-at-the-bottom) than top + middle.
+  if (primaryCount == 2)   { primaryColumn[2] = primaryColumn[1];     primaryColumn[1] = EMPTY; }
+  if (secondaryCount == 2) { secondaryColumn[2] = secondaryColumn[1]; secondaryColumn[1] = EMPTY; }
 
   if (primaryCountOut) *primaryCountOut = primaryCount;
   if (secondaryCountOut) *secondaryCountOut = secondaryCount;
