@@ -337,8 +337,10 @@ Pebble.addEventListener('webviewclosed', function (e) {
 
     window.localStorage.setItem('disable_weather', disableWeather);
 
-    // electricity widget = id 14; enable the fetcher only when it's selected
-    var disableElectricity = (widgetIDs.indexOf(14) != -1) ? 'no' : 'yes';
+    // electricity widgets: 14 (price), 18 (next cheap), 19 (cheapest hour)
+    var disableElectricity =
+      (widgetIDs.indexOf(14) != -1 || widgetIDs.indexOf(18) != -1 ||
+       widgetIDs.indexOf(19) != -1) ? 'no' : 'yes';
     window.localStorage.setItem('disable_electricity', disableElectricity);
 
     // crypto widgets: enable each coin's fetcher only when its widget is selected

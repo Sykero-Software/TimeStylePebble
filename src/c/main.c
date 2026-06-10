@@ -245,7 +245,8 @@ static void main_window_unload(Window *window) {
 
 // Widgets whose data comes from the phone JS on the shared poll.
 static bool isPhoneDataWidget(SidebarWidgetType w) {
-  return w == ELECTRICITY || w == BTC_PRICE || w == XMR_PRICE || w == EURUSD_RATE;
+  return w == ELECTRICITY || w == NEXT_CHEAP_ELEC || w == CHEAPEST_ELEC_HOUR
+      || w == BTC_PRICE || w == XMR_PRICE || w == EURUSD_RATE;
 }
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
