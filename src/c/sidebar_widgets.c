@@ -1265,15 +1265,17 @@ static void elec_draw_two_line(GContext *ctx, int yPosition,
   elec_draw_small_line(ctx, yPosition, small);
 }
 
-// Cheap-widget big line: the hour in the full font + minutes ("00".."45", plus
-// a trailing "+" for a later day) one font size down, the pair centered as a
-// block. Keeps the hour big/legible while the whole HHMM still fits the sidebar.
+// Cheap-widget big line: the hour in the full font + minutes ("00".."45") one
+// font size down, the pair measured and centered as a block. A later-day window
+// gets a small "+" drawn as a superscript ABOVE the minutes (not appended), so
+// the block width stays hour+minutes and the worst case ("23" + "45") still
+// fits the narrow sidebar. Keeps the hour big/legible.
 static void elec_draw_split_time(GContext *ctx, int yPosition,
                                  const ElecDisplay *d, const char *small) {
   elec_draw_bolt(ctx, yPosition);
-  char hourStr[4], minStr[5];
+  char hourStr[4], minStr[3];
   snprintf(hourStr, sizeof(hourStr), "%d", d->startHour);
-  snprintf(minStr, sizeof(minStr), "%02d%s", d->startMin, d->today ? "" : "+");
+  snprintf(minStr, sizeof(minStr), "%02d", d->startMin);
 
   GFont hourFont = currentSidebarFont;
   GFont minFont = smSidebarFont;
@@ -1286,13 +1288,20 @@ static void elec_draw_split_time(GContext *ctx, int yPosition,
   int rectX = layout.textRectX + SidebarWidgets_xOffset;
   int startX = rectX + (layout.textRectWidth - (hsz.w + msz.w)) / 2;
   int yBig = yPosition + layout.heartRateValueY + ELEC_Y_NUDGE;
+  int minX = startX + hsz.w;
   graphics_draw_text(ctx, hourStr, hourFont,
                      GRect(startX, yBig, hsz.w + 4, 30),
                      GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   // Bottom-align the shorter minutes box to the hour's baseline.
   graphics_draw_text(ctx, minStr, minFont,
-                     GRect(startX + hsz.w, yBig + (hsz.h - msz.h), msz.w + 6, 30),
+                     GRect(minX, yBig + (hsz.h - msz.h), msz.w + 6, 30),
                      GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  // Later-day marker: small "+" tucked above the minutes, adding no width.
+  if (!d->today) {
+    graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD),
+                       GRect(minX, yBig - 4, msz.w + 6, 16),
+                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  }
   elec_draw_small_line(ctx, yPosition, small);
 }
 
