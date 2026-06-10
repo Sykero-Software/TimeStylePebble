@@ -25,3 +25,8 @@ void elec_format_price(int16_t value_centi, char sep, char *buf, size_t buflen);
 // 0-23). The window wraps past midnight when quietStart > quietEnd. If
 // quietStart == quietEnd the window is empty (always returns false).
 bool elec_hour_in_quiet(int hour, int quietStart, int quietEnd);
+
+// Cheap-price threshold (0.01 snt): clamp(meanCenti * factorPct / 100,
+// floorCenti, ceilingCenti). Used by the "next cheap" widget.
+int16_t elec_cheap_bar(int16_t meanCenti, int factorPct,
+                       int16_t floorCenti, int16_t ceilingCenti);

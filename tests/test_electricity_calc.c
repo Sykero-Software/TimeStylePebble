@@ -42,6 +42,12 @@ int main(void) {
   assert(!elec_hour_in_quiet(18, 12, 18)); // non-wrapping end exclusive
   assert(!elec_hour_in_quiet(3, 8, 8));    // start==end => no quiet hours
 
+  // --- elec_cheap_bar = clamp(mean*pct/100, floor, ceiling) ---
+  assert(elec_cheap_bar(1000, 70, 200, 800) == 700);  // 10.0 snt mean -> 7.0
+  assert(elec_cheap_bar(200, 70, 200, 800) == 200);   // relative 1.4 -> clamped up to floor
+  assert(elec_cheap_bar(3000, 70, 200, 800) == 800);  // relative 21.0 -> clamped to ceiling
+  assert(elec_cheap_bar(0, 70, 200, 800) == 200);     // zero mean -> floor
+
   printf("All electricity_calc tests passed\n");
   return 0;
 }

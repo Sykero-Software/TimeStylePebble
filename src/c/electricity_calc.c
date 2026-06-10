@@ -46,3 +46,11 @@ bool elec_hour_in_quiet(int hour, int quietStart, int quietEnd) {
   if (quietStart < quietEnd) { return hour >= quietStart && hour < quietEnd; }
   return hour >= quietStart || hour < quietEnd;  // wraps past midnight
 }
+
+int16_t elec_cheap_bar(int16_t meanCenti, int factorPct,
+                       int16_t floorCenti, int16_t ceilingCenti) {
+  int32_t bar = ((int32_t)meanCenti * factorPct) / 100;
+  if (bar < floorCenti) { bar = floorCenti; }
+  if (bar > ceilingCenti) { bar = ceilingCenti; }
+  return (int16_t)bar;
+}
