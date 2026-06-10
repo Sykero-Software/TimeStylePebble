@@ -1,7 +1,9 @@
 <hr>
-<label>Sidebar Widgets</label>
+<label>Widgets (priority order)</label>
+<p class="subtle">One list, most important first. The first widgets fill the main sidebar; when the second panel is visible (while a status strip is on screen, or always &mdash; see below) the list is split evenly between the two panels. While the second panel is hidden, only the first 3 widgets are shown. A side with 3 widgets stays full height; with 2 or fewer the status strip widens into that side.</p>
 <div id="sidebar_layout_section" class="rect">
   <div class="col">
+    <label class="subtle">Main panel</label>
     <div id="sidebar_layout_preview">
       <div id="widget_0_preview" class="widget_preview">
         <img src="images/sidebar_widgets/0-NONE.png" >
@@ -14,7 +16,20 @@
       </div>
     </div>
   </div>
-  <div class="col"><img id="sidebar_preview_lines" src="images/lines.svg" height="155" /></div>
+  <div class="col">
+    <label class="subtle">Second panel</label>
+    <div id="sidebar_layout_preview2">
+      <div id="widget2_0_preview" class="widget_preview">
+        <img src="images/sidebar_widgets/0-NONE.png" >
+      </div>
+      <div id="widget2_1_preview" class="widget_preview">
+        <img src="images/sidebar_widgets/0-NONE.png" >
+      </div>
+      <div id="widget2_2_preview" class="widget_preview">
+        <img src="images/sidebar_widgets/0-NONE.png" >
+      </div>
+    </div>
+  </div>
   <div class="col">
     <select class="form-control" id="widget_0_selector">
       {% include widget_selector.html %}
@@ -25,13 +40,6 @@
     <select class="form-control" id="widget_2_selector">
       {% include widget_selector.html %}
     </select>
-  </div>
-</div>
-<hr>
-<label>Secondary Panel Widgets</label>
-<p class="subtle">Shown on the opposite side of the sidebar, but only while a status strip (e.g. work-time tracking) is on screen. A side with 3 widgets stays full height; with 2 or fewer the status strip widens into that side. Leave all empty to disable.</p>
-<div id="secondary_layout_section" class="rect">
-  <div class="col">
     <select class="form-control" id="widget2_0_selector">
       {% include widget_selector.html %}
     </select>
@@ -41,6 +49,17 @@
     <select class="form-control" id="widget2_2_selector">
       {% include widget_selector.html %}
     </select>
+  </div>
+</div>
+<label class="subtle">Second widget panel visibility</label>
+<div id="secondary_always_on_setting" class="form-group" >
+  <div class="btn-group btn-group-justified"  data-toggle="buttons">
+    <label class="btn btn-default" data-setting="no" >
+      <input type="radio" name="secondary_always_on_options" autocomplete="off">With status only
+    </label>
+    <label class="btn btn-default" data-setting="yes" >
+      <input type="radio" name="secondary_always_on_options" autocomplete="off">Always
+    </label>
   </div>
 </div>
 <hr>

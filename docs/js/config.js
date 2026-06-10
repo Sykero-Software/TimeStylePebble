@@ -1,4 +1,4 @@
-var CURRENT_SETTINGS_VERSION = 11;
+var CURRENT_SETTINGS_VERSION = 12;
 
 // if we have any persistent data saved, load it in
 $(document).ready(function() {
@@ -63,6 +63,7 @@ function loadPreviousSettings() {
       widget2_0_id: '0', // secondary panel: empty
       widget2_1_id: '0', // secondary panel: empty
       widget2_2_id: '0', // secondary panel: empty
+      secondary_always_on_setting: 'no',
       sidebar_position: 'right',
       use_large_sidebar_font_setting: 'no',
 
@@ -162,6 +163,9 @@ function loadPreviousSettings() {
   $('#widget2_1_selector').val(savedSettings.widget2_1_id);
   $('#widget2_2_selector').val(savedSettings.widget2_2_id);
 
+  compactWidgetList();   // older saved configs may have gaps in the list
+  loadSettingCheckbox('secondary_always_on_setting', savedSettings.secondary_always_on_setting);
+
   // load alt timezone widget settings
   $('#altclock_name').val(savedSettings.altclock_name);
   $('#altclock_offset_hour option[data-setting="' + savedSettings.altclock_offset + '"]').prop('selected', true);
@@ -237,6 +241,19 @@ function presetSelected() {
 
 $('#preset_selector label.btn').on('click', presetSelected);
 
+// The 6 widget dropdowns form one priority list: collapse any "Empty" gaps so
+// the configured widgets always occupy the leading slots.
+function compactWidgetList() {
+  var selects = $('#sidebar_layout_section select');
+  var vals = [];
+  selects.each(function() {
+    if ($(this).val() != 0) { vals.push($(this).val()); }
+  });
+  selects.each(function(i) {
+    $(this).val(i < vals.length ? vals[i] : 0);
+  });
+}
+
 // handle changes to the sidebar layout dropdowns
 function sidebarWidgetSelectionChanged() {
   var newSelection = $(this).val();
@@ -256,6 +273,8 @@ function sidebarWidgetSelectionChanged() {
       }
     }
   }
+
+  compactWidgetList();
 
   showOnlySelectedWidgetSettings();
   updateSidebarPreview(); // in case a setting impacts this
@@ -358,73 +377,95 @@ function widgetsShouldBeCompact() {
   return (totalHeight > 142) ? true : false;
 }
 
+// Maps a widget id to its preview image. Falls back to the empty slot image
+// for ids without preview art (e.g. electricity / BTC).
+function widgetPreviewImage(widget_id, useLargeFonts) {
+  var image_url = 'images/sidebar_widgets/';
+
+  if(useLargeFonts) {
+    image_url += 'large_font/';
+  }
+
+  image_url += widget_id + '-';
+
+  switch(widget_id) {
+    case '2':
+      image_url += 'BATTERY';
+      if($('#battery_meter_setting .btn.active').data('setting') == 'icon-and-percent') {
+        image_url += '_WITH_PCT';
+      }
+      break;
+    case '3':
+      image_url += 'ALT_TZ';
+      break;
+    case '4':
+      image_url += 'DATE';
+      if(widgetsShouldBeCompact()) {
+        image_url += '_COMPACT';
+      }
+      break;
+    case '5':
+      image_url += 'SECONDS';
+      break;
+    case '6':
+      image_url += 'WEEK_NUMBER';
+      break;
+    case '7':
+      image_url += 'WEATHER_CURRENT';
+      break;
+    case '8':
+      image_url += 'WEATHER_TODAY';
+      break;
+    case '9':
+      image_url += 'SLEEP';
+      break;
+    case '10':
+      image_url += 'HEALTH';
+      break;
+    case '11':
+      image_url += 'BEATS';
+      break;
+    case '12':
+      image_url += 'HRM';
+      break;
+    case '13':
+      image_url += 'WEATHER_UV_INDEX';
+      break;
+    default:
+      image_url = 'images/sidebar_widgets/0-NONE';
+      break;
+  }
+
+  return image_url + '.png';
+}
+
 function updateSidebarPreview() {
 
   var useLargeFonts = ($('#use_large_sidebar_font_setting .btn.active').data('setting') == 'yes') ? true : false;
 
-  for(var i = 0; i < 3; i++) {
-    var widget_id = $('#widget_' + i + '_selector').val();
+  // Compact list of selected widget ids, in priority order.
+  var ids = [];
+  $('#sidebar_layout_section select').each(function() {
+    if ($(this).val() != 0) { ids.push($(this).val()); }
+  });
 
-    var image_url = 'images/sidebar_widgets/';
+  // Same split as the watch when both panels are visible: even split, extra
+  // widget to the main panel; a column of exactly 2 sits top + bottom.
+  var secondaryCount = Math.min(3, Math.floor(ids.length / 2));
+  var primaryCount = Math.min(3, ids.length - secondaryCount);
 
-    if(useLargeFonts) {
-      image_url += 'large_font/';
-    }
+  var primary = ['0', '0', '0'];
+  var secondary = ['0', '0', '0'];
+  for (var i = 0; i < 3; i++) {
+    if (i < primaryCount) { primary[i] = ids[i]; }
+    if (i < secondaryCount) { secondary[i] = ids[primaryCount + i]; }
+  }
+  if (primaryCount == 2)   { primary[2] = primary[1];     primary[1] = '0'; }
+  if (secondaryCount == 2) { secondary[2] = secondary[1]; secondary[1] = '0'; }
 
-    image_url += widget_id + '-';
-
-    // set the first image
-    switch(widget_id) {
-      case '2':
-        image_url += 'BATTERY';
-        if($('#battery_meter_setting .btn.active').data('setting') == 'icon-and-percent') {
-          image_url += '_WITH_PCT';
-        }
-        break;
-      case '3':
-        image_url += 'ALT_TZ';
-        break;
-      case '4':
-        image_url += 'DATE';
-        if(widgetsShouldBeCompact()) {
-          image_url += '_COMPACT';
-        }
-        break;
-      case '5':
-        image_url += 'SECONDS';
-        break;
-      case '6':
-        image_url += 'WEEK_NUMBER';
-        break;
-      case '7':
-        image_url += 'WEATHER_CURRENT';
-        break;
-      case '8':
-        image_url += 'WEATHER_TODAY';
-        break;
-      case '9':
-        image_url += 'SLEEP';
-        break;
-      case '10':
-        image_url += 'HEALTH';
-        break;
-      case '11':
-        image_url += 'BEATS';
-        break;
-      case '12':
-        image_url += 'HRM';
-        break;
-      case '13':
-        image_url += 'WEATHER_UV_INDEX';
-        break;
-      case '0':
-        image_url += 'NONE';
-        break;
-    }
-
-    image_url += '.png';
-
-    $('#widget_' + i + '_preview img').attr("src", image_url);
+  for (var i = 0; i < 3; i++) {
+    $('#widget_' + i + '_preview img').attr("src", widgetPreviewImage(primary[i], useLargeFonts));
+    $('#widget2_' + i + '_preview img').attr("src", widgetPreviewImage(secondary[i], useLargeFonts));
   }
 
 }
@@ -561,6 +602,10 @@ function sendSettingsToWatch() {
 
   if($('#twt_target_vibe_setting .btn.active')) {
     config.twt_target_vibe_setting = $('#twt_target_vibe_setting .btn.active').data('setting');
+  }
+
+  if($('#secondary_always_on_setting .btn.active')) {
+    config.secondary_always_on_setting = $('#secondary_always_on_setting .btn.active').data('setting');
   }
 
   // notification settings
