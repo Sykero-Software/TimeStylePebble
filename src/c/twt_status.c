@@ -37,12 +37,13 @@ void TwtStatus_save() {
 // Line 1: the day total (big & bold) with its percent of the configured workday target in
 // parentheses just after it, spanning the whole strip width. A thin bar below shows workday
 // completion (only when a target is set). Line 2: the task name (left, truncated) with the
-// current-task time and its percent of the day total right-aligned to the edge. The task time
-// is on line 2 (not crammed onto line 1) so a legible font fits without clipping on 144 px.
-// Both times add the running segment live (it belongs to the current task); percentages are
-// hidden when their base is 0. When settings.twtShowRemaining is set (and a target exists), the
-// big day-total number instead shows remaining = target - worked (negative on overtime); the
-// percent and the bar always reflect worked progress, regardless of that toggle.
+// current-task time right-aligned to the edge (no task percent — TWT Control shows those per
+// task). The task time is on line 2 (not crammed onto line 1) so a legible font fits without
+// clipping on 144 px. Both times add the running segment live (it belongs to the current
+// task); the day percent is hidden when its base is 0. When settings.twtShowRemaining is set
+// (and a target exists), the big day-total number instead shows remaining = target - worked
+// (negative on overtime); the percent and the bar always reflect worked progress, regardless
+// of that toggle.
 int32_t TwtStatus_workedTotalMin(void) {
   int32_t running = 0;
   if (twt_status.isTracking && twt_status.segmentStartEpoch > 0) {
@@ -61,23 +62,12 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   int32_t task_total = twt_status.taskTotalBeforeMin + running;    // all-time task time
 
   int day_pct = twt_percent(total, twt_status.dailyTargetMin);     // -1 -> hide
-  int32_t task_shown;
-  int task_pct;
-  if (twt_status.taskBudgetMin > 0) {
-    task_shown = task_total;                                       // budgeted: all-time total
-    task_pct = twt_percent(task_total, twt_status.taskBudgetMin);  // % of budget (may exceed 100)
-  } else {
-    task_shown = task_today;                                       // unchanged: today's time
-    // % of the day total, gross/gross when the phone sent a gross day sum (the
-    // per-task numerator is gross, so a net denominator would overshoot 100%)
-    task_pct = twt_percent(task_today,
-        twt_task_pct_base(twt_status.dayGrossBeforeMin, running, total));
-  }
+  // budgeted: all-time total; unbudgeted: today's time
+  int32_t task_shown = (twt_status.taskBudgetMin > 0) ? task_total : task_today;
 
   char total_buf[12];
   char task_buf[12];
   char day_pct_buf[12] = "";
-  char task_pct_buf[12] = "";
   int32_t shown_total = total;                       // default: worked time
   if (settings.twtShowRemaining && twt_status.dailyTargetMin > 0) {
     shown_total = twt_status.dailyTargetMin - total; // remaining; negative on overtime
@@ -85,7 +75,6 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   twt_fmt_hhmm_signed(total_buf, sizeof(total_buf), shown_total);
   snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task_shown / 60), (int)(task_shown % 60));
   if (day_pct >= 0)  snprintf(day_pct_buf, sizeof(day_pct_buf), "(%d%%)", day_pct > 999 ? 999 : day_pct);
-  if (task_pct >= 0) snprintf(task_pct_buf, sizeof(task_pct_buf), "(%d%%)", task_pct > 999 ? 999 : task_pct);
 
   graphics_context_set_text_color(ctx, settings.timeColor);
 
@@ -125,18 +114,12 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
     graphics_fill_rect(ctx, GRect(0, bar_y, fill, bar_h), 0, GCornerNone);
   }
 
-  // --- Line 2: task name (left, truncated) + task time & percent (right-aligned). ---
-  char task_line[24];
-  if (task_pct_buf[0]) {
-    snprintf(task_line, sizeof(task_line), "%s %s", task_buf, task_pct_buf);
-  } else {
-    snprintf(task_line, sizeof(task_line), "%s", task_buf);
-  }
-  GSize tl = graphics_text_layout_get_content_size(task_line, small,
+  // --- Line 2: task name (left, truncated) + task time (right-aligned). ---
+  GSize tl = graphics_text_layout_get_content_size(task_buf, small,
       GRect(0, 0, b.size.w, 22), GTextOverflowModeFill, GTextAlignmentLeft);
   int task_x = b.size.w - tl.w;
   if (task_x < 0) task_x = 0;
-  graphics_draw_text(ctx, task_line, small,
+  graphics_draw_text(ctx, task_buf, small,
       GRect(task_x, 40, b.size.w - task_x, 22),
       GTextOverflowModeFill, GTextAlignmentLeft, NULL);
   graphics_draw_text(ctx, twt_status.taskName, big,
