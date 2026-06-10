@@ -59,6 +59,32 @@ int main(void) {
   bool none[6] = {false, false, false, false, false, false};
   assert(!elec_eligible_mean(em, none, 6, 0, &mean));               // no eligible
 
+  // --- elec_find_next_cheap (earliest run of >=minQuarters eligible quarters
+  //     all <= cheapBar; returns the FULL maximal run + its average) ---
+  bool e8[8] = {true, true, true, true, true, true, true, true};
+  // prices: a 3-long cheap run (too short), then a 4-long cheap run
+  int16_t p1[8] = {100, 100, 100, 900, 200, 200, 200, 200};
+  ElecWindow w = elec_find_next_cheap(p1, e8, 8, 0, 500, 4);
+  assert(w.found && w.startIdx == 4 && w.len == 4 && w.avgCenti == 200);
+  // earliest qualifying run is returned even if a later run is cheaper
+  // (a non-cheap quarter at idx 4 separates the two runs)
+  bool e9[9] = {true, true, true, true, true, true, true, true, true};
+  int16_t p2[9] = {300, 300, 300, 300, 900, 100, 100, 100, 100};
+  w = elec_find_next_cheap(p2, e9, 9, 0, 500, 4);
+  assert(w.found && w.startIdx == 0 && w.len == 4 && w.avgCenti == 300);
+  // ineligible quarter breaks the run
+  bool e2[8] = {true, true, false, true, true, true, true, true};
+  int16_t p3[8] = {100, 100, 100, 100, 100, 100, 100, 100};
+  w = elec_find_next_cheap(p3, e2, 8, 0, 500, 4);
+  assert(w.found && w.startIdx == 3 && w.len == 5);
+  // nothing below the bar -> not found
+  int16_t p4[8] = {900, 900, 900, 900, 900, 900, 900, 900};
+  w = elec_find_next_cheap(p4, e8, 8, 0, 500, 4);
+  assert(!w.found);
+  // fromIdx skips an early cheap run
+  w = elec_find_next_cheap(p3, e8, 8, 5, 500, 4);
+  assert(!w.found);  // only 3 quarters (5,6,7) remain, < minQuarters
+
   printf("All electricity_calc tests passed\n");
   return 0;
 }

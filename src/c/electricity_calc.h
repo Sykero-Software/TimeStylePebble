@@ -8,6 +8,14 @@
 
 #define ELEC_MAX_QUARTERS 192
 
+// A contiguous price window result (used by the cheap-electricity widgets).
+typedef struct {
+  bool    found;
+  int     startIdx;   // index into prices[]
+  int     len;        // number of quarters in the window
+  int16_t avgCenti;   // average price over the window (0.01 snt/kWh)
+} ElecWindow;
+
 // Quarter index for `now`; quarters are at startEpoch + i*900 (seconds, UTC).
 // Returns false if count==0 or now is outside [startEpoch, startEpoch+count*900).
 bool elec_current_index(uint32_t startEpoch, uint16_t count, int64_t now, int *outIdx);
@@ -35,3 +43,10 @@ int16_t elec_cheap_bar(int16_t meanCenti, int factorPct,
 // Returns false if no eligible quarter exists in range.
 bool elec_eligible_mean(const int16_t *prices, const bool *eligible,
                         uint16_t count, int fromIdx, int16_t *out);
+
+// Earliest maximal run of >= minQuarters consecutive eligible quarters whose
+// prices are all <= cheapBar, scanning from fromIdx forward. Returns the full
+// run (startIdx, len, average). found=false if none qualifies.
+ElecWindow elec_find_next_cheap(const int16_t *prices, const bool *eligible,
+                                uint16_t count, int fromIdx,
+                                int16_t cheapBar, int minQuarters);

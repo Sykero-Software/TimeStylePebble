@@ -68,3 +68,33 @@ bool elec_eligible_mean(const int16_t *prices, const bool *eligible,
   *out = (int16_t)avg;
   return true;
 }
+
+ElecWindow elec_find_next_cheap(const int16_t *prices, const bool *eligible,
+                                uint16_t count, int fromIdx,
+                                int16_t cheapBar, int minQuarters) {
+  ElecWindow w = { false, 0, 0, 0 };
+  if (fromIdx < 0) { fromIdx = 0; }
+  int runStart = -1;
+  // Iterate one past the end so a run that reaches the table end is finalised.
+  for (int i = fromIdx; i <= (int)count; i++) {
+    bool cheap = (i < (int)count) && eligible[i] && (prices[i] <= cheapBar);
+    if (cheap) {
+      if (runStart < 0) { runStart = i; }
+    } else if (runStart >= 0) {
+      int len = i - runStart;
+      if (len >= minQuarters) {
+        int64_t sum = 0;
+        for (int j = runStart; j < i; j++) { sum += prices[j]; }
+        int64_t avg = (sum >= 0) ? (sum + len / 2) / len
+                                 : -(((-sum) + len / 2) / len);
+        w.found = true;
+        w.startIdx = runStart;
+        w.len = len;
+        w.avgCenti = (int16_t)avg;
+        return w;
+      }
+      runStart = -1;
+    }
+  }
+  return w;
+}
