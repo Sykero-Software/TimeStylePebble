@@ -32,14 +32,6 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 void bluetoothStateChanged(bool newConnectionState);
 static void apply_twt_layout();
 
-static int count_widgets(const SidebarWidgetType w[3]) {
-  int n = 0;
-  for (int i = 0; i < 3; i++) {
-    if (w[i] != EMPTY) n++;
-  }
-  return n;
-}
-
 
 void update_clock() {
   time_t rawTime;
@@ -98,9 +90,12 @@ static void apply_twt_layout() {
   int statusTop = root.size.h - statusHeight;   // == root.size.h when no status
 
   bool primaryOnLeft = settings.sidebarOnLeft;
-  int primaryCount = count_widgets(settings.widgets);
-  int secondaryCount = count_widgets(settings.widgets2);
-  bool showSecondary = statusVisible && secondaryCount >= 1;
+  // Distribute the widget priority list across the panels. The secondary panel
+  // may show while a status is visible, or always if so configured.
+  bool secondaryWanted = statusVisible || settings.secondaryAlwaysOn;
+  int primaryCount, secondaryCount;
+  Sidebar_distributeWidgets(secondaryWanted, &primaryCount, &secondaryCount);
+  bool showSecondary = secondaryCount >= 1;
 
   // A side with exactly 3 widgets stays full height (blocks the status strip on
   // that side); a side with <=2 widgets is shortened to the status-strip top so
@@ -256,7 +251,8 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // only on change), so a short interval does not over-fetch slow sources.
   bool needsPhoneData = !dynamicSettings.disableWeather;
   for (int i = 0; i < 3; i++) {
-    if (settings.widgets[i] == ELECTRICITY || settings.widgets[i] == BTC_PRICE) {
+    if (settings.widgets[i] == ELECTRICITY || settings.widgets[i] == BTC_PRICE ||
+        settings.widgets2[i] == ELECTRICITY || settings.widgets2[i] == BTC_PRICE) {
       needsPhoneData = true;
     }
   }
