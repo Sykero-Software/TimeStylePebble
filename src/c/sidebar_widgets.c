@@ -7,7 +7,7 @@
 #include <math.h>
 #include <pebble.h>
 #include "electricity.h"
-#include "btc.h"
+#include "crypto.h"
 
 bool SidebarWidgets_useCompactMode = false;
 int SidebarWidgets_xOffset;
@@ -1249,8 +1249,8 @@ void BtcPrice_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
   char btcStr[8];
-  if (Btc_info.valid) {
-    snprintf(btcStr, sizeof(btcStr), "%d", Btc_info.priceThousands);
+  if (Crypto_info[CRYPTO_BTC].valid) {
+    snprintf(btcStr, sizeof(btcStr), "%d", Crypto_info[CRYPTO_BTC].value);
   } else {
     strcpy(btcStr, "--");
   }

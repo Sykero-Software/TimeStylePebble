@@ -9,7 +9,7 @@
 #include "midi_status.h"
 #include "date_header.h"
 #include "electricity.h"
-#include "btc.h"
+#include "crypto.h"
 #include "sidebar_widgets.h"
 
 // windows and layers
@@ -371,7 +371,7 @@ static void init() {
   // init weather system
   Weather_init();
   Electricity_init();
-  Btc_init();
+  Crypto_init();
 
   // init the messaging thing
   messaging_init(redrawScreen);

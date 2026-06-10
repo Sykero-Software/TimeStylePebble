@@ -5,7 +5,7 @@
 #include "midi_status.h"
 #include "messaging.h"
 #include "electricity.h"
-#include "btc.h"
+#include "crypto.h"
 #include "languages.h"
 
 void (*message_processed_callback)(void);
@@ -123,11 +123,20 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     Electricity_saveData();
   }
 
-  Tuple *btc_tuple = dict_find(iterator, MESSAGE_KEY_BtcPriceThousands);
-  if (btc_tuple != NULL) {
-    Btc_info.priceThousands = (int16_t)btc_tuple->value->int32;
-    Btc_info.valid = true;
-    Btc_saveData();
+  // MESSAGE_KEY_* are extern uint32_t (not compile-time constants), so the
+  // table must be function-local rather than file-scope static const.
+  const struct { uint32_t key; CryptoCoin coin; } cryptoKeys[] = {
+    { MESSAGE_KEY_BtcPriceThousands, CRYPTO_BTC },
+    { MESSAGE_KEY_XmrPriceDollars,   CRYPTO_XMR },
+    { MESSAGE_KEY_EurUsdMilli,       CRYPTO_EURUSD },
+  };
+  for (size_t i = 0; i < sizeof(cryptoKeys) / sizeof(cryptoKeys[0]); i++) {
+    Tuple *crypto_tuple = dict_find(iterator, cryptoKeys[i].key);
+    if (crypto_tuple != NULL) {
+      Crypto_info[cryptoKeys[i].coin].value = (int16_t)crypto_tuple->value->int32;
+      Crypto_info[cryptoKeys[i].coin].valid = true;
+      Crypto_saveData(cryptoKeys[i].coin);
+    }
   }
 
   // does this message contain new config information?
