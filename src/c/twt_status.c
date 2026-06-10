@@ -56,6 +56,12 @@ int32_t TwtStatus_workedTotalMin(void) {
 static void status_update_proc(Layer* layer, GContext* ctx) {
   GRect b = layer_get_bounds(layer);
 
+  // configurable strip background; GColorClear = inherit watchface bg (no fill)
+  if (!gcolor_equal(settings.twtStatusBgColor, GColorClear)) {
+    graphics_context_set_fill_color(ctx, settings.twtStatusBgColor);
+    graphics_fill_rect(ctx, b, 0, GCornerNone);
+  }
+
   int32_t total = TwtStatus_workedTotalMin();
   int32_t running = total - twt_status.workedBeforeMin;            // live current segment, whole minutes
   int32_t task_today = twt_status.taskWorkedBeforeMin + running;   // today's task time
