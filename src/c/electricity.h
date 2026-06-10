@@ -32,3 +32,21 @@ void Electricity_saveData();
 bool Electricity_getCurrentPrice(int16_t *out);
 // out in 0.01 snt; false if the current local day has no entries.
 bool Electricity_getTodayAverage(int16_t *out);
+
+// What the cheap-electricity widgets need to render one result.
+typedef struct {
+  int     startHour;   // local hour (0-23) the window starts
+  bool    today;       // window starts on the current local day
+  int16_t avgCenti;    // window average price (0.01 snt/kWh)
+} ElecDisplay;
+
+// "Next cheap" widget: earliest >=1 h run below the adaptive cheap threshold,
+// excluding quiet hours [quietStartHour, quietEndHour). false if none / no data.
+bool Electricity_getNextCheap(int quietStartHour, int quietEndHour, int factorPct,
+                              int16_t floorCenti, int16_t ceilingCenti,
+                              ElecDisplay *out);
+
+// "Cheapest hour" widget: globally cheapest 1 h window (excluding quiet hours).
+// false if no eligible 1 h window / no data.
+bool Electricity_getCheapestHour(int quietStartHour, int quietEndHour,
+                                 ElecDisplay *out);
