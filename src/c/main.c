@@ -243,16 +243,20 @@ static void main_window_unload(Window *window) {
 }
 
 
+// Widgets whose data comes from the phone JS on the shared poll.
+static bool isPhoneDataWidget(SidebarWidgetType w) {
+  return w == ELECTRICITY || w == BTC_PRICE || w == XMR_PRICE || w == EURUSD_RATE;
+}
+
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // One watch-driven request per configured interval serves ALL phone-fetched
-  // data (weather, electricity, BTC). This is the documented Pebble pattern: the
-  // tick service is always running and the AppMessage wakes the phone JS out of
-  // power-save. The JS side throttles per source (electricity ~2/day; BTC sends
-  // only on change), so a short interval does not over-fetch slow sources.
+  // data (weather, electricity, crypto). This is the documented Pebble pattern:
+  // the tick service is always running and the AppMessage wakes the phone JS out
+  // of power-save. The JS side throttles per source (electricity ~2/day; crypto
+  // sends only on change), so a short interval does not over-fetch slow sources.
   bool needsPhoneData = !dynamicSettings.disableWeather;
   for (int i = 0; i < 3; i++) {
-    if (settings.widgets[i] == ELECTRICITY || settings.widgets[i] == BTC_PRICE ||
-        settings.widgets2[i] == ELECTRICITY || settings.widgets2[i] == BTC_PRICE) {
+    if (isPhoneDataWidget(settings.widgets[i]) || isPhoneDataWidget(settings.widgets2[i])) {
       needsPhoneData = true;
     }
   }

@@ -266,32 +266,32 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   // mismatched config dict (e.g. from an app-message key-id change) writing
   // garbage widget types into settings.
   if(widget0Id_tuple != NULL && widget0Id_tuple->value->int8 >= EMPTY
-     && widget0Id_tuple->value->int8 <= BTC_PRICE) {
+     && widget0Id_tuple->value->int8 <= MAX_WIDGET_TYPE) {
     settings.widgets[0] = widget0Id_tuple->value->int8;
   }
 
   if(widget1Id_tuple != NULL && widget1Id_tuple->value->int8 >= EMPTY
-     && widget1Id_tuple->value->int8 <= BTC_PRICE) {
+     && widget1Id_tuple->value->int8 <= MAX_WIDGET_TYPE) {
     settings.widgets[1] = widget1Id_tuple->value->int8;
   }
 
   if(widget2Id_tuple != NULL && widget2Id_tuple->value->int8 >= EMPTY
-     && widget2Id_tuple->value->int8 <= BTC_PRICE) {
+     && widget2Id_tuple->value->int8 <= MAX_WIDGET_TYPE) {
     settings.widgets[2] = widget2Id_tuple->value->int8;
   }
 
   if(widget2_0Id_tuple != NULL && widget2_0Id_tuple->value->int8 >= EMPTY
-     && widget2_0Id_tuple->value->int8 <= BTC_PRICE) {
+     && widget2_0Id_tuple->value->int8 <= MAX_WIDGET_TYPE) {
     settings.widgets2[0] = widget2_0Id_tuple->value->int8;
   }
 
   if(widget2_1Id_tuple != NULL && widget2_1Id_tuple->value->int8 >= EMPTY
-     && widget2_1Id_tuple->value->int8 <= BTC_PRICE) {
+     && widget2_1Id_tuple->value->int8 <= MAX_WIDGET_TYPE) {
     settings.widgets2[1] = widget2_1Id_tuple->value->int8;
   }
 
   if(widget2_2Id_tuple != NULL && widget2_2Id_tuple->value->int8 >= EMPTY
-     && widget2_2Id_tuple->value->int8 <= BTC_PRICE) {
+     && widget2_2Id_tuple->value->int8 <= MAX_WIDGET_TYPE) {
     settings.widgets2[2] = widget2_2Id_tuple->value->int8;
   }
 

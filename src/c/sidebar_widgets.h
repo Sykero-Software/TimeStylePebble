@@ -34,8 +34,14 @@ typedef enum {
   HEARTRATE                 = 12,
   WEATHER_UV_INDEX          = 13,
   ELECTRICITY               = 14,
-  BTC_PRICE                 = 15
+  BTC_PRICE                 = 15,
+  XMR_PRICE                 = 16,
+  EURUSD_RATE               = 17
 } SidebarWidgetType;
+
+// Highest valid widget id; bump when appending a widget type. Used for the
+// settings clamp and the config-message bounds checks.
+#define MAX_WIDGET_TYPE EURUSD_RATE
 
 typedef struct {
   /*

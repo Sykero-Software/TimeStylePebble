@@ -136,6 +136,14 @@ SidebarWidget btcWidget;
 int BtcPrice_getHeight();
 void BtcPrice_draw(GContext *ctx, int yPosition);
 
+SidebarWidget xmrWidget;
+int XmrPrice_getHeight();
+void XmrPrice_draw(GContext *ctx, int yPosition);
+
+SidebarWidget eurUsdWidget;
+int EurUsd_getHeight();
+void EurUsd_draw(GContext *ctx, int yPosition);
+
 SidebarWidget uvIndexWidget;
 int UVIndex_getHeight();
 void UVIndex_draw(GContext *ctx, int yPosition);
@@ -287,6 +295,12 @@ void SidebarWidgets_init() {
 
   btcWidget.getHeight = BtcPrice_getHeight;
   btcWidget.draw = BtcPrice_draw;
+
+  xmrWidget.getHeight = XmrPrice_getHeight;
+  xmrWidget.draw = XmrPrice_draw;
+
+  eurUsdWidget.getHeight = EurUsd_getHeight;
+  eurUsdWidget.draw = EurUsd_draw;
 
   electricityBoltPath = gpath_create(&ELEC_BOLT_PATH_INFO);
 }
@@ -590,6 +604,10 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return electricityWidget;
   case BTC_PRICE:
     return btcWidget;
+  case XMR_PRICE:
+    return xmrWidget;
+  case EURUSD_RATE:
+    return eurUsdWidget;
 #ifdef PBL_HEALTH
   case STEP_COUNTER:
     return stepCounterWidget;
@@ -1257,4 +1275,40 @@ void BtcPrice_draw(GContext *ctx, int yPosition) {
 
   // "BTC" label on top, thousands value below (reuses the basic-widget layout).
   draw_basic_widget(ctx, yPosition, "BTC", btcStr, layout.basicWidgetY);
+}
+
+/***** Monero (XMR USD) widget *****/
+
+int XmrPrice_getHeight() { return layout.basicWidgetHeight; }
+
+void XmrPrice_draw(GContext *ctx, int yPosition) {
+  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+
+  char xmrStr[8];
+  if (Crypto_info[CRYPTO_XMR].valid) {
+    snprintf(xmrStr, sizeof(xmrStr), "%d", Crypto_info[CRYPTO_XMR].value);
+  } else {
+    strcpy(xmrStr, "--");
+  }
+
+  draw_basic_widget(ctx, yPosition, "XMR", xmrStr, layout.basicWidgetY);
+}
+
+/***** EUR/USD rate widget *****/
+
+int EurUsd_getHeight() { return layout.basicWidgetHeight; }
+
+void EurUsd_draw(GContext *ctx, int yPosition) {
+  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+
+  char eurStr[8];
+  if (Crypto_info[CRYPTO_EURUSD].valid) {
+    int16_t v = Crypto_info[CRYPTO_EURUSD].value;
+    snprintf(eurStr, sizeof(eurStr), "%d%c%03d",
+             v / 1000, settings.decimalSeparator, v % 1000);
+  } else {
+    strcpy(eurStr, "--");
+  }
+
+  draw_basic_widget(ctx, yPosition, "EUR", eurStr, layout.basicWidgetY);
 }
