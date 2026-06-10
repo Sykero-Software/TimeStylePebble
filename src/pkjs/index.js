@@ -1,7 +1,8 @@
 
 var weather = require('./weather');
 var electricity = require('./electricity');
-var btc = require('./btc');
+var crypto = require('./crypto');
+var cryptoParse = require('./crypto_parse');
 
 var CONFIG_VERSION = 14;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
@@ -36,26 +37,31 @@ Pebble.addEventListener('ready',
       electricity.updateElectricity(true);
     }
 
-    // btc: default disabled until a widget selects it (set in webviewclosed)
-    if (window.localStorage.getItem('disable_btc') === null) {
-      window.localStorage.setItem('disable_btc', 'yes');
-    }
-    if (window.localStorage.getItem('disable_btc') !== 'yes') {
-      // Force a send on (re)launch for the same reason as electricity above: the
-      // watch's persisted BTC value is wiped by a reinstall/reboot, but
-      // btc_last_thousands survives in phone localStorage, so a non-forced call
-      // would suppress the send as "unchanged" and leave the widget empty until
-      // the price next crosses a thousand-boundary. Periodic refresh is now
-      // driven by the watch's data request (see the appmessage handler), not a
-      // JS timer.
-      btc.updateBtc(true);
+    // crypto coins: each defaults to disabled until a widget selects it (set
+    // in webviewclosed). When enabled, force a send on (re)launch for the same
+    // reason as electricity above: the watch's persisted values are wiped by a
+    // reinstall/reboot, but the *_last_* keys survive in phone localStorage,
+    // so a non-forced call would suppress the send as "unchanged" and leave
+    // the widget empty until the price next moves. Periodic refresh is driven
+    // by the watch's data request (see the appmessage handler), not a JS timer.
+    var anyCryptoEnabled = false;
+    cryptoParse.COINS.forEach(function (c) {
+      if (window.localStorage.getItem(c.disableKey) === null) {
+        window.localStorage.setItem(c.disableKey, 'yes');
+      }
+      if (window.localStorage.getItem(c.disableKey) !== 'yes') {
+        anyCryptoEnabled = true;
+      }
+    });
+    if (anyCryptoEnabled) {
+      crypto.updateCrypto(true);
     }
   }
 );
 
 // Listen for incoming messages
 // when one is received, we treat it as the watch's request for fresh phone data
-// (weather + electricity + BTC) -- this is the single shared, watch-driven poll.
+// (weather + electricity + crypto) -- this is the single shared, watch-driven poll.
 Pebble.addEventListener('appmessage',
   function (msg) {
     console.log('Recieved message: ' + JSON.stringify(msg.payload));
@@ -64,7 +70,7 @@ Pebble.addEventListener('appmessage',
     window.localStorage.setItem('disable_weather', 'no');
     weather.updateWeather();
     electricity.updateElectricity();
-    btc.updateBtc();
+    crypto.updateCrypto();
   }
 );
 
@@ -335,9 +341,11 @@ Pebble.addEventListener('webviewclosed', function (e) {
     var disableElectricity = (widgetIDs.indexOf(14) != -1) ? 'no' : 'yes';
     window.localStorage.setItem('disable_electricity', disableElectricity);
 
-    // btc widget = id 15; enable the fetcher only when it's selected
-    var disableBtc = (widgetIDs.indexOf(15) != -1) ? 'no' : 'yes';
-    window.localStorage.setItem('disable_btc', disableBtc);
+    // crypto widgets: enable each coin's fetcher only when its widget is selected
+    cryptoParse.COINS.forEach(function (c) {
+      var disable = (widgetIDs.indexOf(c.widgetId) != -1) ? 'no' : 'yes';
+      window.localStorage.setItem(c.disableKey, disable);
+    });
 
     // shared, watch-driven poll interval (drives weather + electricity + BTC)
     var pollInterval = parseInt(configData.poll_interval, 10);
@@ -355,7 +363,7 @@ Pebble.addEventListener('webviewclosed', function (e) {
       // configured interval), so there is no JS timer to (re)start here.
       weather.updateWeather(true);
       electricity.updateElectricity(true);
-      btc.updateBtc(true);
+      crypto.updateCrypto(true);
     }, function () {
       console.log('Failed to send config data!');
     });
