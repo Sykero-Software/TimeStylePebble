@@ -325,7 +325,7 @@ void Sidebar_distributeWidgets(bool secondaryWanted, int *primaryCountOut, int *
 // disconnect-icon substitution (primary only).
 static void drawWidgetColumn(Layer *l, GContext *ctx,
                              const SidebarWidgetType widgetTypes[3],
-                             bool allowReplacement) {
+                             bool allowReplacement, bool isLeftSide) {
   GRect bounds = layer_get_unobstructed_bounds(l);
 
   // this ends up being zero on every rectangular platform besides emery
@@ -333,7 +333,10 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 
   SidebarWidgets_updateFonts();
 
-  graphics_context_set_fill_color(ctx, settings.sidebarColor);
+  // per-side configurable background; GColorClear = inherit settings.sidebarColor
+  GColor sidebarBg = isLeftSide ? settings.sidebarBgColorLeft : settings.sidebarBgColorRight;
+  if (gcolor_equal(sidebarBg, GColorClear)) sidebarBg = settings.sidebarColor;
+  graphics_context_set_fill_color(ctx, sidebarBg);
   graphics_fill_rect(ctx, layer_get_bounds(l), 0, GCornerNone);
 
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
@@ -414,11 +417,13 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 }
 
 void updateRectSidebar(Layer *l, GContext *ctx) {
-  drawWidgetColumn(l, ctx, primaryColumn, true);
+  // primary sidebar sits on the left iff sidebarOnLeft
+  drawWidgetColumn(l, ctx, primaryColumn, true, settings.sidebarOnLeft);
 }
 
 void updateRectSecondarySidebar(Layer *l, GContext *ctx) {
-  drawWidgetColumn(l, ctx, secondaryColumn, false);
+  // secondary panel is on the opposite side from the primary
+  drawWidgetColumn(l, ctx, secondaryColumn, false, !settings.sidebarOnLeft);
 }
 
 #endif
