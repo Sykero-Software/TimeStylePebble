@@ -139,6 +139,21 @@ Pebble.addEventListener('webviewclosed', function (e) {
       dict.SettingSidebarTextColor = parseInt(configData.sidebar_text_color, 16);
     }
 
+    // panel backgrounds: a hex string sets the color; the literal "-1" means
+    // "inherit". parseInt("-1", 16) === -1, so one path covers both.
+    if (configData.twt_status_bg_color !== undefined) {
+      dict.SettingTwtStatusBgColor = parseInt(configData.twt_status_bg_color, 16);
+    }
+    if (configData.date_bg_color !== undefined) {
+      dict.SettingDateBgColor = parseInt(configData.date_bg_color, 16);
+    }
+    if (configData.sidebar_bg_color_left !== undefined) {
+      dict.SettingSidebarBgColorLeft = parseInt(configData.sidebar_bg_color_left, 16);
+    }
+    if (configData.sidebar_bg_color_right !== undefined) {
+      dict.SettingSidebarBgColorRight = parseInt(configData.sidebar_bg_color_right, 16);
+    }
+
     // general options
     if (configData.language_id !== undefined) {
       dict.SettingLanguageID = configData.language_id;
