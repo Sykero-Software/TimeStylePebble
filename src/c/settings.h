@@ -86,6 +86,15 @@ typedef struct {
   uint8_t elecCheapFactorPct;    // cheapBar = mean*pct/100 (default 70)
   int16_t elecCheapFloorCenti;   // cheapBar floor, 0.01 snt (default 200)
   int16_t elecCheapCeilingCenti; // cheapBar ceiling, 0.01 snt (default 800)
+
+  // configurable panel backgrounds; GColorClear = "inherit". For status/date,
+  // inherit = draw no fill (watchface bg). For the sidebars, inherit = fall back to
+  // settings.sidebarColor. Appended fields, no settings-version bump (defaults in
+  // Settings_init).
+  GColor twtStatusBgColor;    // TWT status strip background
+  GColor dateBgColor;         // date header background
+  GColor sidebarBgColorLeft;  // left-edge widget column (rect only)
+  GColor sidebarBgColorRight; // right-edge widget column (rect only)
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

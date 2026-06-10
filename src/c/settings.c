@@ -61,6 +61,10 @@ void Settings_loadFromStorage() {
   settings.elecCheapFactorPct = 70;
   settings.elecCheapFloorCenti = 200;  // 2.0 snt/kWh
   settings.elecCheapCeilingCenti = 800;// 8.0 snt/kWh
+  settings.twtStatusBgColor = GColorClear;    // inherit watchface bg; appended field
+  settings.dateBgColor = GColorClear;         // inherit watchface bg; appended field
+  settings.sidebarBgColorLeft = GColorClear;  // inherit sidebarColor; appended field
+  settings.sidebarBgColorRight = GColorClear; // inherit sidebarColor; appended field
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
