@@ -1231,9 +1231,11 @@ void Beats_draw(GContext *ctx, int yPosition) {
 /***** Electricity widgets (current price / next cheap / cheapest hour) *****/
 
 // Shared renderer: lightning bolt + a large line and a small line below it.
-static void elec_draw_two_line(GContext *ctx, int yPosition,
-                               const char *big, const char *small,
-                               GFont bigFont) {
+// The bolt is shorter than the heart-rate icon this layout borrows from;
+// pull the number block up a few px.
+#define ELEC_Y_NUDGE (-6)
+
+static void elec_draw_bolt(GContext *ctx, int yPosition) {
   if (electricityBoltPath) {
     gpath_move_to(electricityBoltPath,
                   GPoint(9 + SidebarWidgets_xOffset, yPosition));
@@ -1241,19 +1243,57 @@ static void elec_draw_two_line(GContext *ctx, int yPosition,
     gpath_draw_filled(ctx, electricityBoltPath);
   }
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
-  // The bolt is shorter than the heart-rate icon this layout borrows from;
-  // pull the number block up a few px.
-  const int elecYNudge = -6;
-  graphics_draw_text(ctx, big, bigFont,
-                     GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.heartRateValueY + elecYNudge,
-                           layout.textRectWidth, 20),
-                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
+
+static void elec_draw_small_line(GContext *ctx, int yPosition, const char *small) {
   graphics_draw_text(ctx, small, smSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.heartRateAgeY + elecYNudge,
+                           yPosition + layout.heartRateAgeY + ELEC_Y_NUDGE,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
+
+static void elec_draw_two_line(GContext *ctx, int yPosition,
+                               const char *big, const char *small,
+                               GFont bigFont) {
+  elec_draw_bolt(ctx, yPosition);
+  graphics_draw_text(ctx, big, bigFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           yPosition + layout.heartRateValueY + ELEC_Y_NUDGE,
+                           layout.textRectWidth, 20),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  elec_draw_small_line(ctx, yPosition, small);
+}
+
+// Cheap-widget big line: the hour in the full font + minutes ("00".."45", plus
+// a trailing "+" for a later day) one font size down, the pair centered as a
+// block. Keeps the hour big/legible while the whole HHMM still fits the sidebar.
+static void elec_draw_split_time(GContext *ctx, int yPosition,
+                                 const ElecDisplay *d, const char *small) {
+  elec_draw_bolt(ctx, yPosition);
+  char hourStr[4], minStr[5];
+  snprintf(hourStr, sizeof(hourStr), "%d", d->startHour);
+  snprintf(minStr, sizeof(minStr), "%02d%s", d->startMin, d->today ? "" : "+");
+
+  GFont hourFont = currentSidebarFont;
+  GFont minFont = smSidebarFont;
+  GRect probe = GRect(0, 0, 80, 30);
+  GSize hsz = graphics_text_layout_get_content_size(
+      hourStr, hourFont, probe, GTextOverflowModeFill, GTextAlignmentLeft);
+  GSize msz = graphics_text_layout_get_content_size(
+      minStr, minFont, probe, GTextOverflowModeFill, GTextAlignmentLeft);
+
+  int rectX = layout.textRectX + SidebarWidgets_xOffset;
+  int startX = rectX + (layout.textRectWidth - (hsz.w + msz.w)) / 2;
+  int yBig = yPosition + layout.heartRateValueY + ELEC_Y_NUDGE;
+  graphics_draw_text(ctx, hourStr, hourFont,
+                     GRect(startX, yBig, hsz.w + 4, 30),
+                     GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  // Bottom-align the shorter minutes box to the hour's baseline.
+  graphics_draw_text(ctx, minStr, minFont,
+                     GRect(startX + hsz.w, yBig + (hsz.h - msz.h), msz.w + 6, 30),
+                     GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  elec_draw_small_line(ctx, yPosition, small);
 }
 
 int Electricity_getHeight() { return layout.heartRateHeight; }
@@ -1274,56 +1314,33 @@ void Electricity_draw(GContext *ctx, int yPosition) {
   elec_draw_two_line(ctx, yPosition, nowStr, avgStr, currentSidebarFont);
 }
 
-// Formats an ElecDisplay into a big start-time line ("14" / "14:45", or with a
-// trailing "+" when the window is on a later day) and a small price line.
-// Returns true when the big line carries minutes (":mm"), so the caller can
-// shrink the font a notch — "14:45" is wider than the sidebar fits at full size.
-static bool elec_format_window(const ElecDisplay *d, char *bigStr, size_t bigLen,
-                               char *smallStr, size_t smallLen) {
-  const char *suffix = d->today ? "" : "+";
-  bool hasMinutes = (d->startMin != 0);
-  if (hasMinutes) {
-    snprintf(bigStr, bigLen, "%d:%02d%s", d->startHour, d->startMin, suffix);
-  } else {
-    snprintf(bigStr, bigLen, "%d%s", d->startHour, suffix);
-  }
-  elec_format_price(d->avgCenti, settings.decimalSeparator, smallStr, smallLen);
-  return hasMinutes;
-}
-
 int NextCheap_getHeight() { return layout.heartRateHeight; }
 
 void NextCheap_draw(GContext *ctx, int yPosition) {
-  char bigStr[8], smallStr[12];
+  char smallStr[12];
   ElecDisplay d;
-  bool hasMinutes = false;
   if (Electricity_getNextCheap(settings.elecQuietStart, settings.elecQuietEnd,
                                settings.elecCheapFactorPct,
                                settings.elecCheapFloorCenti,
                                settings.elecCheapCeilingCenti, &d)) {
-    hasMinutes = elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
+    elec_format_price(d.avgCenti, settings.decimalSeparator, smallStr, sizeof(smallStr));
+    elec_draw_split_time(ctx, yPosition, &d, smallStr);
   } else {
-    strcpy(bigStr, "--");
-    strcpy(smallStr, "--");
+    elec_draw_two_line(ctx, yPosition, "--", "--", currentSidebarFont);
   }
-  elec_draw_two_line(ctx, yPosition, bigStr, smallStr,
-                     hasMinutes ? smSidebarFont : currentSidebarFont);
 }
 
 int CheapestHour_getHeight() { return layout.heartRateHeight; }
 
 void CheapestHour_draw(GContext *ctx, int yPosition) {
-  char bigStr[8], smallStr[12];
+  char smallStr[12];
   ElecDisplay d;
-  bool hasMinutes = false;
   if (Electricity_getCheapestHour(settings.elecQuietStart, settings.elecQuietEnd, &d)) {
-    hasMinutes = elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
+    elec_format_price(d.avgCenti, settings.decimalSeparator, smallStr, sizeof(smallStr));
+    elec_draw_split_time(ctx, yPosition, &d, smallStr);
   } else {
-    strcpy(bigStr, "--");
-    strcpy(smallStr, "--");
+    elec_draw_two_line(ctx, yPosition, "--", "--", currentSidebarFont);
   }
-  elec_draw_two_line(ctx, yPosition, bigStr, smallStr,
-                     hasMinutes ? smSidebarFont : currentSidebarFont);
 }
 
 /***** Bitcoin (BTC USD) widget *****/
