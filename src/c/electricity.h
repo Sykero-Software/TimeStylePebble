@@ -38,6 +38,7 @@ typedef struct {
   int     startHour;   // local hour (0-23) the window starts
   int     startMin;    // local minute (0/15/30/45) the window starts
   bool    today;       // window starts on the current local day
+  bool    now;         // window starts at the current quarter (cheap right now)
   int16_t avgCenti;    // window average price (0.01 snt/kWh)
 } ElecDisplay;
 

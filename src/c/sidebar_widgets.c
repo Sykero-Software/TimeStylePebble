@@ -1333,7 +1333,11 @@ void NextCheap_draw(GContext *ctx, int yPosition) {
                                settings.elecCheapFloorCenti,
                                settings.elecCheapCeilingCenti, &d)) {
     elec_format_price(d.avgCenti, settings.decimalSeparator, smallStr, sizeof(smallStr));
-    elec_draw_split_time(ctx, yPosition, &d, smallStr);
+    if (d.now) {
+      elec_draw_two_line(ctx, yPosition, "NOW", smallStr, currentSidebarFont);
+    } else {
+      elec_draw_split_time(ctx, yPosition, &d, smallStr);
+    }
   } else {
     elec_draw_two_line(ctx, yPosition, "--", "--", currentSidebarFont);
   }
@@ -1346,7 +1350,11 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
   ElecDisplay d;
   if (Electricity_getCheapestHour(settings.elecQuietStart, settings.elecQuietEnd, &d)) {
     elec_format_price(d.avgCenti, settings.decimalSeparator, smallStr, sizeof(smallStr));
-    elec_draw_split_time(ctx, yPosition, &d, smallStr);
+    if (d.now) {
+      elec_draw_two_line(ctx, yPosition, "NOW", smallStr, currentSidebarFont);
+    } else {
+      elec_draw_split_time(ctx, yPosition, &d, smallStr);
+    }
   } else {
     elec_draw_two_line(ctx, yPosition, "--", "--", currentSidebarFont);
   }

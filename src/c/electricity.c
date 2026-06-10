@@ -96,12 +96,13 @@ static int elec_build_eligible(bool *eligible, int quietStartHour, int quietEndH
   return idx;
 }
 
-static void elec_fill_display(const ElecWindow *w, ElecDisplay *out) {
+static void elec_fill_display(const ElecWindow *w, int currentIdx, ElecDisplay *out) {
   time_t qstart = (time_t)(Electricity_info.startEpoch + (uint32_t)w->startIdx * 900);
   struct tm wt = *localtime(&qstart);
   out->startHour = wt.tm_hour;
   out->startMin = wt.tm_min;
   out->avgCenti = w->avgCenti;
+  out->now = (w->startIdx == currentIdx);
   time_t now = time(NULL);
   struct tm nt = *localtime(&now);
   out->today = (wt.tm_yday == nt.tm_yday && wt.tm_year == nt.tm_year);
@@ -123,7 +124,7 @@ bool Electricity_getNextCheap(int quietStartHour, int quietEndHour, int factorPc
                                       Electricity_info.count, currentIdx,
                                       bar, ELEC_WIN_QUARTERS);
   if (!w.found) { return false; }
-  elec_fill_display(&w, out);
+  elec_fill_display(&w, currentIdx, out);
   return true;
 }
 
@@ -136,6 +137,6 @@ bool Electricity_getCheapestHour(int quietStartHour, int quietEndHour,
                                     Electricity_info.count, currentIdx,
                                     ELEC_WIN_QUARTERS);
   if (!w.found) { return false; }
-  elec_fill_display(&w, out);
+  elec_fill_display(&w, currentIdx, out);
   return true;
 }
