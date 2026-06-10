@@ -48,6 +48,7 @@ typedef struct {
   // current weather
   int weatherHeight;
   int weatherTempY;
+  int weatherStationY;   // baseline of the small station-name line (FMI)
   // common text rect x offset and width for main data display
   int textRectX;
   int textRectWidth;
@@ -336,6 +337,7 @@ void SidebarWidgets_updateFonts() {
         .dateBgRectHeight = 22,
         .weatherHeight = 44,
         .weatherTempY = 20,
+        .weatherStationY = 39,
         .textRectX = -5,
         .textRectWidth = 40,
         .weatherForecastHeight = 63,
@@ -377,6 +379,7 @@ void SidebarWidgets_updateFonts() {
         .dateBgRectHeight = 22,
         .weatherHeight = 42,
         .weatherTempY = 24,
+        .weatherStationY = 43,
         .textRectX = -5,
         .textRectWidth = 40,
         .weatherForecastHeight = 60,
@@ -422,6 +425,7 @@ void SidebarWidgets_updateFonts() {
     layout.dateBgRectHeight = 26;
     layout.weatherHeight = 49;
     layout.weatherTempY = 21;
+    layout.weatherStationY = 43;
     layout.textRectX = -10;
     layout.textRectWidth = 50;
     layout.weatherForecastHeight = 76;
@@ -460,6 +464,7 @@ void SidebarWidgets_updateFonts() {
     layout.dateBgRectHeight = 26;
     layout.weatherHeight = 46;
     layout.weatherTempY = 22;
+    layout.weatherStationY = 44;
     layout.textRectX = -9;
     layout.textRectWidth = 48;
     layout.weatherForecastHeight = 69;
@@ -762,7 +767,14 @@ void DateWidget_draw(GContext *ctx, int yPosition) {
 
 /********** current weather widget **********/
 
-int CurrentWeather_getHeight() { return layout.weatherHeight; }
+int CurrentWeather_getHeight() {
+  // reserve room for the station-name line only when there is one (so the
+  // Open-Meteo / no-name case is laid out exactly as before)
+  if (Weather_weatherInfo.stationName[0] != '\0') {
+    return layout.weatherStationY + 16;
+  }
+  return layout.weatherHeight;
+}
 
 void CurrentWeather_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
@@ -797,6 +809,15 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
                              yPosition + layout.weatherTempY,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+
+    // observation-station name (small font, below the temperature; FMI only)
+    if (Weather_weatherInfo.stationName[0] != '\0') {
+      graphics_draw_text(ctx, Weather_weatherInfo.stationName, smSidebarFont,
+                         GRect(layout.textRectX + SidebarWidgets_xOffset,
+                               yPosition + layout.weatherStationY,
+                               layout.textRectWidth, 16),
+                         GTextOverflowModeTrailingEllipsis, GTextAlignmentCenter, NULL);
+    }
   } else {
     // if the weather data isn't set, draw a loading indication
     graphics_draw_text(ctx, "...", currentSidebarFont,
