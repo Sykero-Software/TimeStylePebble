@@ -157,6 +157,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *elecFactor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFactorPct);
   Tuple *elecFloor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFloorCenti);
   Tuple *elecCeiling_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapCeilingCenti);
+  Tuple *twtStatusBgColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtStatusBgColor);
+  Tuple *dateBgColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingDateBgColor);
+  Tuple *sidebarBgLeft_tuple = dict_find(iterator, MESSAGE_KEY_SettingSidebarBgColorLeft);
+  Tuple *sidebarBgRight_tuple = dict_find(iterator, MESSAGE_KEY_SettingSidebarBgColorRight);
   Tuple *language_tuple = dict_find(iterator, MESSAGE_KEY_SettingLanguageID);
   Tuple *leadingZero_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowLeadingZero);
   Tuple *batteryPct_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowBatteryPct);
@@ -201,6 +205,26 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(sidebarTextColor_tuple != NULL) {
     // text can only be black or white, so we'll enforce that here
     settings.sidebarTextColor = GColorFromHEX(sidebarTextColor_tuple->value->int32);
+  }
+
+  if(twtStatusBgColor_tuple != NULL) {
+    int32_t v = twtStatusBgColor_tuple->value->int32;
+    settings.twtStatusBgColor = (v < 0) ? GColorClear : GColorFromHEX(v); // <0 = inherit
+  }
+
+  if(dateBgColor_tuple != NULL) {
+    int32_t v = dateBgColor_tuple->value->int32;
+    settings.dateBgColor = (v < 0) ? GColorClear : GColorFromHEX(v); // <0 = inherit
+  }
+
+  if(sidebarBgLeft_tuple != NULL) {
+    int32_t v = sidebarBgLeft_tuple->value->int32;
+    settings.sidebarBgColorLeft = (v < 0) ? GColorClear : GColorFromHEX(v); // <0 = inherit
+  }
+
+  if(sidebarBgRight_tuple != NULL) {
+    int32_t v = sidebarBgRight_tuple->value->int32;
+    settings.sidebarBgColorRight = (v < 0) ? GColorClear : GColorFromHEX(v); // <0 = inherit
   }
 
   if(sidebarPos_tuple != NULL) {
