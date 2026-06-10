@@ -4,7 +4,7 @@ var electricity = require('./electricity');
 var crypto = require('./crypto');
 var cryptoParse = require('./crypto_parse');
 
-var CONFIG_VERSION = 14;
+var CONFIG_VERSION = 15;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
 var BASE_CONFIG_URL = 'https://sykero-software.github.io/TimeStylePebble/';
 

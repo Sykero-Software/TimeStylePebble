@@ -1,4 +1,4 @@
-var CURRENT_SETTINGS_VERSION = 12;
+var CURRENT_SETTINGS_VERSION = 15;
 
 // if we have any persistent data saved, load it in
 $(document).ready(function() {
@@ -719,7 +719,12 @@ function trackSettings(config) {
     '9': 'CurrentTime',
     '10': 'Health',
     '11': 'SwatchBeats',
-    '12': 'HeartRate'
+    '12': 'HeartRate',
+    '13': 'UVIndex',
+    '14': 'Electricity',
+    '15': 'BTC',
+    '16': 'XMR',
+    '17': 'EurUsd'
   };
 
   // track the sidebar layout selections
