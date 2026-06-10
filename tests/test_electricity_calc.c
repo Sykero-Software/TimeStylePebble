@@ -33,6 +33,15 @@ int main(void) {
   int16_t neg[2] = {-100, -300};
   assert(elec_today_average(neg, 2, 0, 0, 1800, &avg) && avg == -200);
 
+  // --- elec_hour_in_quiet (night window [start,end), wraps midnight) ---
+  assert(elec_hour_in_quiet(23, 23, 7));   // start hour is quiet
+  assert(elec_hour_in_quiet(2, 23, 7));    // after midnight, before end
+  assert(!elec_hour_in_quiet(7, 23, 7));   // end hour is NOT quiet (half-open)
+  assert(!elec_hour_in_quiet(12, 23, 7));  // midday awake
+  assert(elec_hour_in_quiet(13, 12, 18));  // non-wrapping window
+  assert(!elec_hour_in_quiet(18, 12, 18)); // non-wrapping end exclusive
+  assert(!elec_hour_in_quiet(3, 8, 8));    // start==end => no quiet hours
+
   printf("All electricity_calc tests passed\n");
   return 0;
 }

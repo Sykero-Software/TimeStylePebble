@@ -40,3 +40,9 @@ void elec_format_price(int16_t value_centi, char sep, char *buf, size_t buflen) 
   int frac = a % 10;
   snprintf(buf, buflen, "%s%d%c%d", neg ? "-" : "", whole, sep, frac);
 }
+
+bool elec_hour_in_quiet(int hour, int quietStart, int quietEnd) {
+  if (quietStart == quietEnd) { return false; }
+  if (quietStart < quietEnd) { return hour >= quietStart && hour < quietEnd; }
+  return hour >= quietStart || hour < quietEnd;  // wraps past midnight
+}

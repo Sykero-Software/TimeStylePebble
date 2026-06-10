@@ -20,3 +20,8 @@ bool elec_today_average(const int16_t *prices, uint16_t count, uint32_t startEpo
 // Formats value_centi (0.01 snt/kWh) as "x.x" with one decimal of snt into buf.
 // `sep` is the decimal separator char. Handles negatives. buf should be >= 12 bytes.
 void elec_format_price(int16_t value_centi, char sep, char *buf, size_t buflen);
+
+// True if `hour` (0-23) falls in the quiet window [quietStart, quietEnd) (hours,
+// 0-23). The window wraps past midnight when quietStart > quietEnd. If
+// quietStart == quietEnd the window is empty (always returns false).
+bool elec_hour_in_quiet(int hour, int quietStart, int quietEnd);
