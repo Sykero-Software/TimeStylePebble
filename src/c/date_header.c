@@ -39,6 +39,7 @@ void DateHeader_updateTime(struct tm* timeInfo) {
 void DateHeader_redraw(void) {
   if (!s_date_layer) return;
   text_layer_set_text_color(s_date_layer, settings.timeColor); // track color setting changes
+  text_layer_set_background_color(s_date_layer, settings.dateBgColor); // track color setting changes
   text_layer_set_text(s_date_layer, s_date_buffer);
   layer_mark_dirty(text_layer_get_layer(s_date_layer));
 }
@@ -51,7 +52,7 @@ void DateHeader_setFrame(GRect frame) {
 void DateHeader_initLayer(Layer* parent, GRect frame) {
   if (!DateHeader_isSupported()) return;
   s_date_layer = text_layer_create(frame);
-  text_layer_set_background_color(s_date_layer, GColorClear);
+  text_layer_set_background_color(s_date_layer, settings.dateBgColor); // GColorClear = inherit
   text_layer_set_text_color(s_date_layer, settings.timeColor);
   text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
