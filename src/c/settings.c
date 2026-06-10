@@ -55,6 +55,7 @@ void Settings_loadFromStorage() {
   settings.widgets2[0] = EMPTY;   // secondary panel off by default; appended field, no settings-version bump
   settings.widgets2[1] = EMPTY;
   settings.widgets2[2] = EMPTY;
+  settings.secondaryAlwaysOn = false;   // auto-hide by default; appended field, no settings-version bump
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)

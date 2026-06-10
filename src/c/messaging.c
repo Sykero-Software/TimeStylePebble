@@ -158,6 +158,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *widget2_1Id_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidget2_1ID);
   Tuple *widget2_2Id_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidget2_2ID);
 
+  Tuple *secondaryAlwaysOn_tuple = dict_find(iterator, MESSAGE_KEY_SettingSecondaryAlwaysOn);
+
   Tuple *altclockName_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockName);
   Tuple *altclockOffset_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockOffset);
 
@@ -282,6 +284,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(widget2_2Id_tuple != NULL && widget2_2Id_tuple->value->int8 >= EMPTY
      && widget2_2Id_tuple->value->int8 <= BTC_PRICE) {
     settings.widgets2[2] = widget2_2Id_tuple->value->int8;
+  }
+
+  if(secondaryAlwaysOn_tuple != NULL) {
+    settings.secondaryAlwaysOn = (bool)secondaryAlwaysOn_tuple->value->int8;
   }
 
   if(altclockName_tuple != NULL) {

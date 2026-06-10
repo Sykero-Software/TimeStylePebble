@@ -74,6 +74,10 @@ typedef struct {
   // secondary widget panel (shown opposite the primary sidebar while a bottom
   // status display is visible); EMPTY x3 = feature off. Appended field.
   SidebarWidgetType widgets2[3];
+
+  // Secondary widget panel: always visible (true) vs only while a bottom
+  // status display is shown (false = historical auto-hide). Appended field.
+  bool secondaryAlwaysOn;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
