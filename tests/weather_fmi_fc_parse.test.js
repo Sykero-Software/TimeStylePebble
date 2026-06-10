@@ -1,0 +1,95 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 Tuomas Airaksinen
+
+const test = require('node:test');
+const assert = require('node:assert');
+const {
+  parseFmiForecastTvp, abbreviateLocationName
+} = require('../src/pkjs/weather_fmi_fc_parse');
+
+// FMI ::point::timevaluepair forecast: one <wfs:member> per parameter, each an
+// om:OM_Observation whose observedProperty href carries param=<name>, sharing a
+// SF_SpatialSamplingFeature with the nearest named location, and a
+// MeasurementTimeseries of <wml2:time>/<wml2:value> pairs.
+function fcMember(param, name, tvps) {
+  var pts = tvps.map(function (tv) {
+    return '<wml2:point><wml2:MeasurementTVP>' +
+      '<wml2:time>' + tv[0] + '</wml2:time>' +
+      '<wml2:value>' + tv[1] + '</wml2:value>' +
+      '</wml2:MeasurementTVP></wml2:point>';
+  }).join('');
+  return '<wfs:member><om:OM_Observation gml:id="WFS-x">' +
+    '<om:observedProperty xlink:href="https://opendata.fmi.fi/meta?observableProperty=forecast&param=' + param + '&language=eng"/>' +
+    '<om:featureOfInterest><sams:SF_SpatialSamplingFeature>' +
+    '<sam:sampledFeature><target:LocationCollection>' +
+    '<gml:name codeSpace="http://xml.fmi.fi/namespace/locationcode/name">' + name + '</gml:name>' +
+    '</target:LocationCollection></sam:sampledFeature>' +
+    '<gml:name>' + name + '</gml:name><gml:pos>62.26 25.86 </gml:pos>' +
+    '</sams:SF_SpatialSamplingFeature></om:featureOfInterest>' +
+    '<om:result><wml2:MeasurementTimeseries gml:id="mts-1-1-' + param + '">' +
+    pts + '</wml2:MeasurementTimeseries></om:result>' +
+    '</om:OM_Observation></wfs:member>';
+}
+
+const SAMPLE =
+  '<wfs:FeatureCollection>' +
+  fcMember('temperature', 'Jyskä', [
+    ['2026-06-10T09:00:00Z', '16.38'],
+    ['2026-06-10T12:00:00Z', '19.0'],
+    ['2026-06-10T15:00:00Z', '11.0']
+  ]) +
+  fcMember('smartsymbol', 'Jyskä', [
+    ['2026-06-10T09:00:00Z', '27'],   // showers
+    ['2026-06-10T12:00:00Z', '1'],    // clear (nearest noon)
+    ['2026-06-10T15:00:00Z', '39']    // heavy rain (most severe of day)
+  ]) +
+  fcMember('uvindex', 'Jyskä', [
+    ['2026-06-10T12:00:00Z', '3'],
+    ['2026-06-10T15:00:00Z', '2']
+  ]) +
+  '</wfs:FeatureCollection>';
+
+const NOON = Math.floor(Date.parse('2026-06-10T12:00:00Z') / 1000);
+
+test('parseFmiForecastTvp parses current values nearest now + the location name', () => {
+  const f = parseFmiForecastTvp(SAMPLE, NOON);
+  assert.strictEqual(f.ok, true);
+  assert.strictEqual(f.currentTemp, 19);     // nearest noon
+  assert.strictEqual(f.currentSymbol, 1);    // clear at noon
+  assert.strictEqual(f.uvIndex, 3);
+  assert.strictEqual(f.name, 'Jyskä');
+});
+
+test('parseFmiForecastTvp derives day high/low and most-severe forecast symbol', () => {
+  const f = parseFmiForecastTvp(SAMPLE, NOON);
+  assert.strictEqual(f.forecastHigh, 19);
+  assert.strictEqual(f.forecastLow, 11);
+  assert.strictEqual(f.forecastSymbol, 39);  // heavy rain outranks showers/clear
+});
+
+test('parseFmiForecastTvp returns ok:false on exception/empty/non-string', () => {
+  assert.strictEqual(parseFmiForecastTvp('<ExceptionReport>x</ExceptionReport>', NOON).ok, false);
+  assert.strictEqual(parseFmiForecastTvp('<wfs:FeatureCollection></wfs:FeatureCollection>', NOON).ok, false);
+  assert.strictEqual(parseFmiForecastTvp(null, NOON).ok, false);
+});
+
+test('parseFmiForecastTvp skips NaN values (FMI emits NaN for gaps)', () => {
+  const xml = '<wfs:FeatureCollection>' +
+    fcMember('temperature', 'Jyskä', [['2026-06-10T12:00:00Z', '12.0']]) +
+    fcMember('uvindex', 'Jyskä', [['2026-06-10T12:00:00Z', 'NaN']]) +
+    '</wfs:FeatureCollection>';
+  const f = parseFmiForecastTvp(xml, NOON);
+  assert.strictEqual(f.ok, true);
+  assert.strictEqual(f.currentTemp, 12);
+  assert.strictEqual(f.uvIndex, 0);
+});
+
+test('abbreviateLocationName: drop municipality, cap to 4, capitalize first char', () => {
+  assert.strictEqual(abbreviateLocationName('Jyskä', 4), 'Jysk');
+  assert.strictEqual(abbreviateLocationName('Jyväskylä keskus', 4), 'Kesk');
+  assert.strictEqual(abbreviateLocationName('Helsinki Kaisaniemi', 4), 'Kais');
+  assert.strictEqual(abbreviateLocationName('asmalampi', 4), 'Asma');  // forces capitalization
+  assert.strictEqual(abbreviateLocationName('Utsjoki', 4), 'Utsj');
+  assert.strictEqual(abbreviateLocationName('', 4), '');
+  assert.strictEqual(abbreviateLocationName(null, 4), '');
+});

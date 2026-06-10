@@ -2,29 +2,24 @@
 // Copyright (c) 2026 Tuomas Airaksinen
 
 /* FMI (Finnish Meteorological Institute / Ilmatieteen laitos) weather provider.
-   Two requests:
-   - the official "edited" forecast (icon, today's high/low, UV, and a baseline
-     current temperature), and
-   - the nearest observation station (measured current temperature + station
-     name) from fmi::observations::weather::timevaluepair.
-   The observation result overrides the baseline temperature and adds the
-   station name; if it is unavailable, the forecast values stand.
-   Falls back to Open-Meteo when the FMI forecast returns no usable data. */
+   One request: the official "edited" forecast via the ::point::timevaluepair
+   stored query, which snaps the queried lat/lon to FMI's nearest *named*
+   forecast location (the same one ilmatieteenlaitos.fi shows for you, e.g.
+   "Jyskä") and returns its name alongside the forecast values. The current-temp
+   widget therefore shows that named point's forecast (matching the website), and
+   the abbreviated location name is shown beneath it.
+   Falls back to Open-Meteo when FMI returns no usable data. */
 
 var weatherCommon = require('./weather');
 var openmeteo = require('./weather_openmeteo');
-var parser = require('./weather_fmi_parse');
-var obsParser = require('./weather_fmi_obs_parse');
+var icon = require('./weather_fmi_parse');     // smartSymbolToIcon
+var parser = require('./weather_fmi_fc_parse');
 
-var STORED_QUERY = 'fmi::forecast::edited::weather::scandinavia::point::simple';
-var OBS_STORED_QUERY = 'fmi::observations::weather::timevaluepair';
+var STORED_QUERY = 'fmi::forecast::edited::weather::scandinavia::point::timevaluepair';
 
-// bbox half-size in degrees around the configured point; wide enough to catch a
-// station even where the network is sparse (~78 km N-S).
-var OBS_BBOX_HALF = 0.7;
-// Cap the station name sent to the watch (the watch's small font + narrow
-// sidebar fit only a few chars; truncated plainly, no ellipsis).
-var STATION_NAME_MAXLEN = 5;
+// Cap the location name sent to the watch (the watch's small font + narrow
+// sidebar fit ~4 chars; truncated plainly, no ellipsis, first char uppercased).
+var LOCATION_NAME_MAXLEN = 4;
 
 module.exports.getWeatherFromCoords = getWeatherFromCoords;
 
@@ -47,60 +42,26 @@ function getWeatherFromCoords(pos) {
   console.log('FMI forecast URL: ' + url);
 
   weatherCommon.xhrRequest(url, 'GET', function (responseText) {
-    var f = parser.parseFmiForecast(responseText, Math.floor(now.getTime() / 1000));
+    var f = parser.parseFmiForecastTvp(responseText, Math.floor(now.getTime() / 1000));
 
     if (!f.ok) {
-      console.log('FMI: no usable forecast data, falling back to Open-Meteo');
+      console.log('FMI: no usable data, falling back to Open-Meteo');
       openmeteo.getWeatherFromCoords(pos);
       return;
     }
 
     var icons = weatherCommon.icons;
     var dictionary = {
-      'WeatherTemperature': f.currentTemp,    // baseline; observation overrides below
-      'WeatherCondition': parser.smartSymbolToIcon(f.currentSymbol, icons),
+      'WeatherTemperature': f.currentTemp,
+      'WeatherCondition': icon.smartSymbolToIcon(f.currentSymbol, icons),
       'WeatherForecastHighTemp': f.forecastHigh,
       'WeatherForecastLowTemp': f.forecastLow,
-      'WeatherForecastCondition': parser.smartSymbolToIcon(f.forecastSymbol, icons),
-      'WeatherUVIndex': f.uvIndex
+      'WeatherForecastCondition': icon.smartSymbolToIcon(f.forecastSymbol, icons),
+      'WeatherUVIndex': f.uvIndex,
+      'WeatherStationName': parser.abbreviateLocationName(f.name, LOCATION_NAME_MAXLEN)
     };
 
-    console.log('FMI forecast: ' + JSON.stringify(dictionary));
-    weatherCommon.sendWeatherToPebble(dictionary);
-
-    // Now refine the current temperature + station name from observations.
-    fetchObservation(lat, lon, now);
-  });
-}
-
-function fetchObservation(lat, lon, now) {
-  var latN = parseFloat(lat), lonN = parseFloat(lon);
-  var bbox = (lonN - OBS_BBOX_HALF) + ',' + (latN - OBS_BBOX_HALF) + ',' +
-             (lonN + OBS_BBOX_HALF) + ',' + (latN + OBS_BBOX_HALF);
-  var start = new Date(now.getTime() - 90 * 60 * 1000);    // last 90 minutes
-
-  var url = 'https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0' +
-    '&request=getFeature&storedquery_id=' + OBS_STORED_QUERY +
-    '&bbox=' + bbox +
-    '&parameters=temperature' +
-    '&timestep=30' +
-    '&starttime=' + start.toISOString() +
-    '&endtime=' + now.toISOString();
-
-  console.log('FMI observation URL: ' + url);
-
-  weatherCommon.xhrRequest(url, 'GET', function (responseText) {
-    var stations = obsParser.parseFmiObservations(responseText);
-    var st = obsParser.pickNearestStation(stations, latN, lonN);
-    if (!st) {
-      console.log('FMI: no usable observation station; keeping forecast temp');
-      return;
-    }
-    var dictionary = {
-      'WeatherTemperature': st.temp,
-      'WeatherStationName': obsParser.abbreviateStationName(st.name, STATION_NAME_MAXLEN)
-    };
-    console.log('FMI observation: ' + JSON.stringify(dictionary));
+    console.log('FMI weather: ' + JSON.stringify(dictionary));
     weatherCommon.sendWeatherToPebble(dictionary);
   });
 }
