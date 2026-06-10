@@ -152,6 +152,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *twtShowRemaining_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtShowRemaining);
   Tuple *twtTargetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtTargetVibe);
   Tuple *pollInterval_tuple = dict_find(iterator, MESSAGE_KEY_SettingPollIntervalMin);
+  Tuple *elecQuietStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietStart);
+  Tuple *elecQuietEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietEnd);
+  Tuple *elecFactor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFactorPct);
+  Tuple *elecFloor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFloorCenti);
+  Tuple *elecCeiling_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapCeilingCenti);
   Tuple *language_tuple = dict_find(iterator, MESSAGE_KEY_SettingLanguageID);
   Tuple *leadingZero_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowLeadingZero);
   Tuple *batteryPct_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowBatteryPct);
@@ -229,6 +234,25 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(pollInterval_tuple != NULL) {
     int v = pollInterval_tuple->value->int32;
     if (v >= 5 && v <= 240) { settings.pollIntervalMin = (uint8_t)v; }
+  }
+
+  if(elecQuietStart_tuple != NULL) {
+    int v = elecQuietStart_tuple->value->int32;
+    if (v >= 0 && v <= 23) { settings.elecQuietStart = (uint8_t)v; }
+  }
+  if(elecQuietEnd_tuple != NULL) {
+    int v = elecQuietEnd_tuple->value->int32;
+    if (v >= 0 && v <= 23) { settings.elecQuietEnd = (uint8_t)v; }
+  }
+  if(elecFactor_tuple != NULL) {
+    int v = elecFactor_tuple->value->int32;
+    if (v >= 1 && v <= 100) { settings.elecCheapFactorPct = (uint8_t)v; }
+  }
+  if(elecFloor_tuple != NULL) {
+    settings.elecCheapFloorCenti = (int16_t)elecFloor_tuple->value->int32;
+  }
+  if(elecCeiling_tuple != NULL) {
+    settings.elecCheapCeilingCenti = (int16_t)elecCeiling_tuple->value->int32;
   }
 
   if(leadingZero_tuple != NULL) {

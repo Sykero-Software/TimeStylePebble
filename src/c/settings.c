@@ -56,6 +56,11 @@ void Settings_loadFromStorage() {
   settings.widgets2[1] = EMPTY;
   settings.widgets2[2] = EMPTY;
   settings.secondaryAlwaysOn = false;   // auto-hide by default; appended field, no settings-version bump
+  settings.elecQuietStart = 23;        // appended field, no settings-version bump
+  settings.elecQuietEnd = 7;
+  settings.elecCheapFactorPct = 70;
+  settings.elecCheapFloorCenti = 200;  // 2.0 snt/kWh
+  settings.elecCheapCeilingCenti = 800;// 8.0 snt/kWh
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
@@ -102,6 +107,11 @@ void Settings_loadFromStorage() {
   settings.altclockName[sizeof(settings.altclockName) - 1] = '\0';
   if (settings.pollIntervalMin < 5 || settings.pollIntervalMin > 240) {
     settings.pollIntervalMin = 30; clamped = true;
+  }
+  if (settings.elecQuietStart > 23) { settings.elecQuietStart = 23; clamped = true; }
+  if (settings.elecQuietEnd > 23) { settings.elecQuietEnd = 7; clamped = true; }
+  if (settings.elecCheapFactorPct < 1 || settings.elecCheapFactorPct > 100) {
+    settings.elecCheapFactorPct = 70; clamped = true;
   }
 
   if (clamped) {

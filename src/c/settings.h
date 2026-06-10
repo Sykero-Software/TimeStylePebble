@@ -78,6 +78,14 @@ typedef struct {
   // Secondary widget panel: always visible (true) vs only while a bottom
   // status display is shown (false = historical auto-hide). Appended field.
   bool secondaryAlwaysOn;
+
+  // cheap-electricity widgets (next-cheap + cheapest-hour); appended fields,
+  // no settings-version bump (defaults set in Settings_init).
+  uint8_t elecQuietStart;        // quiet-hours start hour 0-23 (default 23)
+  uint8_t elecQuietEnd;          // quiet-hours end hour 0-23 (default 7)
+  uint8_t elecCheapFactorPct;    // cheapBar = mean*pct/100 (default 70)
+  int16_t elecCheapFloorCenti;   // cheapBar floor, 0.01 snt (default 200)
+  int16_t elecCheapCeilingCenti; // cheapBar ceiling, 0.01 snt (default 800)
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

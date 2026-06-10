@@ -98,7 +98,12 @@
       "SettingSecondaryAlwaysOn",
       "XmrPriceDollars",
       "EurUsdMilli",
-      "TWT_DAY_GROSS_BEFORE_MIN"
+      "TWT_DAY_GROSS_BEFORE_MIN",
+      "SettingElecQuietStart",
+      "SettingElecQuietEnd",
+      "SettingElecCheapFactorPct",
+      "SettingElecCheapFloorCenti",
+      "SettingElecCheapCeilingCenti"
     ],
     "resources": {
       "media": [
