@@ -194,7 +194,9 @@ function loadPreviousSettings() {
 
 function loadLastUsedColors() {
   // try to load each of the four colors
-  var colorNames = ['time-color', 'time-bg-color', 'sidebar-color', 'sidebar-text-color'];
+  var colorNames = ['time-color', 'time-bg-color', 'sidebar-color', 'sidebar-text-color',
+                    'twt-status-bg-color', 'date-bg-color',
+                    'sidebar-bg-color-left', 'sidebar-bg-color-right'];
 
   for(i = 0; i < colorNames.length; i++) {
     colorName = colorNames[i];
@@ -578,6 +580,40 @@ function sendSettingsToWatch() {
   if($('#sidebar-text-color').val()) {
     config.sidebar_text_color = $('#sidebar-text-color').val().substr(1);
     window.localStorage.setItem('sidebar-text-color', config.sidebar_text_color);
+  }
+
+  // panel backgrounds: send the hex when set, or "-1" (inherit) when cleared, so
+  // clearing a picker actually reverts the watch to its inherit default.
+  if($('#twt-status-bg-color').val()) {
+    config.twt_status_bg_color = $('#twt-status-bg-color').val().substr(1);
+    window.localStorage.setItem('twt-status-bg-color', config.twt_status_bg_color);
+  } else {
+    config.twt_status_bg_color = '-1';
+    window.localStorage.removeItem('twt-status-bg-color');
+  }
+
+  if($('#date-bg-color').val()) {
+    config.date_bg_color = $('#date-bg-color').val().substr(1);
+    window.localStorage.setItem('date-bg-color', config.date_bg_color);
+  } else {
+    config.date_bg_color = '-1';
+    window.localStorage.removeItem('date-bg-color');
+  }
+
+  if($('#sidebar-bg-color-left').val()) {
+    config.sidebar_bg_color_left = $('#sidebar-bg-color-left').val().substr(1);
+    window.localStorage.setItem('sidebar-bg-color-left', config.sidebar_bg_color_left);
+  } else {
+    config.sidebar_bg_color_left = '-1';
+    window.localStorage.removeItem('sidebar-bg-color-left');
+  }
+
+  if($('#sidebar-bg-color-right').val()) {
+    config.sidebar_bg_color_right = $('#sidebar-bg-color-right').val().substr(1);
+    window.localStorage.setItem('sidebar-bg-color-right', config.sidebar_bg_color_right);
+  } else {
+    config.sidebar_bg_color_right = '-1';
+    window.localStorage.removeItem('sidebar-bg-color-right');
   }
 
   // general options
