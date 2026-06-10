@@ -85,6 +85,28 @@ int main(void) {
   w = elec_find_next_cheap(p3, e8, 8, 5, 500, 4);
   assert(!w.found);  // only 3 quarters (5,6,7) remain, < minQuarters
 
+  // --- elec_find_cheapest (lowest-average run of exactly winQuarters eligible
+  //     quarters; ties resolve to the earliest) ---
+  bool ce[8] = {true, true, true, true, true, true, true, true};
+  int16_t cp[8] = {500, 500, 100, 100, 100, 100, 500, 500};
+  ElecWindow c = elec_find_cheapest(cp, ce, 8, 0, 4);
+  assert(c.found && c.startIdx == 2 && c.len == 4 && c.avgCenti == 100);
+  // tie -> earliest window wins
+  int16_t cp2[8] = {100, 100, 100, 100, 100, 100, 100, 100};
+  c = elec_find_cheapest(cp2, ce, 8, 0, 4);
+  assert(c.found && c.startIdx == 0);
+  // the cheap quarters (idx 0-1) cannot form a 4-window because idx 2 is
+  // ineligible; the earliest fully-eligible window (idx 3-6) wins instead
+  bool ce2[8] = {true, true, false, true, true, true, true, true};
+  int16_t cp3[8] = {10, 10, 10, 900, 900, 900, 900, 900};
+  c = elec_find_cheapest(cp3, ce2, 8, 0, 4);
+  assert(c.found && c.startIdx == 3 && c.avgCenti == 900);
+  // not enough contiguous eligible quarters -> not found
+  bool ce3[3] = {true, true, true};
+  int16_t cp4[3] = {10, 10, 10};
+  c = elec_find_cheapest(cp4, ce3, 3, 0, 4);
+  assert(!c.found);
+
   printf("All electricity_calc tests passed\n");
   return 0;
 }

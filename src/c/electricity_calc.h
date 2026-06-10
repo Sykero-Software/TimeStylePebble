@@ -50,3 +50,9 @@ bool elec_eligible_mean(const int16_t *prices, const bool *eligible,
 ElecWindow elec_find_next_cheap(const int16_t *prices, const bool *eligible,
                                 uint16_t count, int fromIdx,
                                 int16_t cheapBar, int minQuarters);
+
+// Lowest-average run of exactly winQuarters consecutive eligible quarters,
+// scanning from fromIdx forward. Ties resolve to the earliest window.
+// found=false if no fully-eligible window of winQuarters exists.
+ElecWindow elec_find_cheapest(const int16_t *prices, const bool *eligible,
+                              uint16_t count, int fromIdx, int winQuarters);

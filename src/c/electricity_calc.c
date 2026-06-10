@@ -98,3 +98,32 @@ ElecWindow elec_find_next_cheap(const int16_t *prices, const bool *eligible,
   }
   return w;
 }
+
+ElecWindow elec_find_cheapest(const int16_t *prices, const bool *eligible,
+                              uint16_t count, int fromIdx, int winQuarters) {
+  ElecWindow w = { false, 0, 0, 0 };
+  if (fromIdx < 0) { fromIdx = 0; }
+  if (winQuarters <= 0) { return w; }
+  int64_t bestSum = 0;
+  for (int i = fromIdx; i + winQuarters <= (int)count; i++) {
+    bool ok = true;
+    int64_t sum = 0;
+    for (int j = i; j < i + winQuarters; j++) {
+      if (!eligible[j]) { ok = false; break; }
+      sum += prices[j];
+    }
+    if (!ok) { continue; }
+    if (!w.found || sum < bestSum) {   // strict < => earliest wins on ties
+      w.found = true;
+      w.startIdx = i;
+      w.len = winQuarters;
+      bestSum = sum;
+    }
+  }
+  if (w.found) {
+    int64_t avg = (bestSum >= 0) ? (bestSum + winQuarters / 2) / winQuarters
+                                 : -(((-bestSum) + winQuarters / 2) / winQuarters);
+    w.avgCenti = (int16_t)avg;
+  }
+  return w;
+}
