@@ -54,3 +54,17 @@ int16_t elec_cheap_bar(int16_t meanCenti, int factorPct,
   if (bar > ceilingCenti) { bar = ceilingCenti; }
   return (int16_t)bar;
 }
+
+bool elec_eligible_mean(const int16_t *prices, const bool *eligible,
+                        uint16_t count, int fromIdx, int16_t *out) {
+  if (fromIdx < 0) { fromIdx = 0; }
+  int64_t sum = 0;
+  int n = 0;
+  for (int i = fromIdx; i < (int)count; i++) {
+    if (eligible[i]) { sum += prices[i]; n++; }
+  }
+  if (n == 0) { return false; }
+  int64_t avg = (sum >= 0) ? (sum + n / 2) / n : -(((-sum) + n / 2) / n);
+  *out = (int16_t)avg;
+  return true;
+}

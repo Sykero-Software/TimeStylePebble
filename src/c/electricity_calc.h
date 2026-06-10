@@ -30,3 +30,8 @@ bool elec_hour_in_quiet(int hour, int quietStart, int quietEnd);
 // floorCenti, ceilingCenti). Used by the "next cheap" widget.
 int16_t elec_cheap_bar(int16_t meanCenti, int factorPct,
                        int16_t floorCenti, int16_t ceilingCenti);
+
+// Mean (0.01 snt, rounded) of quarters i in [fromIdx, count) with eligible[i].
+// Returns false if no eligible quarter exists in range.
+bool elec_eligible_mean(const int16_t *prices, const bool *eligible,
+                        uint16_t count, int fromIdx, int16_t *out);

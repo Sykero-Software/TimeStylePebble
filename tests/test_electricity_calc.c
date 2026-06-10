@@ -48,6 +48,17 @@ int main(void) {
   assert(elec_cheap_bar(3000, 70, 200, 800) == 800);  // relative 21.0 -> clamped to ceiling
   assert(elec_cheap_bar(0, 70, 200, 800) == 200);     // zero mean -> floor
 
+  // --- elec_eligible_mean (mean of eligible[] quarters from fromIdx) ---
+  int16_t em[6] = {100, 200, 300, 400, 500, 600};
+  bool elig[6] = {true, true, true, true, true, true};
+  int16_t mean;
+  assert(elec_eligible_mean(em, elig, 6, 0, &mean) && mean == 350);
+  assert(elec_eligible_mean(em, elig, 6, 4, &mean) && mean == 550); // fromIdx skips earlier
+  bool elig2[6] = {false, false, true, true, false, false};
+  assert(elec_eligible_mean(em, elig2, 6, 0, &mean) && mean == 350); // only idx 2,3
+  bool none[6] = {false, false, false, false, false, false};
+  assert(!elec_eligible_mean(em, none, 6, 0, &mean));               // no eligible
+
   printf("All electricity_calc tests passed\n");
   return 0;
 }
