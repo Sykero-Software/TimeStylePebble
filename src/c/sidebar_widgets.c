@@ -1232,7 +1232,8 @@ void Beats_draw(GContext *ctx, int yPosition) {
 
 // Shared renderer: lightning bolt + a large line and a small line below it.
 static void elec_draw_two_line(GContext *ctx, int yPosition,
-                               const char *big, const char *small) {
+                               const char *big, const char *small,
+                               GFont bigFont) {
   if (electricityBoltPath) {
     gpath_move_to(electricityBoltPath,
                   GPoint(9 + SidebarWidgets_xOffset, yPosition));
@@ -1243,7 +1244,7 @@ static void elec_draw_two_line(GContext *ctx, int yPosition,
   // The bolt is shorter than the heart-rate icon this layout borrows from;
   // pull the number block up a few px.
   const int elecYNudge = -6;
-  graphics_draw_text(ctx, big, currentSidebarFont,
+  graphics_draw_text(ctx, big, bigFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
                            yPosition + layout.heartRateValueY + elecYNudge,
                            layout.textRectWidth, 20),
@@ -1270,19 +1271,24 @@ void Electricity_draw(GContext *ctx, int yPosition) {
   } else {
     strcpy(avgStr, "--");
   }
-  elec_draw_two_line(ctx, yPosition, nowStr, avgStr);
+  elec_draw_two_line(ctx, yPosition, nowStr, avgStr, currentSidebarFont);
 }
 
-// Formats an ElecDisplay into a big "hour" line ("14", or "14+" when the window
-// is on a later day) and a small price line.
-static void elec_format_window(const ElecDisplay *d, char *bigStr, size_t bigLen,
+// Formats an ElecDisplay into a big start-time line ("14" / "14:45", or with a
+// trailing "+" when the window is on a later day) and a small price line.
+// Returns true when the big line carries minutes (":mm"), so the caller can
+// shrink the font a notch — "14:45" is wider than the sidebar fits at full size.
+static bool elec_format_window(const ElecDisplay *d, char *bigStr, size_t bigLen,
                                char *smallStr, size_t smallLen) {
-  if (d->today) {
-    snprintf(bigStr, bigLen, "%d", d->startHour);
+  const char *suffix = d->today ? "" : "+";
+  bool hasMinutes = (d->startMin != 0);
+  if (hasMinutes) {
+    snprintf(bigStr, bigLen, "%d:%02d%s", d->startHour, d->startMin, suffix);
   } else {
-    snprintf(bigStr, bigLen, "%d+", d->startHour);
+    snprintf(bigStr, bigLen, "%d%s", d->startHour, suffix);
   }
   elec_format_price(d->avgCenti, settings.decimalSeparator, smallStr, smallLen);
+  return hasMinutes;
 }
 
 int NextCheap_getHeight() { return layout.heartRateHeight; }
@@ -1290,16 +1296,18 @@ int NextCheap_getHeight() { return layout.heartRateHeight; }
 void NextCheap_draw(GContext *ctx, int yPosition) {
   char bigStr[8], smallStr[12];
   ElecDisplay d;
+  bool hasMinutes = false;
   if (Electricity_getNextCheap(settings.elecQuietStart, settings.elecQuietEnd,
                                settings.elecCheapFactorPct,
                                settings.elecCheapFloorCenti,
                                settings.elecCheapCeilingCenti, &d)) {
-    elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
+    hasMinutes = elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
   } else {
     strcpy(bigStr, "--");
     strcpy(smallStr, "--");
   }
-  elec_draw_two_line(ctx, yPosition, bigStr, smallStr);
+  elec_draw_two_line(ctx, yPosition, bigStr, smallStr,
+                     hasMinutes ? smSidebarFont : currentSidebarFont);
 }
 
 int CheapestHour_getHeight() { return layout.heartRateHeight; }
@@ -1307,13 +1315,15 @@ int CheapestHour_getHeight() { return layout.heartRateHeight; }
 void CheapestHour_draw(GContext *ctx, int yPosition) {
   char bigStr[8], smallStr[12];
   ElecDisplay d;
+  bool hasMinutes = false;
   if (Electricity_getCheapestHour(settings.elecQuietStart, settings.elecQuietEnd, &d)) {
-    elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
+    hasMinutes = elec_format_window(&d, bigStr, sizeof(bigStr), smallStr, sizeof(smallStr));
   } else {
     strcpy(bigStr, "--");
     strcpy(smallStr, "--");
   }
-  elec_draw_two_line(ctx, yPosition, bigStr, smallStr);
+  elec_draw_two_line(ctx, yPosition, bigStr, smallStr,
+                     hasMinutes ? smSidebarFont : currentSidebarFont);
 }
 
 /***** Bitcoin (BTC USD) widget *****/

@@ -100,6 +100,7 @@ static void elec_fill_display(const ElecWindow *w, ElecDisplay *out) {
   time_t qstart = (time_t)(Electricity_info.startEpoch + (uint32_t)w->startIdx * 900);
   struct tm wt = *localtime(&qstart);
   out->startHour = wt.tm_hour;
+  out->startMin = wt.tm_min;
   out->avgCenti = w->avgCenti;
   time_t now = time(NULL);
   struct tm nt = *localtime(&now);

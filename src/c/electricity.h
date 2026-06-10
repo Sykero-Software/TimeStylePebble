@@ -36,6 +36,7 @@ bool Electricity_getTodayAverage(int16_t *out);
 // What the cheap-electricity widgets need to render one result.
 typedef struct {
   int     startHour;   // local hour (0-23) the window starts
+  int     startMin;    // local minute (0/15/30/45) the window starts
   bool    today;       // window starts on the current local day
   int16_t avgCenti;    // window average price (0.01 snt/kWh)
 } ElecDisplay;
