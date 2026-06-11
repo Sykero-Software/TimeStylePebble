@@ -8,10 +8,6 @@ var Clay = require('pebble-clay');
 var clayConfig = require('./config_clay');
 var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
 
-var CONFIG_VERSION = 15;
-// var BASE_CONFIG_URL = 'http://localhost:3001/';
-var BASE_CONFIG_URL = 'https://sykero-software.github.io/TimeStylePebble/';
-
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready',
   function (e) {
