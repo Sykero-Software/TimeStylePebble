@@ -7,6 +7,7 @@
   ],
   "private": true,
   "dependencies": {
+    "pebble-clay": "^1.0.4",
     "pebble-fctx": "^1.6.5"
   },
   "pebble": {
@@ -17,8 +18,12 @@
     "companionApp": {
       "android": {
         "apps": [
-          { "package": "fi.sykero.trackworktime" },
-          { "package": "fi.sykero.midirecorder" }
+          {
+            "package": "fi.sykero.trackworktime"
+          },
+          {
+            "package": "fi.sykero.midirecorder"
+          }
         ]
       }
     },
