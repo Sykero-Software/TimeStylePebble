@@ -122,21 +122,21 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Colors' },
       { type: 'color', messageKey: 'SettingColorTime', label: 'Time text color',
-        defaultValue: '0xFF5500', sunlight: false, allowGray: true },
+        defaultValue: '0x000000', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingColorBG', label: 'Background color',
-        defaultValue: '0x000000', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingColorSidebar', label: 'Sidebar color',
-        defaultValue: '0xFF5500', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingSidebarTextColor', label: 'Sidebar text color',
         defaultValue: '0xFFFFFF', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingColorSidebar', label: 'Sidebar color',
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingSidebarTextColor', label: 'Sidebar text color',
+        defaultValue: '0x000000', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingTwtStatusBgColor', label: 'Work-time status background',
-        defaultValue: '0x000000', sunlight: false, allowGray: true },
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingDateBgColor', label: 'Date background',
-        defaultValue: '0x000000', sunlight: false, allowGray: true },
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingSidebarBgColorLeft', label: 'Left sidebar widget-area background',
-        defaultValue: '0x000000', sunlight: false, allowGray: true },
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingSidebarBgColorRight', label: 'Right sidebar widget-area background',
-        defaultValue: '0x000000', sunlight: false, allowGray: true }
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true }
     ]
   },
 
@@ -145,9 +145,9 @@ module.exports = [
     type: 'section',
     items: [
       { type: 'heading', defaultValue: 'Widgets' },
-      { type: 'select', messageKey: 'SettingWidget0ID', label: 'Widget slot 1', defaultValue: 0, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget1ID', label: 'Widget slot 2', defaultValue: 0, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget2ID', label: 'Widget slot 3', defaultValue: 0, options: WIDGETS },
+      { type: 'select', messageKey: 'SettingWidget0ID', label: 'Widget slot 1', defaultValue: 15, options: WIDGETS },
+      { type: 'select', messageKey: 'SettingWidget1ID', label: 'Widget slot 2', defaultValue: 12, options: WIDGETS },
+      { type: 'select', messageKey: 'SettingWidget2ID', label: 'Widget slot 3', defaultValue: 17, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2_0ID', label: 'Widget slot 4', defaultValue: 0, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2_1ID', label: 'Widget slot 5', defaultValue: 0, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2_2ID', label: 'Widget slot 6', defaultValue: 0, options: WIDGETS },
@@ -184,7 +184,7 @@ module.exports = [
           { label: 'Bold Minute', value: '4' }
         ] },
       { type: 'radiogroup', messageKey: 'SettingBigDate', label: 'Large date above clock',
-        defaultValue: '0', options: [ { label: 'None', value: '0' }, { label: 'Show', value: '1' } ] },
+        defaultValue: '1', options: [ { label: 'None', value: '0' }, { label: 'Show', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingTwtShowRemaining', label: 'Work time display',
         defaultValue: '0', options: [ { label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingTwtTargetVibe', label: 'Vibrate when daily target reached',

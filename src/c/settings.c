@@ -27,20 +27,21 @@ void Settings_deinit() { Settings_saveToStorage(); }
 
 void Settings_loadFromStorage() {
   // Set defaults
-  settings.timeBgColor = GColorBlack;
   settings.sidebarTextColor = GColorBlack;
 
 #ifdef PBL_COLOR
-  settings.timeColor = GColorOrange;
-  settings.sidebarColor = GColorOrange;
+  settings.timeBgColor = GColorWhite;
+  settings.timeColor = GColorBlack;
+  settings.sidebarColor = GColorMintGreen;
 #else
+  settings.timeBgColor = GColorBlack;
   settings.timeColor = GColorWhite;
   settings.sidebarColor = GColorWhite;
 #endif
 
-  settings.widgets[0] = WEATHER_CURRENT;
-  settings.widgets[1] = EMPTY;
-  settings.widgets[2] = DATE;
+  settings.widgets[0] = BTC_PRICE;
+  settings.widgets[1] = HEARTRATE;
+  settings.widgets[2] = EURUSD_RATE;
 
   settings.activateDisconnectIcon = true;
   strncpy(settings.altclockName, "ALT", sizeof(settings.altclockName));
@@ -48,7 +49,7 @@ void Settings_loadFromStorage() {
   settings.decimalSeparator = '.';
   settings.showBatteryPct = true;
   settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
-  settings.showBigDate = false;   // opt-in default; appended field, no settings-version bump
+  settings.showBigDate = true;   // on by default (configurable); appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
   settings.twtTargetVibe = false;   // opt-in default; appended field, no settings-version bump
   settings.pollIntervalMin = 30;   // default; appended field, no settings-version bump
@@ -61,10 +62,17 @@ void Settings_loadFromStorage() {
   settings.elecCheapFactorPct = 70;
   settings.elecCheapFloorCenti = 200;  // 2.0 snt/kWh
   settings.elecCheapCeilingCenti = 800;// 8.0 snt/kWh
+#ifdef PBL_COLOR
+  settings.twtStatusBgColor = GColorMintGreen;    // light-green panels by default
+  settings.dateBgColor = GColorMintGreen;
+  settings.sidebarBgColorLeft = GColorMintGreen;
+  settings.sidebarBgColorRight = GColorMintGreen;
+#else
   settings.twtStatusBgColor = GColorClear;    // inherit watchface bg; appended field
   settings.dateBgColor = GColorClear;         // inherit watchface bg; appended field
   settings.sidebarBgColorLeft = GColorClear;  // inherit sidebarColor; appended field
   settings.sidebarBgColorRight = GColorClear; // inherit sidebarColor; appended field
+#endif
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
