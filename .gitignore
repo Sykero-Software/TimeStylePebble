@@ -3,6 +3,9 @@
 build
 .lock-waf*
 
+# Phone-side JS is generated from src/ts/ by tsc (see wscript compile_typescript).
+/src/pkjs/*.js
+
 # Ignore linked files/directories
 waf
 wscript

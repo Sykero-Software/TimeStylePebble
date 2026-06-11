@@ -509,6 +509,13 @@
     }
   },
   "devDependencies": {
-    "pebble-fctx-compiler": "^1.2.2"
+    "pebble-fctx-compiler": "^1.2.2",
+    "typescript": "^6.0.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "pretest": "tsc",
+    "test": "node --test tests/*.test.js"
   }
 }

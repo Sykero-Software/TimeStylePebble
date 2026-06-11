@@ -6,11 +6,31 @@
    The XML is a flat list of <BsWfs:BsWfsElement> with consecutive
    <BsWfs:Time> / <BsWfs:ParameterName> / <BsWfs:ParameterValue>. */
 
-var ELEMENT_RE =
+const ELEMENT_RE =
   /<BsWfs:Time>([^<]+)<\/BsWfs:Time>\s*<BsWfs:ParameterName>([^<]+)<\/BsWfs:ParameterName>\s*<BsWfs:ParameterValue>([^<]+)<\/BsWfs:ParameterValue>/g;
 
+interface Sample {
+  epoch: number;
+  value: number;
+}
+
+// The WeatherIcons map (injected so this stays pure/testable).
+export type WeatherIcons = Record<string, number>;
+
+export interface FmiForecast {
+  ok: true;
+  currentTemp: number;
+  currentSymbol: number | null;
+  forecastSymbol: number | null;
+  forecastHigh: number;
+  forecastLow: number;
+  uvIndex: number;
+}
+
+export type FmiForecastResult = FmiForecast | { ok: false };
+
 // Higher rank = more "notable" weather; used to pick the day's forecast symbol.
-function symbolRank(base) {
+export function symbolRank(base: number): number {
   if (base >= 71 && base <= 77) { return 9; }                    // thundershowers
   if (base >= 61) { return 8; }                                  // hail showers
   if (base >= 51) { return 7; }                                  // snow
@@ -24,50 +44,55 @@ function symbolRank(base) {
   return 0;                                                      // clear
 }
 
-function parseFmiForecast(xml, nowEpochSec) {
+function nearest(series: Sample[], nowEpochSec: number): Sample | null {
+  let best: Sample | null = null;
+  let bestDiff = Infinity;
+  for (const s of series) {
+    const d = Math.abs(s.epoch - nowEpochSec);
+    if (d < bestDiff) { bestDiff = d; best = s; }
+  }
+  return best;
+}
+
+export function parseFmiForecast(xml: unknown, nowEpochSec: number): FmiForecastResult {
   if (typeof xml !== 'string' || xml.indexOf('ExceptionReport') !== -1) {
     return { ok: false };
   }
 
-  var temps = [], syms = [], uvs = [];
-  var m;
+  const temps: Sample[] = [];
+  const syms: Sample[] = [];
+  const uvs: Sample[] = [];
+  let m: RegExpExecArray | null;
   ELEMENT_RE.lastIndex = 0;
   while ((m = ELEMENT_RE.exec(xml)) !== null) {
-    var epoch = Math.floor(Date.parse(m[1]) / 1000);
-    var value = parseFloat(m[3]);
+    const epoch = Math.floor(Date.parse(m[1]) / 1000);
+    const value = parseFloat(m[3]);
     if (isNaN(epoch) || isNaN(value)) { continue; }
-    if (m[2] === 'temperature') { temps.push({ epoch: epoch, value: value }); }
-    else if (m[2] === 'smartsymbol') { syms.push({ epoch: epoch, value: value }); }
-    else if (m[2] === 'uvindex') { uvs.push({ epoch: epoch, value: value }); }
+    if (m[2] === 'temperature') { temps.push({ epoch, value }); }
+    else if (m[2] === 'smartsymbol') { syms.push({ epoch, value }); }
+    else if (m[2] === 'uvindex') { uvs.push({ epoch, value }); }
   }
 
   if (temps.length === 0) { return { ok: false }; }
 
-  function nearest(series) {
-    var best = null, bestDiff = Infinity;
-    for (var i = 0; i < series.length; i++) {
-      var d = Math.abs(series[i].epoch - nowEpochSec);
-      if (d < bestDiff) { bestDiff = d; best = series[i]; }
-    }
-    return best;
-  }
+  const curTemp = nearest(temps, nowEpochSec)!;
+  const curSym = syms.length ? nearest(syms, nowEpochSec) : null;
+  const curUv = uvs.length ? nearest(uvs, nowEpochSec) : null;
 
-  var curTemp = nearest(temps);
-  var curSym = syms.length ? nearest(syms) : null;
-  var curUv = uvs.length ? nearest(uvs) : null;
-
-  var high = temps[0].value, low = temps[0].value;
-  for (var i = 1; i < temps.length; i++) {
+  let high = temps[0].value;
+  let low = temps[0].value;
+  for (let i = 1; i < temps.length; i++) {
     if (temps[i].value > high) { high = temps[i].value; }
     if (temps[i].value < low) { low = temps[i].value; }
   }
 
   // Forecast condition = the day's most notable weather, as a DAY-base code
   // (strip the +100 night offset so the icon mapping yields a daytime icon).
-  var fcSym = null, fcRank = -1;
-  for (var j = 0; j < syms.length; j++) {
-    var base = syms[j].value % 100;
-    var r = symbolRank(base);
+  let fcSym: number | null = null;
+  let fcRank = -1;
+  for (const s of syms) {
+    const base = s.value % 100;
+    const r = symbolRank(base);
     if (r > fcRank) { fcRank = r; fcSym = base; }
   }
 
@@ -78,16 +103,16 @@ function parseFmiForecast(xml, nowEpochSec) {
     forecastSymbol: fcSym,
     forecastHigh: Math.round(high),
     forecastLow: Math.round(low),
-    uvIndex: curUv ? Math.round(curUv.value) : 0
+    uvIndex: curUv ? Math.round(curUv.value) : 0,
   };
 }
 
 // Map an FMI smartsymbol code to a TimeStyle WeatherIcons value. `icons` is the
 // WeatherIcons map (injected so this stays pure/testable). Night = code >= 100.
-function smartSymbolToIcon(code, icons) {
+export function smartSymbolToIcon(code: unknown, icons: WeatherIcons): number {
   if (typeof code !== 'number' || isNaN(code)) { return icons.WEATHER_GENERIC; }
-  var night = code >= 100;
-  var base = code % 100;
+  const night = code >= 100;
+  const base = code % 100;
 
   switch (base) {
     case 1: case 2:
@@ -108,7 +133,3 @@ function smartSymbolToIcon(code, icons) {
   if (base >= 11 && base <= 39) { return icons.LIGHT_RAIN; }                 // 11-39 (minus heavy) rain/drizzle/showers
   return icons.WEATHER_GENERIC;
 }
-
-module.exports.parseFmiForecast = parseFmiForecast;
-module.exports.smartSymbolToIcon = smartSymbolToIcon;
-module.exports.symbolRank = symbolRank;

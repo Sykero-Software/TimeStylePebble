@@ -26,6 +26,7 @@ def configure(ctx):
 
 def build(ctx):
     patch_clay_for_new_platforms(ctx)
+    compile_typescript(ctx)
     ctx.load('pebble_sdk')
 
     build_worker = os.path.exists('worker_src')
@@ -61,6 +62,31 @@ def build(ctx):
     # to authorise the trackworktime companion to push TWT status to this
     # watchface via PebbleKit Android 2. Re-inject it into the .pbw here.
     ctx.add_post_fun(inject_companion_app)
+
+
+def compile_typescript(ctx):
+    """Compile the phone-side TypeScript (`src/ts/*.ts`) to CommonJS JS in
+    `src/pkjs/` *before* the SDK bundles `src/pkjs/**/*.js`.
+
+    The PKJS source lives in `src/ts/` as modern TypeScript; tsc (pinned to 6.x
+    in devDependencies, config in `tsconfig.json`) emits ES5/CommonJS 1:1 into
+    `src/pkjs/`, which the Pebble SDK's webpack pass then bundles exactly as it
+    would hand-written JS. The generated `src/pkjs/*.js` are gitignored — this
+    hook regenerates them on every build, so a clean checkout still bundles
+    correctly. A type error aborts the build (tsc has noEmitOnError).
+    """
+    import subprocess, os
+    root = ctx.path.abspath()
+    if not os.path.isdir(os.path.join(root, 'src', 'ts')):
+        return
+    tsc = os.path.join(root, 'node_modules', '.bin', 'tsc')
+    cmd = [tsc] if os.path.exists(tsc) else ['npx', 'tsc']
+    from waflib import Logs
+    Logs.pprint('CYAN', 'Compiling TypeScript (src/ts -> src/pkjs)')
+    try:
+        subprocess.run(cmd, cwd=root, check=True)
+    except subprocess.CalledProcessError:
+        ctx.fatal('TypeScript compilation failed')
 
 
 def patch_clay_for_new_platforms(ctx):
