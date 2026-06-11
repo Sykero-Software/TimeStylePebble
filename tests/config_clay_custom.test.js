@@ -5,10 +5,6 @@ const test = require('node:test');
 const assert = require('node:assert');
 const clayConfigCustom = require('../src/pkjs/config_clay_custom');
 
-// Must match WIDGET_KEYS in src/pkjs/config_clay_custom.js
-const WIDGET_KEYS = ['SettingWidget0ID', 'SettingWidget1ID', 'SettingWidget2ID',
-                     'SettingWidget2_0ID', 'SettingWidget2_1ID', 'SettingWidget2_2ID'];
-
 const GATED_KEYS = ['SettingUseMetric', 'weather_loc_mode', 'weather_datasource',
   'weather_loc', 'weather_loc_lat', 'weather_loc_lng',
   'SettingElecQuietStart', 'SettingElecQuietEnd', 'SettingElecCheapFactorPct',
@@ -33,7 +29,8 @@ function makeClay(widgetVals, opts) {
   opts = opts || {};
   const byKey = {};
   const byId = {};
-  WIDGET_KEYS.forEach((k, i) => { byKey[k] = makeItem(String(widgetVals[i] || 0)); });
+  // widgetList component value is the array of selected widget ids (ints)
+  byKey['WidgetList'] = makeItem((widgetVals || []).map((v) => parseInt(v, 10) || 0));
   GATED_KEYS.forEach((k) => { byKey[k] = makeItem(''); });
   byKey['weather_loc_mode'].value = opts.locMode || 'auto';
   byKey['SettingDisableAutobattery'].value = String(opts.autoBatteryDisabled ? 1 : 0);
@@ -165,8 +162,8 @@ test('battery style: hidden when no battery widget AND auto-battery off', () => 
 test('live change: selecting a weather widget reveals weather after re-render', () => {
   const c = render([]);
   assert.strictEqual(c.byId['heading-weather'].shown, false);
-  c.byKey['SettingWidget0ID'].value = '7';
-  c.byKey['SettingWidget0ID'].changeHandlers.forEach((fn) => fn());
+  c.byKey['WidgetList'].value = [7];
+  c.byKey['WidgetList'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byId['heading-weather'].shown, true);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
 });

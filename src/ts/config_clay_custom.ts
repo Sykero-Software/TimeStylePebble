@@ -15,7 +15,7 @@
    See docs/superpowers/specs/2026-06-11-timestyle-conditional-config-settings-design.md */
 
 interface ClayItem {
-  get(): string;
+  get(): any;
   show(): void;
   hide(): void;
   on(event: string, cb: () => void): void;
@@ -32,13 +32,14 @@ interface ClayConfigThis {
 function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   const clayConfig = this;
 
-  const WIDGET_KEYS = ['SettingWidget0ID', 'SettingWidget1ID', 'SettingWidget2ID',
-    'SettingWidget2_0ID', 'SettingWidget2_1ID', 'SettingWidget2_2ID'];
-
   function widgetIds(): number[] {
-    return WIDGET_KEYS.map((k) =>
-      // unparseable/empty slot -> 0 (Empty widget id)
-      parseInt(clayConfig.getItemByMessageKey(k).get(), 10) || 0);
+    const v = clayConfig.getItemByMessageKey('WidgetList').get();
+    if (!v || !v.length) { return []; }
+    const ids: number[] = [];
+    for (let i = 0; i < v.length; i++) {
+      ids.push(parseInt(v[i], 10) || 0);
+    }
+    return ids;
   }
   function has(ids: number[], set: number[]): boolean {
     return set.some((v) => ids.indexOf(v) !== -1);
@@ -91,7 +92,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   // has no AFTER_RENDER); items are show/hide-able and getters valid by then.
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, () => {
     update();
-    WIDGET_KEYS.concat(['weather_loc_mode', 'SettingDisableAutobattery'])
+    ['WidgetList', 'weather_loc_mode', 'SettingDisableAutobattery']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', update); });
   });
 }
