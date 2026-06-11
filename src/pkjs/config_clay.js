@@ -196,7 +196,7 @@ module.exports = [
   {
     type: 'section',
     items: [
-      { type: 'heading', defaultValue: 'Weather' },
+      { type: 'heading', id: 'heading-weather', defaultValue: 'Weather' },
       { type: 'radiogroup', messageKey: 'SettingUseMetric', label: 'Units',
         defaultValue: '1', options: [ { label: 'Celsius', value: '1' }, { label: 'Fahrenheit', value: '0' } ] },
       { type: 'radiogroup', messageKey: 'weather_loc_mode', label: 'Location',
@@ -270,7 +270,7 @@ module.exports = [
   {
     type: 'section',
     items: [
-      { type: 'heading', defaultValue: 'Electricity' },
+      { type: 'heading', id: 'heading-electricity', defaultValue: 'Electricity' },
       { type: 'input', messageKey: 'SettingElecQuietStart', label: 'Quiet hours start (0-23)',
         attributes: { type: 'number', min: 0, max: 23, placeholder: '23' }, defaultValue: '23' },
       { type: 'input', messageKey: 'SettingElecQuietEnd', label: 'Quiet hours end (0-23)',
