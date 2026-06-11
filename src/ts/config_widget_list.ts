@@ -162,12 +162,18 @@ const widgetListComponent = {
     '<div class="wl-list"></div>' +
     '<button type="button" class="wl-add">+ Add widget</button>' +
     '</div>',
+  // NOTE: Clay's base theme styles `button { min-width: 12rem; margin: 0 auto }`
+  // (elements/_button.scss). Our row buttons MUST override min-width (else each is
+  // forced to 12rem, overflowing the row and squeezing the select to zero width)
+  // and neutralize the auto margins. `.wl-row button` (specificity 0,1,1) beats
+  // Clay's `button` (0,0,1), so these win regardless of stylesheet order.
   style:
-    '.wl-row{display:flex;align-items:center;margin:0 0 6px 10px}' +
-    '.wl-row .wl-sel{flex:1;min-width:0;margin-right:6px}' +
-    '.wl-row button{width:36px;height:36px;margin-left:4px;flex:none}' +
+    '.wl-row{display:flex;align-items:center;margin:0 0 8px 0}' +
+    '.wl-row .wl-sel{flex:1 1 auto;min-width:0;height:2.8rem;margin:0}' +
+    '.wl-row button{flex:0 0 auto;min-width:0;width:2.8rem;height:2.8rem;' +
+      'margin:0 0 0 6px;padding:0}' +
     '.wl-row button[disabled]{opacity:.35}' +
-    '.wl-add{margin:4px 0 10px 10px}',
+    '.wl-add{margin:8px 0 10px 0}',
   manipulator: {
     get: function(this: any): number[] {
       return this._wlCurrentIds ? this._wlCurrentIds() : [];
