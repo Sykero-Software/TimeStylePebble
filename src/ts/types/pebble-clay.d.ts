@@ -22,6 +22,7 @@ declare module 'pebble-clay' {
      *   shape (Clay's serialize form) rather than `{ key: X }`.
      */
     getSettings(response: string, convert?: boolean): Record<string, any>;
+    registerComponent(component: unknown): void;
   }
 
   export = Clay;

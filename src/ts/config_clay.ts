@@ -16,37 +16,6 @@ interface ClayOption {
   value: number | string;
 }
 
-// Widget slot options (id per slot). Mirrors docs/_includes/widget_selector.html.
-// 19 real options including Empty=0. Extracted once and reused for all 6 slots.
-const WIDGETS: ClayOption[] = [
-  { label: 'Empty', value: 0 },
-  // Time & Date
-  { label: 'Alternate Time Zone', value: 3 },
-  { label: 'Seconds', value: 5 },
-  { label: 'Swatch Internet Time', value: 11 },
-  { label: "Today's Date", value: 4 },
-  { label: 'Week Number', value: 6 },
-  // Weather
-  { label: 'Current Weather', value: 7 },
-  { label: "Today's Forecast", value: 8 },
-  { label: 'UV Index', value: 13 },
-  // Sahko (electricity)
-  { label: 'Porssisahko', value: 14 },
-  { label: 'Seuraava halpa sahko', value: 18 },
-  { label: 'Halvin sahkotunti', value: 19 },
-  // Crypto
-  { label: 'Bitcoin (BTC)', value: 15 },
-  { label: 'Monero (XMR)', value: 16 },
-  // Currency
-  { label: 'EUR/USD rate', value: 17 },
-  // Health
-  { label: 'Sleep', value: 9 },
-  { label: 'Steps', value: 10 },
-  { label: 'Heart Rate', value: 12 },
-  // Status
-  { label: 'Battery', value: 2 },
-];
-
 // Language options. Mirrors docs/_includes/config_common_options.html:349-387.
 const LANGUAGES: ClayOption[] = [
   { label: 'English (Default)', value: 0 },
@@ -150,12 +119,7 @@ const config = [
     type: 'section',
     items: [
       { type: 'heading', defaultValue: 'Widgets' },
-      { type: 'select', messageKey: 'SettingWidget0ID', label: 'Widget slot 1', defaultValue: 12, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget1ID', label: 'Widget slot 2', defaultValue: 15, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget2ID', label: 'Widget slot 3', defaultValue: 17, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget2_0ID', label: 'Widget slot 4', defaultValue: 0, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget2_1ID', label: 'Widget slot 5', defaultValue: 0, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget2_2ID', label: 'Widget slot 6', defaultValue: 0, options: WIDGETS },
+      { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
       { type: 'radiogroup', messageKey: 'SettingSecondaryAlwaysOn', label: 'Show secondary widgets',
         defaultValue: '1', options: [{ label: 'Always', value: '1' }, { label: 'With status only', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingSidebarOnLeft', label: 'Sidebar position',

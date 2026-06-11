@@ -9,8 +9,11 @@ import { COINS } from './crypto_parse';
 import Clay from 'pebble-clay';
 import clayConfig from './config_clay';
 import clayConfigCustom from './config_clay_custom';
+import widgetListComponent from './config_widget_list';
+import { listToSlots } from './widget_slots';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
+clay.registerComponent(widgetListComponent);
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', () => {
@@ -110,8 +113,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
   const STRING_KEYS: Record<string, boolean> = { SettingAltClockName: true, SettingDecimalSep: true };
   ['SettingLanguageID', 'SettingShowLeadingZero', 'SettingClockFontId', 'SettingDisconnectIcon',
     'SettingBluetoothVibe', 'SettingMidiVibe', 'SettingBigDate', 'SettingTwtShowRemaining',
-    'SettingTwtTargetVibe', 'SettingHourlyVibe', 'SettingWidget0ID', 'SettingWidget1ID',
-    'SettingWidget2ID', 'SettingWidget2_0ID', 'SettingWidget2_1ID', 'SettingWidget2_2ID',
+    'SettingTwtTargetVibe', 'SettingHourlyVibe',
     'SettingSecondaryAlwaysOn', 'SettingSidebarOnLeft', 'SettingUseLargeFonts', 'SettingUseMetric',
     'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
     'SettingDecimalSep', 'SettingHealthUseDistance', 'SettingHealthUseRestfulSleep',
@@ -146,6 +148,15 @@ Pebble.addEventListener('webviewclosed', (e) => {
     window.localStorage.setItem('weather_datasource', s.weather_datasource);
     window.localStorage.setItem('weather_api_key', '');
   }
+
+  // widget list -> the 6 fixed slot keys the watch reads (pad/truncate to 6).
+  const slots = listToSlots(s.WidgetList);
+  dict.SettingWidget0ID = slots[0];
+  dict.SettingWidget1ID = slots[1];
+  dict.SettingWidget2ID = slots[2];
+  dict.SettingWidget2_0ID = slots[3];
+  dict.SettingWidget2_1ID = slots[4];
+  dict.SettingWidget2_2ID = slots[5];
 
   // derive disable_* flags from selected widget IDs (preserved from old index.js)
   const widgetIDs = [dict.SettingWidget0ID, dict.SettingWidget1ID, dict.SettingWidget2ID,
