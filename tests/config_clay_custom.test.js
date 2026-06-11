@@ -40,11 +40,23 @@ function makeClay(widgetVals, opts) {
   byId['heading-weather'] = makeItem('');
   byId['heading-electricity'] = makeItem('');
   return {
-    EVENTS: { AFTER_RENDER: 'AFTER_RENDER' },
-    _render: null,
+    // Mirror Clay 1.0.4's real event set (lib/clay-config.js). There is NO
+    // AFTER_RENDER — using a missing constant passes `undefined` to on(), which
+    // Clay's _transformEventNames crashes on (`undefined.split`). The mock below
+    // reproduces that crash so a wrong event constant fails the tests.
+    EVENTS: { BEFORE_BUILD: 'BEFORE_BUILD', AFTER_BUILD: 'AFTER_BUILD',
+              BEFORE_DESTROY: 'BEFORE_DESTROY', AFTER_DESTROY: 'AFTER_DESTROY' },
+    _handlers: {},
     getItemByMessageKey(k) { return byKey[k]; },
     getItemById(i) { return byId[i]; },
-    on(ev, fn) { if (ev === 'AFTER_RENDER') { this._render = fn; } },
+    on(ev, fn) {
+      // ClayEvents.on() does events.split(' ') immediately -> TypeError if ev is
+      // undefined (the AFTER_RENDER bug). Reproduce that here.
+      if (typeof ev !== 'string') {
+        throw new TypeError("Cannot read properties of undefined (reading 'split')");
+      }
+      this._handlers[ev] = fn;
+    },
     byKey,
     byId
   };
@@ -53,7 +65,10 @@ function makeClay(widgetVals, opts) {
 function render(widgetVals, opts) {
   const clay = makeClay(widgetVals, opts);
   clayConfigCustom.call(clay, {});  // minified arg unused by logic
-  clay._render();                    // simulate Clay firing AFTER_RENDER
+  // Clay fires AFTER_BUILD once items are built; simulate it.
+  assert.ok(clay._handlers.AFTER_BUILD,
+    'custom fn must register an AFTER_BUILD handler');
+  clay._handlers.AFTER_BUILD();
   return clay;
 }
 

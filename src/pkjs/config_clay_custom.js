@@ -69,7 +69,9 @@ module.exports = function clayConfigCustom(minified) {
     toggle(key('SettingShowBatteryPct'), has(ids, [2]) || autoBattery);
   }
 
-  clayConfig.on(clayConfig.EVENTS.AFTER_RENDER, function () {
+  // AFTER_BUILD fires once items are built and have initial values (Clay 1.0.4
+  // has no AFTER_RENDER); items are show/hide-able and getters valid by then.
+  clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function () {
     update();
     WIDGET_KEYS.concat(['weather_loc_mode', 'SettingDisableAutobattery'])
       .forEach(function (k) { clayConfig.getItemByMessageKey(k).on('change', update); });
