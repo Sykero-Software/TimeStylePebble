@@ -39,14 +39,15 @@ void Settings_loadFromStorage() {
   settings.sidebarColor = GColorWhite;
 #endif
 
-  settings.widgets[0] = BTC_PRICE;
-  settings.widgets[1] = HEARTRATE;
+  settings.widgets[0] = HEARTRATE;
+  settings.widgets[1] = BTC_PRICE;
   settings.widgets[2] = EURUSD_RATE;
 
   settings.activateDisconnectIcon = true;
   strncpy(settings.altclockName, "ALT", sizeof(settings.altclockName));
   settings.altclockOffset = 0;
   settings.decimalSeparator = '.';
+  settings.clockFontId = FONT_SETTING_LECO;   // LECO clock font by default (configurable)
   settings.showBatteryPct = true;
   settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
   settings.showBigDate = true;   // on by default (configurable); appended field, no settings-version bump

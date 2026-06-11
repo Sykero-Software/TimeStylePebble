@@ -145,8 +145,8 @@ module.exports = [
     type: 'section',
     items: [
       { type: 'heading', defaultValue: 'Widgets' },
-      { type: 'select', messageKey: 'SettingWidget0ID', label: 'Widget slot 1', defaultValue: 15, options: WIDGETS },
-      { type: 'select', messageKey: 'SettingWidget1ID', label: 'Widget slot 2', defaultValue: 12, options: WIDGETS },
+      { type: 'select', messageKey: 'SettingWidget0ID', label: 'Widget slot 1', defaultValue: 12, options: WIDGETS },
+      { type: 'select', messageKey: 'SettingWidget1ID', label: 'Widget slot 2', defaultValue: 15, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2ID', label: 'Widget slot 3', defaultValue: 17, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2_0ID', label: 'Widget slot 4', defaultValue: 0, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2_1ID', label: 'Widget slot 5', defaultValue: 0, options: WIDGETS },
@@ -176,7 +176,7 @@ module.exports = [
       { type: 'radiogroup', messageKey: 'SettingShowLeadingZero', label: 'Leading zero',
         defaultValue: '0', options: [ { label: 'No', value: '0' }, { label: 'Yes', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingClockFontId', label: 'Clock font',
-        defaultValue: '0', options: [
+        defaultValue: '1', options: [
           { label: 'Default', value: '0' },
           { label: 'LECO', value: '1' },
           { label: 'Bold', value: '2' },
