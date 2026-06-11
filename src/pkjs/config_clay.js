@@ -152,19 +152,19 @@ module.exports = [
       { type: 'select', messageKey: 'SettingWidget2_1ID', label: 'Widget slot 5', defaultValue: 0, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2_2ID', label: 'Widget slot 6', defaultValue: 0, options: WIDGETS },
       { type: 'radiogroup', messageKey: 'SettingSecondaryAlwaysOn', label: 'Show secondary widgets',
-        defaultValue: 1, options: [ { label: 'Always', value: 1 }, { label: 'With status only', value: 0 } ] },
+        defaultValue: '1', options: [ { label: 'Always', value: '1' }, { label: 'With status only', value: '0' } ] },
       { type: 'radiogroup', messageKey: 'SettingSidebarOnLeft', label: 'Sidebar position',
-        defaultValue: 1, options: [ { label: 'Left', value: 1 }, { label: 'Right', value: 0 } ] },
+        defaultValue: '1', options: [ { label: 'Left', value: '1' }, { label: 'Right', value: '0' } ] },
       { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
-        defaultValue: 0, options: [ { label: 'Large', value: 1 }, { label: 'Normal', value: 0 } ] },
+        defaultValue: '0', options: [ { label: 'Large', value: '1' }, { label: 'Normal', value: '0' } ] },
       { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',
-        defaultValue: 1, options: [ { label: 'Icon & percent', value: 1 }, { label: 'Icon only', value: 0 } ] },
+        defaultValue: '1', options: [ { label: 'Icon & percent', value: '1' }, { label: 'Icon only', value: '0' } ] },
       { type: 'radiogroup', messageKey: 'SettingDisableAutobattery', label: 'Automatic battery meter (at 10%)',
-        defaultValue: 0, options: [ { label: 'Automatic (on)', value: 0 }, { label: 'Never (off)', value: 1 } ] },
+        defaultValue: '0', options: [ { label: 'Automatic (on)', value: '0' }, { label: 'Never (off)', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingHealthUseDistance', label: 'Steps widget displays',
-        defaultValue: 0, options: [ { label: 'Number of steps', value: 0 }, { label: 'Distance', value: 1 } ] },
+        defaultValue: '0', options: [ { label: 'Number of steps', value: '0' }, { label: 'Distance', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingHealthUseRestfulSleep', label: 'Sleep widget uses',
-        defaultValue: 0, options: [ { label: 'Total Sleep', value: 0 }, { label: 'Restful Sleep', value: 1 } ] }
+        defaultValue: '0', options: [ { label: 'Total Sleep', value: '0' }, { label: 'Restful Sleep', value: '1' } ] }
     ]
   },
 
@@ -174,21 +174,21 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Time Display' },
       { type: 'radiogroup', messageKey: 'SettingShowLeadingZero', label: 'Leading zero',
-        defaultValue: 0, options: [ { label: 'No', value: 0 }, { label: 'Yes', value: 1 } ] },
+        defaultValue: '0', options: [ { label: 'No', value: '0' }, { label: 'Yes', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingClockFontId', label: 'Clock font',
-        defaultValue: 0, options: [
-          { label: 'Default', value: 0 },
-          { label: 'LECO', value: 1 },
-          { label: 'Bold', value: 2 },
-          { label: 'Bold Hour', value: 3 },
-          { label: 'Bold Minute', value: 4 }
+        defaultValue: '0', options: [
+          { label: 'Default', value: '0' },
+          { label: 'LECO', value: '1' },
+          { label: 'Bold', value: '2' },
+          { label: 'Bold Hour', value: '3' },
+          { label: 'Bold Minute', value: '4' }
         ] },
       { type: 'radiogroup', messageKey: 'SettingBigDate', label: 'Large date above clock',
-        defaultValue: 0, options: [ { label: 'None', value: 0 }, { label: 'Show', value: 1 } ] },
+        defaultValue: '0', options: [ { label: 'None', value: '0' }, { label: 'Show', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingTwtShowRemaining', label: 'Work time display',
-        defaultValue: 0, options: [ { label: 'Worked', value: 0 }, { label: 'Remaining', value: 1 } ] },
+        defaultValue: '0', options: [ { label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' } ] },
       { type: 'radiogroup', messageKey: 'SettingTwtTargetVibe', label: 'Vibrate when daily target reached',
-        defaultValue: 0, options: [ { label: 'None', value: 0 }, { label: 'Vibrate', value: 1 } ] }
+        defaultValue: '0', options: [ { label: 'None', value: '0' }, { label: 'Vibrate', value: '1' } ] }
     ]
   },
 
@@ -198,7 +198,7 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Weather' },
       { type: 'radiogroup', messageKey: 'SettingUseMetric', label: 'Units',
-        defaultValue: 1, options: [ { label: 'Celsius', value: 1 }, { label: 'Fahrenheit', value: 0 } ] },
+        defaultValue: '1', options: [ { label: 'Celsius', value: '1' }, { label: 'Fahrenheit', value: '0' } ] },
       { type: 'radiogroup', messageKey: 'weather_loc_mode', label: 'Location',
         defaultValue: 'auto', options: [ { label: 'Automatic (GPS)', value: 'auto' }, { label: 'Manual', value: 'manual' } ] },
       { type: 'input', messageKey: 'weather_loc', label: 'Manual location label',
@@ -221,9 +221,9 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Bluetooth' },
       { type: 'radiogroup', messageKey: 'SettingDisconnectIcon', label: 'Disconnect icon',
-        defaultValue: 1, options: [ { label: 'Show', value: 1 }, { label: 'Hide', value: 0 } ] },
+        defaultValue: '1', options: [ { label: 'Show', value: '1' }, { label: 'Hide', value: '0' } ] },
       { type: 'radiogroup', messageKey: 'SettingBluetoothVibe', label: 'Disconnect vibration',
-        defaultValue: 0, options: [ { label: 'Vibrate', value: 1 }, { label: 'None', value: 0 } ] }
+        defaultValue: '0', options: [ { label: 'Vibrate', value: '1' }, { label: 'None', value: '0' } ] }
     ]
   },
 
@@ -233,7 +233,7 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'MIDI' },
       { type: 'radiogroup', messageKey: 'SettingMidiVibe', label: 'MIDI recording start/stop',
-        defaultValue: 0, options: [ { label: 'Vibrate', value: 1 }, { label: 'None', value: 0 } ] }
+        defaultValue: '0', options: [ { label: 'Vibrate', value: '1' }, { label: 'None', value: '0' } ] }
     ]
   },
 
@@ -243,10 +243,10 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Notification' },
       { type: 'radiogroup', messageKey: 'SettingHourlyVibe', label: 'Vibration on interval',
-        defaultValue: 0, options: [
-          { label: 'No vibration', value: 0 },
-          { label: 'Every 30 minutes', value: 2 },
-          { label: 'Every hour', value: 1 }
+        defaultValue: '0', options: [
+          { label: 'No vibration', value: '0' },
+          { label: 'Every 30 minutes', value: '2' },
+          { label: 'Every hour', value: '1' }
         ] }
     ]
   },

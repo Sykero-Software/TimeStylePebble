@@ -108,7 +108,10 @@ Pebble.addEventListener('webviewclosed', function (e) {
     if (s[k] !== undefined && s[k] !== null) { dict[k] = colorInt(s[k]); }
   });
 
-  // straight-through int/string settings (Clay options already carry the right value)
+  // Straight-through settings. Clay returns radiogroup/select/input values as
+  // strings (DOM values), so coerce every numeric watch key to int; only genuine
+  // string settings (alt-clock name, decimal separator char) stay as-is.
+  var STRING_KEYS = { SettingAltClockName: true, SettingDecimalSep: true };
   ['SettingLanguageID','SettingShowLeadingZero','SettingClockFontId','SettingDisconnectIcon',
    'SettingBluetoothVibe','SettingMidiVibe','SettingBigDate','SettingTwtShowRemaining',
    'SettingTwtTargetVibe','SettingHourlyVibe','SettingWidget0ID','SettingWidget1ID',
@@ -118,13 +121,8 @@ Pebble.addEventListener('webviewclosed', function (e) {
    'SettingDecimalSep','SettingHealthUseDistance','SettingHealthUseRestfulSleep',
    'SettingPollIntervalMin','SettingElecQuietStart','SettingElecQuietEnd',
    'SettingElecCheapFactorPct'].forEach(function (k) {
-    if (s[k] !== undefined && s[k] !== null && s[k] !== '') { dict[k] = s[k]; }
-  });
-
-  // number coercions (Clay number inputs come back as strings)
-  ['SettingPollIntervalMin','SettingElecQuietStart','SettingElecQuietEnd',
-   'SettingElecCheapFactorPct','SettingAltClockOffset'].forEach(function (k) {
-    if (dict[k] !== undefined) { dict[k] = parseInt(dict[k], 10); }
+    if (s[k] === undefined || s[k] === null || s[k] === '') { return; }
+    dict[k] = STRING_KEYS[k] ? s[k] : parseInt(s[k], 10);
   });
   if (dict.SettingPollIntervalMin === undefined || isNaN(dict.SettingPollIntervalMin)) {
     dict.SettingPollIntervalMin = 30;
