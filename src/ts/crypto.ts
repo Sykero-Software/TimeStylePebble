@@ -4,60 +4,55 @@
 /* Crypto/currency prices (USD) via CoinGecko. One request per poll fetches all
    enabled coins; each value is pushed to the watch ONLY when its displayed
    value changes — no needless Bluetooth wakeups. Coin table + parsing live in
-   crypto_parse.js (pure, unit-tested). */
+   crypto_parse.ts (pure, unit-tested). */
 
-var weather = require('./weather');          // reuse xhrRequest helper
-var parser = require('./crypto_parse');
+import * as weather from './weather';          // reuse xhrRequest helper
+import { COINS, parseWire, Coin } from './crypto_parse';
 
-var BASE_URL = 'https://api.coingecko.com/api/v3/simple/price';
+const BASE_URL = 'https://api.coingecko.com/api/v3/simple/price';
 
-function updateCrypto(forceUpdate) {
-  var coins = parser.COINS.filter(function (c) {
-    return window.localStorage.getItem(c.disableKey) !== 'yes';
-  });
+export function updateCrypto(forceUpdate?: boolean): void {
+  const coins = COINS.filter((c) => window.localStorage.getItem(c.disableKey) !== 'yes');
   if (coins.length === 0) {
     return;
   }
-  var url = BASE_URL + '?ids=' + coins.map(function (c) {
-    return c.geckoId;
-  }).join(',') + '&vs_currencies=usd&precision=4';
+  const url = BASE_URL + '?ids=' + coins.map((c) => c.geckoId).join(',') +
+    '&vs_currencies=usd&precision=4';
 
-  weather.xhrRequest(url, 'GET', function (responseText) {
-    var json;
+  weather.xhrRequest(url, 'GET', (responseText) => {
+    let json;
     try {
       json = JSON.parse(responseText);
     } catch (e) {
       console.log('crypto: parse error ' + e);
       return;
     }
-    var dict = {};
-    var pending = [];
-    coins.forEach(function (c) {
-      var wire = parser.parseWire(json, c);
+    const dict: Record<string, number> = {};
+    const pending: { coin: Coin; wire: number }[] = [];
+    coins.forEach((c) => {
+      const wire = parseWire(json, c);
       if (wire === null) {
         console.log('crypto: no usable ' + c.geckoId + ' price in response');
         return;
       }
-      var last = window.localStorage.getItem(c.lastKey);
+      const last = window.localStorage.getItem(c.lastKey);
       if (!forceUpdate && last !== null && parseInt(last, 10) === wire) {
         return;
       }
       dict[c.messageKey] = wire;
-      pending.push({ coin: c, wire: wire });
+      pending.push({ coin: c, wire });
     });
     if (pending.length === 0) {
       console.log('crypto: nothing changed, not sending');
       return;
     }
-    Pebble.sendAppMessage(dict, function () {
-      pending.forEach(function (p) {
+    Pebble.sendAppMessage(dict, () => {
+      pending.forEach((p) => {
         window.localStorage.setItem(p.coin.lastKey, String(p.wire));
       });
       console.log('crypto: sent ' + JSON.stringify(dict));
-    }, function (e) {
+    }, () => {
       console.log('crypto: failed to send to Pebble');
     });
   });
 }
-
-module.exports.updateCrypto = updateCrypto;

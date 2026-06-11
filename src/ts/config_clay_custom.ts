@@ -4,41 +4,59 @@
 /* Clay custom config function: hides settings that are irrelevant under the
    current widget selection, and reveals them live as widgets / gating settings
    change. Runs INSIDE the config webview (Clay serializes it via toSource), so it
-   MUST be fully self-contained — no require(), no closure over pkjs scope, ES5
-   only. Dependency rationale (verified against src/c/sidebar_widgets.c):
+   MUST be fully self-contained — no require(), no closure over pkjs scope, and
+   the EMITTED code must not reference TS downlevel helpers (__spreadArray etc.),
+   which live in module scope and would be undefined once the function is
+   re-evaluated in the webview. Keep to native array methods; avoid spread /
+   destructuring. Dependency rationale (verified against src/c/sidebar_widgets.c):
      - widget 14 (current price) uses none of the electricity inputs
      - widget 19 (cheapest hour) uses quiet hours only
      - widget 18 (next cheap) uses quiet hours + cheap factor/floor/ceiling
    See docs/superpowers/specs/2026-06-11-timestyle-conditional-config-settings-design.md */
 
+interface ClayItem {
+  get(): string;
+  show(): void;
+  hide(): void;
+  on(event: string, cb: () => void): void;
+}
+
+interface ClayConfigThis {
+  getItemByMessageKey(key: string): ClayItem;
+  getItemById(id: string): ClayItem | undefined;
+  on(event: string, cb: () => void): void;
+  EVENTS: { AFTER_BUILD: string };
+}
+
 // `minified` is Clay's minified.js helper passed to every custom fn; unused here.
-module.exports = function clayConfigCustom(minified) {
-  var clayConfig = this;
+function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
+  const clayConfig = this;
 
-  var WIDGET_KEYS = ['SettingWidget0ID', 'SettingWidget1ID', 'SettingWidget2ID',
-                     'SettingWidget2_0ID', 'SettingWidget2_1ID', 'SettingWidget2_2ID'];
+  const WIDGET_KEYS = ['SettingWidget0ID', 'SettingWidget1ID', 'SettingWidget2ID',
+    'SettingWidget2_0ID', 'SettingWidget2_1ID', 'SettingWidget2_2ID'];
 
-  function widgetIds() {
-    return WIDGET_KEYS.map(function (k) {
+  function widgetIds(): number[] {
+    return WIDGET_KEYS.map((k) =>
       // unparseable/empty slot -> 0 (Empty widget id)
-      return parseInt(clayConfig.getItemByMessageKey(k).get(), 10) || 0;
-    });
+      parseInt(clayConfig.getItemByMessageKey(k).get(), 10) || 0);
   }
-  function has(ids, set) {
-    return set.some(function (v) { return ids.indexOf(v) !== -1; });
+  function has(ids: number[], set: number[]): boolean {
+    return set.some((v) => ids.indexOf(v) !== -1);
   }
-  function key(k) { return clayConfig.getItemByMessageKey(k); }
-  function byId(i) { return clayConfig.getItemById(i); }
-  function toggle(item, on) { if (item) { if (on) { item.show(); } else { item.hide(); } } }
+  function key(k: string): ClayItem { return clayConfig.getItemByMessageKey(k); }
+  function byId(i: string): ClayItem | undefined { return clayConfig.getItemById(i); }
+  function toggle(item: ClayItem | undefined, on: boolean): void {
+    if (item) { if (on) { item.show(); } else { item.hide(); } }
+  }
 
-  function update() {
-    var ids = widgetIds();
-    var weather = has(ids, [7, 8, 13]);
-    var temp = has(ids, [7, 8]);
-    var manual = weather && key('weather_loc_mode').get() === 'manual';
-    var cheapHour = has(ids, [18, 19]);
-    var nextCheap = has(ids, [18]);
-    var autoBattery = parseInt(key('SettingDisableAutobattery').get(), 10) === 0;
+  function update(): void {
+    const ids = widgetIds();
+    const weather = has(ids, [7, 8, 13]);
+    const temp = has(ids, [7, 8]);
+    const manual = weather && key('weather_loc_mode').get() === 'manual';
+    const cheapHour = has(ids, [18, 19]);
+    const nextCheap = has(ids, [18]);
+    const autoBattery = parseInt(key('SettingDisableAutobattery').get(), 10) === 0;
 
     // Weather
     toggle(byId('heading-weather'), weather);
@@ -71,9 +89,11 @@ module.exports = function clayConfigCustom(minified) {
 
   // AFTER_BUILD fires once items are built and have initial values (Clay 1.0.4
   // has no AFTER_RENDER); items are show/hide-able and getters valid by then.
-  clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function () {
+  clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, () => {
     update();
     WIDGET_KEYS.concat(['weather_loc_mode', 'SettingDisableAutobattery'])
-      .forEach(function (k) { clayConfig.getItemByMessageKey(k).on('change', update); });
+      .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', update); });
   });
-};
+}
+
+export = clayConfigCustom;

@@ -11,9 +11,14 @@
    index.js webviewclosed handler (written to localStorage; never sent to the
    watch). */
 
+interface ClayOption {
+  label: string;
+  value: number | string;
+}
+
 // Widget slot options (id per slot). Mirrors docs/_includes/widget_selector.html.
 // 19 real options including Empty=0. Extracted once and reused for all 6 slots.
-var WIDGETS = [
+const WIDGETS: ClayOption[] = [
   { label: 'Empty', value: 0 },
   // Time & Date
   { label: 'Alternate Time Zone', value: 3 },
@@ -39,11 +44,11 @@ var WIDGETS = [
   { label: 'Steps', value: 10 },
   { label: 'Heart Rate', value: 12 },
   // Status
-  { label: 'Battery', value: 2 }
+  { label: 'Battery', value: 2 },
 ];
 
 // Language options. Mirrors docs/_includes/config_common_options.html:349-387.
-var LANGUAGES = [
+const LANGUAGES: ClayOption[] = [
   { label: 'English (Default)', value: 0 },
   { label: 'Bahasa Indonesia', value: 30 },
   { label: 'Catala', value: 15 },
@@ -80,12 +85,12 @@ var LANGUAGES = [
   { label: 'Zhongwen (requires language pack)', value: 29 },
   { label: 'Nihongo (requires language pack)', value: 34 },
   { label: 'Hangugeo (requires language pack)', value: 35 },
-  { label: 'Ivrit (requires language pack)', value: 36 }
+  { label: 'Ivrit (requires language pack)', value: 36 },
 ];
 
 // Alternate-clock timezone offsets. Mirrors config_common_options.html:127-164.
 // Commented-out half-hour zones are intentionally omitted.
-var ALT_CLOCK_OFFSETS = [
+const ALT_CLOCK_OFFSETS: ClayOption[] = [
   { label: 'UTC-12:00 (Baker Island)', value: -12 },
   { label: 'UTC-11:00 (American Samoa)', value: -11 },
   { label: 'UTC-10:00 (Hawaii, Tahiti)', value: -10 },
@@ -112,10 +117,10 @@ var ALT_CLOCK_OFFSETS = [
   { label: 'UTC+11:00 (Solomon Islands, Magadan)', value: 11 },
   { label: 'UTC+12:00 (Auckland, Fiji)', value: 12 },
   { label: 'UTC+13:00 (Tonga, Phoenix Islands)', value: 13 },
-  { label: 'UTC+14:00 (Kiritimati, Line Islands)', value: 14 }
+  { label: 'UTC+14:00 (Kiritimati, Line Islands)', value: 14 },
 ];
 
-module.exports = [
+const config = [
   // ---------------------------------------------------------------- Colors
   {
     type: 'section',
@@ -136,8 +141,8 @@ module.exports = [
       { type: 'color', messageKey: 'SettingSidebarBgColorLeft', label: 'Left sidebar widget-area background',
         defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingSidebarBgColorRight', label: 'Right sidebar widget-area background',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true }
-    ]
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+    ],
   },
 
   // --------------------------------------------------------------- Widgets
@@ -152,20 +157,20 @@ module.exports = [
       { type: 'select', messageKey: 'SettingWidget2_1ID', label: 'Widget slot 5', defaultValue: 0, options: WIDGETS },
       { type: 'select', messageKey: 'SettingWidget2_2ID', label: 'Widget slot 6', defaultValue: 0, options: WIDGETS },
       { type: 'radiogroup', messageKey: 'SettingSecondaryAlwaysOn', label: 'Show secondary widgets',
-        defaultValue: '1', options: [ { label: 'Always', value: '1' }, { label: 'With status only', value: '0' } ] },
+        defaultValue: '1', options: [{ label: 'Always', value: '1' }, { label: 'With status only', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingSidebarOnLeft', label: 'Sidebar position',
-        defaultValue: '1', options: [ { label: 'Left', value: '1' }, { label: 'Right', value: '0' } ] },
+        defaultValue: '1', options: [{ label: 'Left', value: '1' }, { label: 'Right', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
-        defaultValue: '0', options: [ { label: 'Large', value: '1' }, { label: 'Normal', value: '0' } ] },
+        defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',
-        defaultValue: '1', options: [ { label: 'Icon & percent', value: '1' }, { label: 'Icon only', value: '0' } ] },
+        defaultValue: '1', options: [{ label: 'Icon & percent', value: '1' }, { label: 'Icon only', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingDisableAutobattery', label: 'Automatic battery meter (at 10%)',
-        defaultValue: '0', options: [ { label: 'Automatic (on)', value: '0' }, { label: 'Never (off)', value: '1' } ] },
+        defaultValue: '0', options: [{ label: 'Automatic (on)', value: '0' }, { label: 'Never (off)', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingHealthUseDistance', label: 'Steps widget displays',
-        defaultValue: '0', options: [ { label: 'Number of steps', value: '0' }, { label: 'Distance', value: '1' } ] },
+        defaultValue: '0', options: [{ label: 'Number of steps', value: '0' }, { label: 'Distance', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingHealthUseRestfulSleep', label: 'Sleep widget uses',
-        defaultValue: '0', options: [ { label: 'Total Sleep', value: '0' }, { label: 'Restful Sleep', value: '1' } ] }
-    ]
+        defaultValue: '0', options: [{ label: 'Total Sleep', value: '0' }, { label: 'Restful Sleep', value: '1' }] },
+    ],
   },
 
   // ---------------------------------------------------------- Time Display
@@ -174,22 +179,22 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Time Display' },
       { type: 'radiogroup', messageKey: 'SettingShowLeadingZero', label: 'Leading zero',
-        defaultValue: '0', options: [ { label: 'No', value: '0' }, { label: 'Yes', value: '1' } ] },
+        defaultValue: '0', options: [{ label: 'No', value: '0' }, { label: 'Yes', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingClockFontId', label: 'Clock font',
         defaultValue: '1', options: [
           { label: 'Default', value: '0' },
           { label: 'LECO', value: '1' },
           { label: 'Bold', value: '2' },
           { label: 'Bold Hour', value: '3' },
-          { label: 'Bold Minute', value: '4' }
+          { label: 'Bold Minute', value: '4' },
         ] },
       { type: 'radiogroup', messageKey: 'SettingBigDate', label: 'Large date above clock',
-        defaultValue: '1', options: [ { label: 'None', value: '0' }, { label: 'Show', value: '1' } ] },
+        defaultValue: '1', options: [{ label: 'None', value: '0' }, { label: 'Show', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingTwtShowRemaining', label: 'Work time display',
-        defaultValue: '0', options: [ { label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' } ] },
+        defaultValue: '0', options: [{ label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingTwtTargetVibe', label: 'Vibrate when daily target reached',
-        defaultValue: '0', options: [ { label: 'None', value: '0' }, { label: 'Vibrate', value: '1' } ] }
-    ]
+        defaultValue: '0', options: [{ label: 'None', value: '0' }, { label: 'Vibrate', value: '1' }] },
+    ],
   },
 
   // --------------------------------------------------------------- Weather
@@ -198,9 +203,9 @@ module.exports = [
     items: [
       { type: 'heading', id: 'heading-weather', defaultValue: 'Weather' },
       { type: 'radiogroup', messageKey: 'SettingUseMetric', label: 'Units',
-        defaultValue: '1', options: [ { label: 'Celsius', value: '1' }, { label: 'Fahrenheit', value: '0' } ] },
+        defaultValue: '1', options: [{ label: 'Celsius', value: '1' }, { label: 'Fahrenheit', value: '0' }] },
       { type: 'radiogroup', messageKey: 'weather_loc_mode', label: 'Location',
-        defaultValue: 'auto', options: [ { label: 'Automatic (GPS)', value: 'auto' }, { label: 'Manual', value: 'manual' } ] },
+        defaultValue: 'auto', options: [{ label: 'Automatic (GPS)', value: 'auto' }, { label: 'Manual', value: 'manual' }] },
       { type: 'input', messageKey: 'weather_loc', label: 'Manual location label',
         attributes: { placeholder: 'e.g. Helsinki' }, defaultValue: '' },
       { type: 'input', messageKey: 'weather_loc_lat', label: 'Latitude',
@@ -210,9 +215,9 @@ module.exports = [
       { type: 'radiogroup', messageKey: 'weather_datasource', label: 'Data source',
         defaultValue: 'openmeteo', options: [
           { label: 'Open-Meteo', value: 'openmeteo' },
-          { label: 'FMI (Ilmatieteen laitos)', value: 'fmi' }
-        ] }
-    ]
+          { label: 'FMI (Ilmatieteen laitos)', value: 'fmi' },
+        ] },
+    ],
   },
 
   // ------------------------------------------------------------- Bluetooth
@@ -221,10 +226,10 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Bluetooth' },
       { type: 'radiogroup', messageKey: 'SettingDisconnectIcon', label: 'Disconnect icon',
-        defaultValue: '1', options: [ { label: 'Show', value: '1' }, { label: 'Hide', value: '0' } ] },
+        defaultValue: '1', options: [{ label: 'Show', value: '1' }, { label: 'Hide', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingBluetoothVibe', label: 'Disconnect vibration',
-        defaultValue: '0', options: [ { label: 'Vibrate', value: '1' }, { label: 'None', value: '0' } ] }
-    ]
+        defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
+    ],
   },
 
   // ------------------------------------------------------------------ MIDI
@@ -233,8 +238,8 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'MIDI' },
       { type: 'radiogroup', messageKey: 'SettingMidiVibe', label: 'MIDI recording start/stop',
-        defaultValue: '0', options: [ { label: 'Vibrate', value: '1' }, { label: 'None', value: '0' } ] }
-    ]
+        defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
+    ],
   },
 
   // ---------------------------------------------------------- Notification
@@ -246,9 +251,9 @@ module.exports = [
         defaultValue: '0', options: [
           { label: 'No vibration', value: '0' },
           { label: 'Every 30 minutes', value: '2' },
-          { label: 'Every hour', value: '1' }
-        ] }
-    ]
+          { label: 'Every hour', value: '1' },
+        ] },
+    ],
   },
 
   // -------------------------------------------------------------- Regional
@@ -262,8 +267,8 @@ module.exports = [
       { type: 'select', messageKey: 'SettingAltClockOffset', label: 'Alternate clock time zone',
         defaultValue: 0, options: ALT_CLOCK_OFFSETS },
       { type: 'radiogroup', messageKey: 'SettingDecimalSep', label: 'Decimal separator',
-        defaultValue: '.', options: [ { label: '.', value: '.' }, { label: ',', value: ',' } ] }
-    ]
+        defaultValue: '.', options: [{ label: '.', value: '.' }, { label: ',', value: ',' }] },
+    ],
   },
 
   // ----------------------------------------------------------- Electricity
@@ -280,8 +285,8 @@ module.exports = [
       { type: 'input', messageKey: 'elec_cheap_floor', label: 'Cheap floor (snt/kWh)',
         attributes: { type: 'number', step: 0.1, placeholder: '2.0' }, defaultValue: '2.0' },
       { type: 'input', messageKey: 'elec_cheap_ceiling', label: 'Cheap ceiling (snt/kWh)',
-        attributes: { type: 'number', step: 0.1, placeholder: '8.0' }, defaultValue: '8.0' }
-    ]
+        attributes: { type: 'number', step: 0.1, placeholder: '8.0' }, defaultValue: '8.0' },
+    ],
   },
 
   // ---------------------------------------------------------- Data Refresh
@@ -290,9 +295,11 @@ module.exports = [
     items: [
       { type: 'heading', defaultValue: 'Data Refresh' },
       { type: 'input', messageKey: 'SettingPollIntervalMin', label: 'Data refresh interval (min)',
-        attributes: { type: 'number', min: 5, max: 240, step: 1, placeholder: '30' }, defaultValue: '30' }
-    ]
+        attributes: { type: 'number', min: 5, max: 240, step: 1, placeholder: '30' }, defaultValue: '30' },
+    ],
   },
 
-  { type: 'submit', defaultValue: 'Save' }
+  { type: 'submit', defaultValue: 'Save' },
 ];
+
+export = config;

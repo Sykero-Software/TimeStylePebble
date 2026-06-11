@@ -4,7 +4,9 @@
 
 declare module 'pebble-clay' {
   type ClayConfig = unknown[];
-  type ClayCustomFn = (this: unknown, minified: unknown) => void;
+  // The custom fn runs with `this` bound to Clay's ClayConfig instance; callers
+  // type `this` precisely on their own function, so accept any here.
+  type ClayCustomFn = (this: any, minified: any) => void;
 
   interface ClayOptions {
     autoHandleEvents?: boolean;
