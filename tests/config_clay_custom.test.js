@@ -5,6 +5,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const clayConfigCustom = require('../src/pkjs/config_clay_custom');
 
+// Must match WIDGET_KEYS in src/pkjs/config_clay_custom.js
 const WIDGET_KEYS = ['SettingWidget0ID', 'SettingWidget1ID', 'SettingWidget2ID',
                      'SettingWidget2_0ID', 'SettingWidget2_1ID', 'SettingWidget2_2ID'];
 
@@ -153,4 +154,22 @@ test('live change: selecting a weather widget reveals weather after re-render', 
   c.byKey['SettingWidget0ID'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byId['heading-weather'].shown, true);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
+});
+
+test('live change: switching weather location to manual reveals lat/lng/label', () => {
+  const c = render([7]);  // weather present, auto mode -> manual fields hidden
+  assert.strictEqual(c.byKey['weather_loc'].shown, false);
+  c.byKey['weather_loc_mode'].value = 'manual';
+  c.byKey['weather_loc_mode'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['weather_loc'].shown, true);
+  assert.strictEqual(c.byKey['weather_loc_lat'].shown, true);
+  assert.strictEqual(c.byKey['weather_loc_lng'].shown, true);
+});
+
+test('live change: disabling auto-battery hides battery style when no battery widget', () => {
+  const c = render([]);  // no widgets, auto-battery on -> style shown
+  assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, true);
+  c.byKey['SettingDisableAutobattery'].value = '1';
+  c.byKey['SettingDisableAutobattery'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, false);
 });

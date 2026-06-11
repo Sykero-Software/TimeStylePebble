@@ -11,6 +11,7 @@
      - widget 18 (next cheap) uses quiet hours + cheap factor/floor/ceiling
    See docs/superpowers/specs/2026-06-11-timestyle-conditional-config-settings-design.md */
 
+// `minified` is Clay's minified.js helper passed to every custom fn; unused here.
 module.exports = function clayConfigCustom(minified) {
   var clayConfig = this;
 
@@ -19,7 +20,8 @@ module.exports = function clayConfigCustom(minified) {
 
   function widgetIds() {
     return WIDGET_KEYS.map(function (k) {
-      return parseInt(clayConfig.getItemByMessageKey(k).get(), 10);
+      // unparseable/empty slot -> 0 (Empty widget id)
+      return parseInt(clayConfig.getItemByMessageKey(k).get(), 10) || 0;
     });
   }
   function has(ids, set) {
