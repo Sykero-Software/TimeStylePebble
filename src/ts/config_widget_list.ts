@@ -155,24 +155,6 @@ function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void
   });
 }
 
-function wlNormalize(value: any): number[] {
-  if (value === null || value === undefined) { return []; }
-  if (typeof value === 'string') {
-    if (value === '') { return []; }
-    try {
-      const parsed = JSON.parse(value);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      return [];
-    }
-  }
-  if (Array.isArray(value)) { return value; }
-  if (typeof value === 'object' && value.value !== undefined) {
-    return wlNormalize(value.value);
-  }
-  return [];
-}
-
 const widgetListComponent = {
   name: 'widgetList',
   template:
@@ -191,7 +173,24 @@ const widgetListComponent = {
       return this._wlCurrentIds ? this._wlCurrentIds() : [];
     },
     set: function(this: any, value: any) {
-      const ids = wlNormalize(value);
+      // Inlined normalization — this function is serialized via toSource and
+      // re-eval'd in the webview, so it must NOT reference any module-scope
+      // helper (a referenced sibling fn would be undefined there). Accepts a
+      // bare array (normal), a JSON string, or a {value:X} wrapper; anything
+      // else -> empty list.
+      let ids: any[] = [];
+      let v: any = value;
+      if (v && typeof v === 'object' && !Array.isArray(v) && v.value !== undefined) {
+        v = v.value;
+      }
+      if (Array.isArray(v)) {
+        ids = v;
+      } else if (typeof v === 'string' && v !== '') {
+        try {
+          const parsed = JSON.parse(v);
+          if (Array.isArray(parsed)) { ids = parsed; }
+        } catch (e) { ids = []; }
+      }
       if (this._wlRebuild) { this._wlRebuild(ids); }
       return this;
     },
