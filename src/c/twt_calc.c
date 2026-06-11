@@ -22,3 +22,10 @@ void twt_fmt_hhmm_signed(char* buf, size_t bufsize, int32_t minutes) {
   int32_t mag = neg ? -minutes : minutes;
   snprintf(buf, bufsize, "%s%d:%02d", neg ? "-" : "", (int)(mag / 60), (int)(mag % 60));
 }
+
+void twt_fmt_hhmm_remaining(char* buf, size_t bufsize, int32_t remaining) {
+  // overtime (remaining < 0) reads as "+h:mm" worked over target; otherwise plain
+  int over = remaining < 0;
+  int32_t mag = over ? -remaining : remaining;
+  snprintf(buf, bufsize, "%s%d:%02d", over ? "+" : "", (int)(mag / 60), (int)(mag % 60));
+}

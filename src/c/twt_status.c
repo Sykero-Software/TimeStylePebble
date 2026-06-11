@@ -42,8 +42,8 @@ void TwtStatus_save() {
 // clipping on 144 px. Both times add the running segment live (it belongs to the current
 // task); the day percent is hidden when its base is 0. When settings.twtShowRemaining is set
 // (and a target exists), the big day-total number instead shows remaining = target - worked
-// (negative on overtime); the percent and the bar always reflect worked progress, regardless
-// of that toggle.
+// (overtime renders as "+h:mm" worked over target); the percent and the bar always reflect
+// worked progress, regardless of that toggle.
 int32_t TwtStatus_workedTotalMin(void) {
   int32_t running = 0;
   if (twt_status.isTracking && twt_status.segmentStartEpoch > 0) {
@@ -74,11 +74,12 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   char total_buf[12];
   char task_buf[12];
   char day_pct_buf[12] = "";
-  int32_t shown_total = total;                       // default: worked time
   if (settings.twtShowRemaining && twt_status.dailyTargetMin > 0) {
-    shown_total = twt_status.dailyTargetMin - total; // remaining; negative on overtime
+    // remaining = target - worked; overtime renders as "+h:mm" (worked over target)
+    twt_fmt_hhmm_remaining(total_buf, sizeof(total_buf), twt_status.dailyTargetMin - total);
+  } else {
+    twt_fmt_hhmm_signed(total_buf, sizeof(total_buf), total);  // worked time
   }
-  twt_fmt_hhmm_signed(total_buf, sizeof(total_buf), shown_total);
   snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task_shown / 60), (int)(task_shown % 60));
   if (day_pct >= 0)  snprintf(day_pct_buf, sizeof(day_pct_buf), "(%d%%)", day_pct > 999 ? 999 : day_pct);
 

@@ -37,6 +37,13 @@ int main(void) {
   twt_fmt_hhmm_signed(b, sizeof(b), -65);   assert(strcmp(b, "-1:05") == 0);
   twt_fmt_hhmm_signed(b, sizeof(b), 630);   assert(strcmp(b, "10:30") == 0);
 
+  // --- twt_fmt_hhmm_remaining (remaining-time display; overtime gets leading '+') ---
+  twt_fmt_hhmm_remaining(b, sizeof(b), 45);    assert(strcmp(b, "0:45") == 0);   // 45 min left
+  twt_fmt_hhmm_remaining(b, sizeof(b), 90);    assert(strcmp(b, "1:30") == 0);   // 1:30 left
+  twt_fmt_hhmm_remaining(b, sizeof(b), 0);     assert(strcmp(b, "0:00") == 0);   // exactly on target
+  twt_fmt_hhmm_remaining(b, sizeof(b), -5);    assert(strcmp(b, "+0:05") == 0);  // 5 min over target
+  twt_fmt_hhmm_remaining(b, sizeof(b), -65);   assert(strcmp(b, "+1:05") == 0);  // 1:05 over target
+
   printf("All twt_calc tests passed\n");
   return 0;
 }

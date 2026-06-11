@@ -17,3 +17,9 @@ int twt_bar_fill_px(int32_t value, int32_t base, int width_px);
 // Formats minutes as "h:mm". Negative values get a leading '-' on the magnitude
 // (e.g. -65 -> "-1:05", 0 -> "0:00", 90 -> "1:30"). Writes into buf (bufsize >= 8).
 void twt_fmt_hhmm_signed(char* buf, size_t bufsize, int32_t minutes);
+
+// Formats a "remaining = target - worked" value for display. A non-negative value
+// (time still left) is shown plain ("0:45"); a negative value (overtime) is shown
+// as the magnitude with a leading '+' ("+0:05" = 5 min worked over target), which
+// reads more intuitively than a minus sign. Writes into buf (bufsize >= 8).
+void twt_fmt_hhmm_remaining(char* buf, size_t bufsize, int32_t remaining);

@@ -65,7 +65,7 @@ typedef struct {
 
   // clock area extras
   bool showBigDate;   // large date line above the clock (e.g. "Ti 6.6.")
-  bool twtShowRemaining;   // TWT strip: show remaining (target - worked), negative on overtime
+  bool twtShowRemaining;   // TWT strip: show remaining (target - worked), "+h:mm" on overtime
   bool twtTargetVibe;   // vibrate once when the daily work-time target is reached
 
   // polling
