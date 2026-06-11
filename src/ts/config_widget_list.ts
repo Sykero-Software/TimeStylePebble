@@ -169,7 +169,12 @@ const widgetListComponent = {
   // Clay's `button` (0,0,1), so these win regardless of stylesheet order.
   style:
     '.wl-row{display:flex;align-items:center;margin:0 0 8px 0}' +
-    '.wl-row .wl-sel{flex:1 1 auto;min-width:0;height:2.8rem;margin:0}' +
+    // Native <select> defaults to a light OS theme; match Clay's dark controls
+    // (body bg gray-2 #333, buttons gray-7 #767676, white text). color-scheme:dark
+    // nudges the OS-rendered option popup toward dark too where supported.
+    '.wl-row .wl-sel{flex:1 1 auto;min-width:0;height:2.8rem;margin:0;' +
+      'background-color:#767676;color:#fff;border:none;border-radius:0.3rem;' +
+      'padding:0 0.5rem;color-scheme:dark}' +
     '.wl-row button{flex:0 0 auto;min-width:0;width:2.8rem;height:2.8rem;' +
       'margin:0 0 0 6px;padding:0}' +
     '.wl-row button[disabled]{opacity:.35}' +
