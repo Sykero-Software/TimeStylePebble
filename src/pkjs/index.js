@@ -6,7 +6,8 @@ var cryptoParse = require('./crypto_parse');
 
 var Clay = require('pebble-clay');
 var clayConfig = require('./config_clay');
-var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+var clayConfigCustom = require('./config_clay_custom');
+var clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready',
