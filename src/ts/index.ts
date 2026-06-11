@@ -10,7 +10,7 @@ import Clay from 'pebble-clay';
 import clayConfig from './config_clay';
 import clayConfigCustom from './config_clay_custom';
 import widgetListComponent from './config_widget_list';
-import { listToSlots } from './widget_slots';
+import { listToSlots, slotsToList } from './widget_slots';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
@@ -77,7 +77,27 @@ Pebble.addEventListener('appmessage', (msg) => {
   crypto.updateCrypto();
 });
 
+// One-time migration: the old config saved 6 separate SettingWidget*ID keys to
+// Clay's `clay-settings` store; the new single `widgetList` component reads
+// `WidgetList`. Without this, opening the new config shows the default 3 widgets
+// (ignoring the user's real slots) and saving would clobber slots 4-6. Seed
+// `WidgetList` from the legacy slots once, before Clay bakes settings into the URL.
+function migrateWidgetListSettings() {
+  let stored: Record<string, any>;
+  try {
+    stored = JSON.parse(window.localStorage.getItem('clay-settings') || '{}') || {};
+  } catch (e) {
+    return;
+  }
+  if (stored.WidgetList !== undefined) { return; } // already present/migrated
+  const list = slotsToList(stored);
+  if (!list) { return; } // no legacy slots to migrate
+  stored.WidgetList = list;
+  window.localStorage.setItem('clay-settings', JSON.stringify(stored));
+}
+
 Pebble.addEventListener('showConfiguration', () => {
+  migrateWidgetListSettings();
   Pebble.openURL(clay.generateUrl());
 });
 
