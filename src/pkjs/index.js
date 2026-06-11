@@ -4,6 +4,10 @@ var electricity = require('./electricity');
 var crypto = require('./crypto');
 var cryptoParse = require('./crypto_parse');
 
+var Clay = require('pebble-clay');
+var clayConfig = require('./config_clay');
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+
 var CONFIG_VERSION = 15;
 // var BASE_CONFIG_URL = 'http://localhost:3001/';
 var BASE_CONFIG_URL = 'https://sykero-software.github.io/TimeStylePebble/';
@@ -75,334 +79,95 @@ Pebble.addEventListener('appmessage',
 );
 
 Pebble.addEventListener('showConfiguration', function (e) {
-  var availabileConfigPlatforms = ['aplite', 'basalt', 'chalk', 'diorite', 'emery', 'flint', 'gabbro'];
-
-  var watchInfo;
-
-  if (Pebble.getActiveWatchInfo) {
-    try {
-      watchInfo = Pebble.getActiveWatchInfo();
-    } catch (err) {
-      watchInfo = {
-        platform: "basalt"
-      };
-    }
-  } else {
-    watchInfo = {
-      platform: "aplite"
-    };
-  }
-
-  // map newer platforms to the closest equivalent config page
-  // TODO: create real config pages for these platforms
-  if (watchInfo.platform === 'flint') {
-    watchInfo = { platform: 'diorite' };
-  } else if (watchInfo.platform === 'gabbro') {
-    watchInfo = { platform: 'chalk' };
-  }
-
-  // if the reported platform isn't one of the known platforms, just assume it's basalt
-  if (availabileConfigPlatforms.indexOf(watchInfo.platform) === -1) {
-    watchInfo = {
-      platform: "basalt"
-    };
-  }
-
-  Pebble.openURL(BASE_CONFIG_URL + 'config_' + watchInfo.platform + '.html?appversion=' + CONFIG_VERSION)
+  Pebble.openURL(clay.generateUrl());
 });
 
 Pebble.addEventListener('webviewclosed', function (e) {
-  var configData = decodeURIComponent(e.response);
+  if (!e || !e.response) { console.log('No settings changed!'); return; }
 
-  if (configData) {
-    configData = JSON.parse(decodeURIComponent(e.response));
+  // getSettings(response, false) returns the raw parsed config keyed by
+  // messageKey, with each value wrapped as { value: X[, precision] } (Clay's
+  // serialize() shape). Flatten those wrappers into `s` so each `s[k]` is the
+  // bare value the rest of this handler expects.
+  var raw = clay.getSettings(e.response, false);
+  var s = {};
+  Object.keys(raw).forEach(function (k) {
+    var v = raw[k];
+    s[k] = (v && typeof v === 'object' && 'value' in v) ? v.value : v;
+  });
 
-    console.log("Config data recieved!" + JSON.stringify(configData));
+  var dict = {};
 
-    // prepare a structure to hold everything we'll send to the watch
-    var dict = {};
+  // colors: Clay returns a 24-bit RGB decimal int; C decodes via GColorFromHEX
+  function colorInt(v) {
+    return (typeof v === 'string') ? (parseInt(v.replace(/^0x/, ''), 16) & 0xFFFFFF) : (v & 0xFFFFFF);
+  }
+  ['SettingColorTime','SettingColorBG','SettingColorSidebar','SettingSidebarTextColor',
+   'SettingTwtStatusBgColor','SettingDateBgColor','SettingSidebarBgColorLeft',
+   'SettingSidebarBgColorRight'].forEach(function (k) {
+    if (s[k] !== undefined && s[k] !== null) { dict[k] = colorInt(s[k]); }
+  });
 
-    // color settings
-    if (configData.color_bg) {
-      dict.SettingColorBG = parseInt(configData.color_bg, 16);
-    }
+  // straight-through int/string settings (Clay options already carry the right value)
+  ['SettingLanguageID','SettingShowLeadingZero','SettingClockFontId','SettingDisconnectIcon',
+   'SettingBluetoothVibe','SettingMidiVibe','SettingBigDate','SettingTwtShowRemaining',
+   'SettingTwtTargetVibe','SettingHourlyVibe','SettingWidget0ID','SettingWidget1ID',
+   'SettingWidget2ID','SettingWidget2_0ID','SettingWidget2_1ID','SettingWidget2_2ID',
+   'SettingSecondaryAlwaysOn','SettingSidebarOnLeft','SettingUseLargeFonts','SettingUseMetric',
+   'SettingShowBatteryPct','SettingDisableAutobattery','SettingAltClockName','SettingAltClockOffset',
+   'SettingDecimalSep','SettingHealthUseDistance','SettingHealthUseRestfulSleep',
+   'SettingPollIntervalMin','SettingElecQuietStart','SettingElecQuietEnd',
+   'SettingElecCheapFactorPct'].forEach(function (k) {
+    if (s[k] !== undefined && s[k] !== null && s[k] !== '') { dict[k] = s[k]; }
+  });
 
-    if (configData.color_sidebar) {
-      dict.SettingColorSidebar = parseInt(configData.color_sidebar, 16);
-    }
-
-    if (configData.color_time) {
-      dict.SettingColorTime = parseInt(configData.color_time, 16);
-    }
-
-    if (configData.sidebar_text_color) {
-      dict.SettingSidebarTextColor = parseInt(configData.sidebar_text_color, 16);
-    }
-
-    // panel backgrounds: a hex string sets the color; the literal "-1" means
-    // "inherit". parseInt("-1", 16) === -1, so one path covers both.
-    if (configData.twt_status_bg_color !== undefined) {
-      dict.SettingTwtStatusBgColor = parseInt(configData.twt_status_bg_color, 16);
-    }
-    if (configData.date_bg_color !== undefined) {
-      dict.SettingDateBgColor = parseInt(configData.date_bg_color, 16);
-    }
-    if (configData.sidebar_bg_color_left !== undefined) {
-      dict.SettingSidebarBgColorLeft = parseInt(configData.sidebar_bg_color_left, 16);
-    }
-    if (configData.sidebar_bg_color_right !== undefined) {
-      dict.SettingSidebarBgColorRight = parseInt(configData.sidebar_bg_color_right, 16);
-    }
-
-    // general options
-    if (configData.language_id !== undefined) {
-      dict.SettingLanguageID = configData.language_id;
-    }
-
-    if (configData.leading_zero_setting) {
-      if (configData.leading_zero_setting == 'yes') {
-        dict.SettingShowLeadingZero = 1;
-      } else {
-        dict.SettingShowLeadingZero = 0;
-      }
-    }
-
-    if (configData.clock_font_setting) {
-      if (configData.clock_font_setting == 'default') {
-        dict.SettingClockFontId = 0;
-      } else if (configData.clock_font_setting == 'leco') {
-        dict.SettingClockFontId = 1;
-      } else if (configData.clock_font_setting == 'bold') {
-        dict.SettingClockFontId = 2;
-      } else if (configData.clock_font_setting == 'bold-h') {
-        dict.SettingClockFontId = 3;
-      } else if (configData.clock_font_setting == 'bold-m') {
-        dict.SettingClockFontId = 4;
-      }
-    }
-
-    // bluetooth settings
-    if (configData.disconnect_icon_setting) {
-      if (configData.disconnect_icon_setting == 'yes') {
-        dict.SettingDisconnectIcon = 1;
-      } else {
-        dict.SettingDisconnectIcon = 0;
-      }
-    }
-
-    if (configData.bluetooth_vibe_setting) {
-      if (configData.bluetooth_vibe_setting == 'yes') {
-        dict.SettingBluetoothVibe = 1;
-      } else {
-        dict.SettingBluetoothVibe = 0;
-      }
-    }
-
-    if (configData.midi_vibe_setting) {
-      if (configData.midi_vibe_setting == 'yes') {
-        dict.SettingMidiVibe = 1;
-      } else {
-        dict.SettingMidiVibe = 0;
-      }
-    }
-
-    if (configData.big_date_setting) {
-      if (configData.big_date_setting == 'yes') {
-        dict.SettingBigDate = 1;
-      } else {
-        dict.SettingBigDate = 0;
-      }
-    }
-
-    if (configData.twt_remaining_setting) {
-      if (configData.twt_remaining_setting == 'yes') {
-        dict.SettingTwtShowRemaining = 1;
-      } else {
-        dict.SettingTwtShowRemaining = 0;
-      }
-    }
-
-    if (configData.twt_target_vibe_setting) {
-      if (configData.twt_target_vibe_setting == 'yes') {
-        dict.SettingTwtTargetVibe = 1;
-      } else {
-        dict.SettingTwtTargetVibe = 0;
-      }
-    }
-
-    // notification settings
-    if (configData.hourly_vibe_setting) {
-      if (configData.hourly_vibe_setting == 'yes') {
-        dict.SettingHourlyVibe = 1;
-      } else if (configData.hourly_vibe_setting == 'half') {
-        dict.SettingHourlyVibe = 2;
-      } else {
-        dict.SettingHourlyVibe = 0;
-      }
-    }
-
-    // sidebar settings
-    dict.SettingWidget0ID = configData.widget_0_id;
-    dict.SettingWidget1ID = configData.widget_1_id;
-    dict.SettingWidget2ID = configData.widget_2_id;
-    dict.SettingWidget2_0ID = configData.widget2_0_id;
-    dict.SettingWidget2_1ID = configData.widget2_1_id;
-    dict.SettingWidget2_2ID = configData.widget2_2_id;
-
-    if (configData.secondary_always_on_setting) {
-      dict.SettingSecondaryAlwaysOn = (configData.secondary_always_on_setting == 'yes') ? 1 : 0;
-    }
-
-    if (configData.sidebar_position) {
-      if (configData.sidebar_position == 'right') {
-        dict.SettingSidebarOnLeft = 0;
-      } else {
-        dict.SettingSidebarOnLeft = 1;
-      }
-    }
-
-    if (configData.use_large_sidebar_font_setting) {
-      if (configData.use_large_sidebar_font_setting == 'yes') {
-        dict.SettingUseLargeFonts = 1;
-      } else {
-        dict.SettingUseLargeFonts = 0;
-      }
-    }
-
-    // weather widget settings
-    if (configData.units) {
-      if (configData.units == 'c') {
-        dict.SettingUseMetric = 1;
-      } else {
-        dict.SettingUseMetric = 0;
-      }
-    }
-
-    // weather location/source configs are not the watch's concern
-
-    if (configData.weather_loc !== undefined) {
-      window.localStorage.setItem('weather_loc', configData.weather_loc);
-      window.localStorage.setItem('weather_loc_lat', configData.weather_loc_lat);
-      window.localStorage.setItem('weather_loc_lng', configData.weather_loc_lng);
-    }
-
-    if (configData.weather_datasource) {
-      window.localStorage.setItem('weather_datasource', configData.weather_datasource);
-      window.localStorage.setItem('weather_api_key', configData.weather_api_key);
-    }
-
-    // battery widget settings
-    if (configData.battery_meter_setting) {
-      if (configData.battery_meter_setting == 'icon-and-percent') {
-        dict.SettingShowBatteryPct = 1;
-      } else if (configData.battery_meter_setting == 'icon-only') {
-        dict.SettingShowBatteryPct = 0;
-      }
-    }
-
-    if (configData.autobattery_setting) {
-      if (configData.autobattery_setting == 'on') {
-        dict.SettingDisableAutobattery = 0;
-      } else if (configData.autobattery_setting == 'off') {
-        dict.SettingDisableAutobattery = 1;
-      }
-    }
-
-    if (configData.altclock_name) {
-      dict.SettingAltClockName = configData.altclock_name;
-    }
-
-    if (configData.altclock_offset !== null) {
-      dict.SettingAltClockOffset = parseInt(configData.altclock_offset, 10);
-    }
-
-    if (configData.decimal_separator) {
-      dict.SettingDecimalSep = configData.decimal_separator;
-    }
-
-    if (configData.health_use_distance) {
-      if (configData.health_use_distance == 'yes') {
-        dict.SettingHealthUseDistance = 1;
-      } else {
-        dict.SettingHealthUseDistance = 0;
-      }
-    }
-
-    // heath settings
-    if (configData.health_use_restful_sleep) {
-      if (configData.health_use_restful_sleep == 'yes') {
-        dict.SettingHealthUseRestfulSleep = 1;
-      } else {
-        dict.SettingHealthUseRestfulSleep = 0;
-      }
-    }
-
-    // determine whether or not the weather checking should be enabled
-    var disableWeather;
-
-    var widgetIDs = [configData.widget_0_id, configData.widget_1_id, configData.widget_2_id,
-                     configData.widget2_0_id, configData.widget2_1_id, configData.widget2_2_id];
-
-    // if none of the weather widgets are present, disable the weather
-    if (widgetIDs.indexOf(7) != -1 || widgetIDs.indexOf(8) != -1 || widgetIDs.indexOf(13) != -1) {
-      disableWeather = 'no';
-    } else {
-      disableWeather = 'yes';
-    }
-
-    window.localStorage.setItem('disable_weather', disableWeather);
-
-    // electricity widgets: 14 (price), 18 (next cheap), 19 (cheapest hour)
-    var disableElectricity =
-      (widgetIDs.indexOf(14) != -1 || widgetIDs.indexOf(18) != -1 ||
-       widgetIDs.indexOf(19) != -1) ? 'no' : 'yes';
-    window.localStorage.setItem('disable_electricity', disableElectricity);
-
-    // crypto widgets: enable each coin's fetcher only when its widget is selected
-    cryptoParse.COINS.forEach(function (c) {
-      var disable = (widgetIDs.indexOf(c.widgetId) != -1) ? 'no' : 'yes';
-      window.localStorage.setItem(c.disableKey, disable);
-    });
-
-    // shared, watch-driven poll interval (drives weather + electricity + BTC)
-    var pollInterval = parseInt(configData.poll_interval, 10);
-    if (isNaN(pollInterval)) { pollInterval = 30; }
-    dict.SettingPollIntervalMin = pollInterval;
-
-    // cheap-electricity widget tuning (prices entered in snt/kWh -> 0.01 snt centi)
-    if (configData.elec_quiet_start !== undefined && configData.elec_quiet_start !== null) {
-      dict.SettingElecQuietStart = parseInt(configData.elec_quiet_start, 10);
-    }
-    if (configData.elec_quiet_end !== undefined && configData.elec_quiet_end !== null) {
-      dict.SettingElecQuietEnd = parseInt(configData.elec_quiet_end, 10);
-    }
-    if (configData.elec_cheap_factor !== undefined && configData.elec_cheap_factor !== null) {
-      dict.SettingElecCheapFactorPct = parseInt(configData.elec_cheap_factor, 10);
-    }
-    if (configData.elec_cheap_floor !== undefined && configData.elec_cheap_floor !== null) {
-      dict.SettingElecCheapFloorCenti = Math.round(parseFloat(configData.elec_cheap_floor) * 100);
-    }
-    if (configData.elec_cheap_ceiling !== undefined && configData.elec_cheap_ceiling !== null) {
-      dict.SettingElecCheapCeilingCenti = Math.round(parseFloat(configData.elec_cheap_ceiling) * 100);
-    }
-
-    console.log('Preparing message: ', JSON.stringify(dict));
-
-    // Send settings to Pebble watchapp
-    Pebble.sendAppMessage(dict, function () {
-      console.log('Sent config data to Pebble, now trying to get weather');
-
-      // after sending config data, force a refresh in case settings changed.
-      // Periodic polling is now watch-driven (the tick handler requests on the
-      // configured interval), so there is no JS timer to (re)start here.
-      weather.updateWeather(true);
-      electricity.updateElectricity(true);
-      crypto.updateCrypto(true);
-    }, function () {
-      console.log('Failed to send config data!');
-    });
-  } else {
-    console.log("No settings changed!");
+  // number coercions (Clay number inputs come back as strings)
+  ['SettingPollIntervalMin','SettingElecQuietStart','SettingElecQuietEnd',
+   'SettingElecCheapFactorPct','SettingAltClockOffset'].forEach(function (k) {
+    if (dict[k] !== undefined) { dict[k] = parseInt(dict[k], 10); }
+  });
+  if (dict.SettingPollIntervalMin === undefined || isNaN(dict.SettingPollIntervalMin)) {
+    dict.SettingPollIntervalMin = 30;
   }
 
+  // decimal electricity fields: snt/kWh -> centi (x100)
+  if (s.elec_cheap_floor !== undefined && s.elec_cheap_floor !== '') {
+    dict.SettingElecCheapFloorCenti = Math.round(parseFloat(s.elec_cheap_floor) * 100);
+  }
+  if (s.elec_cheap_ceiling !== undefined && s.elec_cheap_ceiling !== '') {
+    dict.SettingElecCheapCeilingCenti = Math.round(parseFloat(s.elec_cheap_ceiling) * 100);
+  }
+
+  // phone-only: weather location + data source -> localStorage (weather.js reads these)
+  if (s.weather_loc_mode === 'manual') {
+    window.localStorage.setItem('weather_loc', s.weather_loc || '');
+    window.localStorage.setItem('weather_loc_lat', s.weather_loc_lat || '');
+    window.localStorage.setItem('weather_loc_lng', s.weather_loc_lng || '');
+  } else {
+    window.localStorage.removeItem('weather_loc');
+    window.localStorage.removeItem('weather_loc_lat');
+    window.localStorage.removeItem('weather_loc_lng');
+  }
+  if (s.weather_datasource) {
+    window.localStorage.setItem('weather_datasource', s.weather_datasource);
+    window.localStorage.setItem('weather_api_key', '');
+  }
+
+  // derive disable_* flags from selected widget IDs (preserved from old index.js)
+  var widgetIDs = [dict.SettingWidget0ID, dict.SettingWidget1ID, dict.SettingWidget2ID,
+                   dict.SettingWidget2_0ID, dict.SettingWidget2_1ID, dict.SettingWidget2_2ID];
+  window.localStorage.setItem('disable_weather',
+    (widgetIDs.indexOf(7) != -1 || widgetIDs.indexOf(8) != -1 || widgetIDs.indexOf(13) != -1) ? 'no' : 'yes');
+  window.localStorage.setItem('disable_electricity',
+    (widgetIDs.indexOf(14) != -1 || widgetIDs.indexOf(18) != -1 || widgetIDs.indexOf(19) != -1) ? 'no' : 'yes');
+  cryptoParse.COINS.forEach(function (c) {
+    window.localStorage.setItem(c.disableKey, (widgetIDs.indexOf(c.widgetId) != -1) ? 'no' : 'yes');
+  });
+
+  console.log('Preparing message: ' + JSON.stringify(dict));
+  Pebble.sendAppMessage(dict, function () {
+    weather.updateWeather(true);
+    electricity.updateElectricity(true);
+    crypto.updateCrypto(true);
+  }, function () { console.log('Failed to send config data!'); });
 });
