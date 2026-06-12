@@ -20,6 +20,10 @@ serial_dump.txt
 pebble_screenshot_*
 compile_commands.json
 
+# Built release bundles don't belong in the repo
+Releases/
+*.pbw
+
 # Ignore Apple Files
 # General
 .DS_Store
