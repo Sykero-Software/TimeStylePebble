@@ -25,6 +25,9 @@ static bool updatingEverySecond;
 static time_t lastDataRequest = 0;   // epoch of the last watch->phone data request
 static bool twtTargetAlerted = false;   // already vibrated for the current daily-target crossing
 static bool twtTargetInit = false;      // have we seeded twtTargetAlerted since launch?
+static bool twtBudgetAlerted = false;   // already vibrated for the current task's budget crossing
+static bool twtBudgetInit = false;      // have we seeded twtBudgetAlerted since launch?
+static int32_t twtBudgetLastCtx = 0;    // context key (isTracking?taskId:-1) of the last seed
 
 void update_clock();
 void redrawScreen();
@@ -303,6 +306,31 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
       static const uint32_t segs[] = { 100, 80, 100, 80, 300 };
       VibePattern pat = { .durations = segs, .num_segments = ARRAY_LENGTH(segs) };
       vibes_enqueue_custom_pattern(pat);
+      TwtStatus_startFlash();
+    }
+  }
+
+  // Task budget reached: vibrate once on the rising edge while tracking THAT task.
+  // Context key isTracking?taskId:-1 re-seeds the alerted flag on task-switch and
+  // stop/restart, so switching to an already-over task does NOT re-vibrate (only a
+  // genuine crossing while tracking does). Budget measure = task all-time total
+  // (matches the strip + Android list).
+  int32_t budgetCtx = twt_status.isTracking ? twt_status.taskId : -1;
+  bool budgetReached = twt_status.isTracking && twt_status.taskBudgetMin > 0
+      && TwtStatus_taskTotalMin() >= twt_status.taskBudgetMin;
+  if (!twtBudgetInit || budgetCtx != twtBudgetLastCtx) {
+    twtBudgetAlerted = budgetReached;   // seed: already-over (or no budget) -> no spurious vibe
+    twtBudgetLastCtx = budgetCtx;
+    twtBudgetInit = true;
+  } else if (!budgetReached) {
+    twtBudgetAlerted = false;
+  } else if (!twtBudgetAlerted) {
+    twtBudgetAlerted = true;
+    if (settings.twtBudgetVibe && !quiet_time_is_active()) {
+      static const uint32_t segs[] = { 100, 80, 100, 80, 300 };  // same as daily target
+      VibePattern pat = { .durations = segs, .num_segments = ARRAY_LENGTH(segs) };
+      vibes_enqueue_custom_pattern(pat);
+      TwtStatus_startFlash();
     }
   }
 
