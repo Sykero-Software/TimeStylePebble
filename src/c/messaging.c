@@ -151,6 +151,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *bigDate_tuple = dict_find(iterator, MESSAGE_KEY_SettingBigDate);
   Tuple *twtShowRemaining_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtShowRemaining);
   Tuple *twtTargetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtTargetVibe);
+  Tuple *twtBudgetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtBudgetVibe);
   Tuple *pollInterval_tuple = dict_find(iterator, MESSAGE_KEY_SettingPollIntervalMin);
   Tuple *elecQuietStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietStart);
   Tuple *elecQuietEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietEnd);
@@ -158,6 +159,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *elecFloor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFloorCenti);
   Tuple *elecCeiling_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapCeilingCenti);
   Tuple *twtStatusBgColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtStatusBgColor);
+  Tuple *twtFlashColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtFlashColor);
   Tuple *dateBgColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingDateBgColor);
   Tuple *sidebarBgLeft_tuple = dict_find(iterator, MESSAGE_KEY_SettingSidebarBgColorLeft);
   Tuple *sidebarBgRight_tuple = dict_find(iterator, MESSAGE_KEY_SettingSidebarBgColorRight);
@@ -212,6 +214,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     settings.twtStatusBgColor = (v < 0) ? GColorClear : GColorFromHEX(v); // <0 = inherit
   }
 
+  if(twtFlashColor_tuple != NULL) {
+    settings.twtFlashColor = GColorFromHEX(twtFlashColor_tuple->value->int32); // always solid
+  }
+
   if(dateBgColor_tuple != NULL) {
     int32_t v = dateBgColor_tuple->value->int32;
     settings.dateBgColor = (v < 0) ? GColorClear : GColorFromHEX(v); // <0 = inherit
@@ -253,6 +259,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   if(twtTargetVibe_tuple != NULL) {
     settings.twtTargetVibe = (bool)twtTargetVibe_tuple->value->int8;
+  }
+
+  if(twtBudgetVibe_tuple != NULL) {
+    settings.twtBudgetVibe = (bool)twtBudgetVibe_tuple->value->int8;
   }
 
   if(pollInterval_tuple != NULL) {
