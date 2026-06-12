@@ -216,6 +216,10 @@ const config = [
         defaultValue: '0', options: [{ label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingTwtTargetVibe', label: 'Vibrate when daily target reached',
         defaultValue: '0', options: [{ label: 'None', value: '0' }, { label: 'Vibrate', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingTwtBudgetVibe', label: 'Vibrate when budget target reached',
+        defaultValue: '0', options: [{ label: 'None', value: '0' }, { label: 'Vibrate', value: '1' }] },
+      { type: 'color', messageKey: 'SettingTwtFlashColor', label: 'Status flash color',
+        defaultValue: '0xFF0000', sunlight: false, allowGray: true },
     ],
   },
 
