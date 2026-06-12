@@ -356,6 +356,7 @@ void bluetoothStateChanged(bool newConnectionState) {
       .num_segments = ARRAY_LENGTH(segments),
       };
     vibes_enqueue_custom_pattern(pat);
+    light_enable_interaction();   // briefly light the backlight, per the user's watch light settings
   }
 
   // if the phone was disconnected and isn't anymore, update the data
