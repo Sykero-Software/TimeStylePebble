@@ -266,7 +266,11 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
                       SidebarWidgetType widgetType, int widgetXOffset) {
   SidebarWidgets_updateFonts();
 
-  graphics_context_set_fill_color(ctx, settings.sidebarColor);
+  // Round has a single continuous sidebar -> use the primary background color
+  // (legacy key sidebarBgColorLeft); GColorClear = inherit settings.sidebarColor.
+  GColor roundBg = gcolor_equal(settings.sidebarBgColorLeft, GColorClear)
+      ? settings.sidebarColor : settings.sidebarBgColorLeft;
+  graphics_context_set_fill_color(ctx, roundBg);
 
   graphics_fill_radial(ctx, bgBounds, GOvalScaleModeFillCircle, 100,
                        DEG_TO_TRIGANGLE(0), TRIG_MAX_ANGLE);
@@ -325,7 +329,7 @@ void Sidebar_distributeWidgets(bool secondaryWanted, int *primaryCountOut, int *
 // disconnect-icon substitution (primary only).
 static void drawWidgetColumn(Layer *l, GContext *ctx,
                              const SidebarWidgetType widgetTypes[3],
-                             bool allowReplacement, bool isLeftSide) {
+                             bool allowReplacement, bool isPrimary) {
   GRect bounds = layer_get_unobstructed_bounds(l);
 
   // this ends up being zero on every rectangular platform besides emery
@@ -333,8 +337,11 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 
   SidebarWidgets_updateFonts();
 
-  // per-side configurable background; GColorClear = inherit settings.sidebarColor
-  GColor sidebarBg = isLeftSide ? settings.sidebarBgColorLeft : settings.sidebarBgColorRight;
+  // Role-based configurable background: the primary column always uses the
+  // primary color and the secondary column the secondary, regardless of which
+  // physical side each sits on. sidebarBgColorLeft/Right are the (legacy-named)
+  // primary/secondary keys. GColorClear = inherit settings.sidebarColor.
+  GColor sidebarBg = isPrimary ? settings.sidebarBgColorLeft : settings.sidebarBgColorRight;
   if (gcolor_equal(sidebarBg, GColorClear)) sidebarBg = settings.sidebarColor;
   graphics_context_set_fill_color(ctx, sidebarBg);
   graphics_fill_rect(ctx, layer_get_bounds(l), 0, GCornerNone);
@@ -417,13 +424,11 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 }
 
 void updateRectSidebar(Layer *l, GContext *ctx) {
-  // primary sidebar sits on the left iff sidebarOnLeft
-  drawWidgetColumn(l, ctx, primaryColumn, true, settings.sidebarOnLeft);
+  drawWidgetColumn(l, ctx, primaryColumn, true, /*isPrimary=*/true);
 }
 
 void updateRectSecondarySidebar(Layer *l, GContext *ctx) {
-  // secondary panel is on the opposite side from the primary
-  drawWidgetColumn(l, ctx, secondaryColumn, false, !settings.sidebarOnLeft);
+  drawWidgetColumn(l, ctx, secondaryColumn, false, /*isPrimary=*/false);
 }
 
 #endif

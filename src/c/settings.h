@@ -91,10 +91,15 @@ typedef struct {
   // inherit = draw no fill (watchface bg). For the sidebars, inherit = fall back to
   // settings.sidebarColor. Appended fields, no settings-version bump (defaults in
   // Settings_init).
-  GColor twtStatusBgColor;    // TWT status strip background
+  GColor twtStatusBgColor;    // status strip background (work-time + MIDI strips)
   GColor dateBgColor;         // date header background
-  GColor sidebarBgColorLeft;  // left-edge widget column (rect only)
-  GColor sidebarBgColorRight; // right-edge widget column (rect only)
+  // Repurposed as PRIMARY / SECONDARY sidebar backgrounds (role-based). The
+  // "Left"/"Right" names are legacy (kept so AppMessage IDs don't drift); the
+  // primary column always uses sidebarBgColorLeft, the secondary always
+  // sidebarBgColorRight, whichever physical side each is on. Round uses the
+  // primary one. See sidebar.c drawWidgetColumn / drawRoundSidebar.
+  GColor sidebarBgColorLeft;  // PRIMARY sidebar background
+  GColor sidebarBgColorRight; // SECONDARY sidebar background
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

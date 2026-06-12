@@ -107,6 +107,12 @@ const config = [
         ] },
       { type: 'radiogroup', messageKey: 'SettingBigDate', label: 'Large date above clock',
         defaultValue: '1', options: [{ label: 'None', value: '0' }, { label: 'Show', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingHourlyVibe', label: 'Periodic vibration',
+        defaultValue: '0', options: [
+          { label: 'No vibration', value: '0' },
+          { label: 'Every 30 minutes', value: '2' },
+          { label: 'Every hour', value: '1' },
+        ] },
     ],
   },
 
@@ -123,14 +129,17 @@ const config = [
         defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingTwtStatusBgColor', label: 'Status area background',
         defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingColorSidebar', label: 'Sidebar color',
+      // NOTE: the SettingSidebarBgColor{Left,Right} messageKeys are repurposed as
+      // PRIMARY / SECONDARY sidebar backgrounds (role-based, not physical side).
+      // The keys keep their legacy "Left"/"Right" names so the positional
+      // AppMessage IDs don't drift (see CLAUDE.md). The watch C side maps
+      // Left=primary, Right=secondary regardless of which side the primary is on.
+      { type: 'color', messageKey: 'SettingSidebarBgColorLeft', label: 'Primary sidebar background',
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingSidebarBgColorRight', label: 'Secondary sidebar background',
         defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
       { type: 'color', messageKey: 'SettingSidebarTextColor', label: 'Sidebar text color',
         defaultValue: '0x000000', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingSidebarBgColorLeft', label: 'Left sidebar widget-area background',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingSidebarBgColorRight', label: 'Right sidebar widget-area background',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
     ],
   },
 
@@ -138,7 +147,7 @@ const config = [
   {
     type: 'section',
     items: [
-      { type: 'heading', defaultValue: 'Widgets' },
+      { type: 'heading', defaultValue: 'Sidebar widgets' },
       { type: 'radiogroup', messageKey: 'SettingSidebarOnLeft', label: 'Primary sidebar position',
         defaultValue: '1', options: [{ label: 'Left', value: '1' }, { label: 'Right', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingSecondaryAlwaysOn', label: 'Show secondary sidebar',
@@ -229,20 +238,6 @@ const config = [
         defaultValue: '1', options: [{ label: 'Show', value: '1' }, { label: 'Hide', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingBluetoothVibe', label: 'Disconnect vibration',
         defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
-    ],
-  },
-
-  // ------------------------------------------------------ Periodic vibration
-  {
-    type: 'section',
-    items: [
-      { type: 'heading', defaultValue: 'Periodic vibration' },
-      { type: 'radiogroup', messageKey: 'SettingHourlyVibe', label: 'Vibration on interval',
-        defaultValue: '0', options: [
-          { label: 'No vibration', value: '0' },
-          { label: 'Every 30 minutes', value: '2' },
-          { label: 'Every hour', value: '1' },
-        ] },
     ],
   },
 

@@ -190,8 +190,12 @@ void Settings_updateDynamicSettings() {
     }
   }
 
-  // if the sidebar is black, use inverted colors for icons
-  if (gcolor_equal(settings.sidebarColor, GColorBlack)) {
+  // if the (primary) sidebar background is black, use inverted icon colors.
+  // sidebarBgColorLeft is the primary-background key; GColorClear = inherit
+  // settings.sidebarColor.
+  GColor primaryBg = gcolor_equal(settings.sidebarBgColorLeft, GColorClear)
+      ? settings.sidebarColor : settings.sidebarBgColorLeft;
+  if (gcolor_equal(primaryBg, GColorBlack)) {
     dynamicSettings.iconFillColor = GColorBlack;
     dynamicSettings.iconStrokeColor = settings.sidebarTextColor;
   } else {
