@@ -11,7 +11,7 @@
     "pebble-fctx": "^1.6.5"
   },
   "pebble": {
-    "displayName": "TimeStyle TWT",
+    "displayName": "Sykerö TimeStyle",
     "uuid": "812efd3c-309b-4474-a942-35bcb55a76f2",
     "sdkVersion": "3",
     "enableMultiJS": true,
