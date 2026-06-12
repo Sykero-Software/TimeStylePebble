@@ -33,6 +33,19 @@ void TwtStatus_load() {
     // no data, or a blob from a different struct layout -> start clean
     twt_status = (TwtStatus){0};
     twt_status.taskName[0] = '\0';
+#ifdef SCREENSHOT_FIXTURES
+    // Deterministic demo data for appstore screenshots (no phone needed). Enabled
+    // only when the build defines SCREENSHOT_FIXTURES (see wscript + env var).
+    twt_status.isTracking = true;
+    strncpy(twt_status.taskName, "Client work", TWT_TASK_NAME_LEN);
+    twt_status.taskName[TWT_TASK_NAME_LEN] = '\0';
+    twt_status.workedBeforeMin = 372;      // 6:12 worked today
+    twt_status.taskWorkedBeforeMin = 145;  // 2:25 on this task today
+    twt_status.taskTotalBeforeMin = 145;
+    twt_status.dailyTargetMin = 450;       // 7:30 target -> ~83%, bar partly filled
+    twt_status.taskBudgetMin = 0;
+    twt_status.segmentStartEpoch = 0;      // no live delta -> deterministic
+#endif
   }
 }
 

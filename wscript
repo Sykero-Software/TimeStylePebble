@@ -38,6 +38,8 @@ def build(ctx):
         ctx.set_group(ctx.env.PLATFORM_NAME)
         app_elf = '{}/pebble-app.elf'.format(ctx.env.BUILD_DIR)
         defines = ['USE_FAKE_TIME'] if os.environ.get('FAKE_TIME') else []
+        if os.environ.get('SCREENSHOT_FIXTURES'):
+            defines.append('SCREENSHOT_FIXTURES')  # seed demo data for appstore screenshots
         ctx.pbl_build(source=ctx.path.ant_glob('src/c/**/*.c'), target=app_elf, bin_type='app', defines=defines)
 
         if build_worker:
