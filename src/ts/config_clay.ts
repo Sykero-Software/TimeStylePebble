@@ -157,18 +157,6 @@ const config = [
     ],
   },
 
-  // ------------------------------------------------------------- Work time
-  {
-    type: 'section',
-    items: [
-      { type: 'heading', defaultValue: 'Work time' },
-      { type: 'radiogroup', messageKey: 'SettingTwtShowRemaining', label: 'Work time display',
-        defaultValue: '0', options: [{ label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' }] },
-      { type: 'radiogroup', messageKey: 'SettingTwtTargetVibe', label: 'Vibrate when daily target reached',
-        defaultValue: '0', options: [{ label: 'None', value: '0' }, { label: 'Vibrate', value: '1' }] },
-    ],
-  },
-
   // --------------------------------------------------------------- Weather
   {
     type: 'section',
@@ -210,15 +198,15 @@ const config = [
     ],
   },
 
-  // ------------------------------------------------------------- Bluetooth
+  // ------------------------------------------------------------- Work time
   {
     type: 'section',
     items: [
-      { type: 'heading', defaultValue: 'Bluetooth' },
-      { type: 'radiogroup', messageKey: 'SettingDisconnectIcon', label: 'Disconnect icon',
-        defaultValue: '1', options: [{ label: 'Show', value: '1' }, { label: 'Hide', value: '0' }] },
-      { type: 'radiogroup', messageKey: 'SettingBluetoothVibe', label: 'Disconnect vibration',
-        defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
+      { type: 'heading', defaultValue: 'Work time' },
+      { type: 'radiogroup', messageKey: 'SettingTwtShowRemaining', label: 'Work time display',
+        defaultValue: '0', options: [{ label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingTwtTargetVibe', label: 'Vibrate when daily target reached',
+        defaultValue: '0', options: [{ label: 'None', value: '0' }, { label: 'Vibrate', value: '1' }] },
     ],
   },
 
@@ -228,6 +216,18 @@ const config = [
     items: [
       { type: 'heading', defaultValue: 'MIDI recorder' },
       { type: 'radiogroup', messageKey: 'SettingMidiVibe', label: 'Vibrate on recording start/stop',
+        defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
+    ],
+  },
+
+  // ------------------------------------------------------------- Bluetooth
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Bluetooth' },
+      { type: 'radiogroup', messageKey: 'SettingDisconnectIcon', label: 'Disconnect icon',
+        defaultValue: '1', options: [{ label: 'Show', value: '1' }, { label: 'Hide', value: '0' }] },
+      { type: 'radiogroup', messageKey: 'SettingBluetoothVibe', label: 'Disconnect vibration',
         defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
     ],
   },
