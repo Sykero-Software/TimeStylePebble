@@ -53,6 +53,7 @@ void Settings_loadFromStorage() {
   settings.showBigDate = true;   // on by default (configurable); appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
   settings.twtTargetVibe = false;   // opt-in default; appended field, no settings-version bump
+  settings.twtBudgetVibe = false;   // opt-in default; appended field, no settings-version bump
   settings.pollIntervalMin = 30;   // default; appended field, no settings-version bump
   settings.widgets2[0] = EMPTY;   // secondary panel off by default; appended field, no settings-version bump
   settings.widgets2[1] = EMPTY;
@@ -65,11 +66,13 @@ void Settings_loadFromStorage() {
   settings.elecCheapCeilingCenti = 800;// 8.0 snt/kWh
 #ifdef PBL_COLOR
   settings.twtStatusBgColor = GColorMintGreen;    // light-green panels by default
+  settings.twtFlashColor = GColorRed;             // bright flash; appended field, no settings-version bump
   settings.dateBgColor = GColorMintGreen;
   settings.sidebarBgColorLeft = GColorMintGreen;
   settings.sidebarBgColorRight = GColorMintGreen;
 #else
   settings.twtStatusBgColor = GColorClear;    // inherit watchface bg; appended field
+  settings.twtFlashColor = GColorBlack;       // high-contrast flash on b&w; appended field
   settings.dateBgColor = GColorClear;         // inherit watchface bg; appended field
   settings.sidebarBgColorLeft = GColorClear;  // inherit sidebarColor; appended field
   settings.sidebarBgColorRight = GColorClear; // inherit sidebarColor; appended field

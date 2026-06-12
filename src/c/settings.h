@@ -67,6 +67,7 @@ typedef struct {
   bool showBigDate;   // large date line above the clock (e.g. "Ti 6.6.")
   bool twtShowRemaining;   // TWT strip: show remaining (target - worked), "+h:mm" on overtime
   bool twtTargetVibe;   // vibrate once when the daily work-time target is reached
+  bool twtBudgetVibe;   // vibrate once when the current task's budget is reached
 
   // polling
   uint8_t pollIntervalMin;   // shared watch->phone data request interval (min); appended field
@@ -92,6 +93,7 @@ typedef struct {
   // settings.sidebarColor. Appended fields, no settings-version bump (defaults in
   // Settings_init).
   GColor twtStatusBgColor;    // status strip background (work-time + MIDI strips)
+  GColor twtFlashColor;       // status strip flash colour on a target-reached vibe (always solid)
   GColor dateBgColor;         // date header background
   // Repurposed as PRIMARY / SECONDARY sidebar backgrounds (role-based). The
   // "Left"/"Right" names are legacy (kept so AppMessage IDs don't drift); the
