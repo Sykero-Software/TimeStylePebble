@@ -112,7 +112,9 @@
       "SettingTwtStatusBgColor",
       "SettingDateBgColor",
       "SettingSidebarBgColorLeft",
-      "SettingSidebarBgColorRight"
+      "SettingSidebarBgColorRight",
+      "SettingTwtBudgetVibe",
+      "SettingTwtFlashColor"
     ],
     "resources": {
       "media": [
