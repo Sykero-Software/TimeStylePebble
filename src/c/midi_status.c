@@ -52,6 +52,13 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   GRect b = layer_get_bounds(layer);
   build_status_text();
 
+  // Shared "status area" background (same setting as the work-time strip);
+  // GColorClear = inherit watchface bg (no fill). Mirrors twt_status.c.
+  if (!gcolor_equal(settings.twtStatusBgColor, GColorClear)) {
+    graphics_context_set_fill_color(ctx, settings.twtStatusBgColor);
+    graphics_fill_rect(ctx, b, 0, GCornerNone);
+  }
+
   GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
 
   // main.c reserves a fixed (2-line) status height so the clock size is consistent

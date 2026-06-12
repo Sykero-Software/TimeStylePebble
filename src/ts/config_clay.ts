@@ -90,58 +90,11 @@ const ALT_CLOCK_OFFSETS: ClayOption[] = [
 ];
 
 const config = [
-  // ---------------------------------------------------------------- Colors
+  // ------------------------------------------------------------------ Clock
   {
     type: 'section',
     items: [
-      { type: 'heading', defaultValue: 'Colors' },
-      { type: 'color', messageKey: 'SettingColorTime', label: 'Time text color',
-        defaultValue: '0x000000', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingColorBG', label: 'Background color',
-        defaultValue: '0xFFFFFF', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingColorSidebar', label: 'Sidebar color',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingSidebarTextColor', label: 'Sidebar text color',
-        defaultValue: '0x000000', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingTwtStatusBgColor', label: 'Work-time status background',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingDateBgColor', label: 'Date background',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingSidebarBgColorLeft', label: 'Left sidebar widget-area background',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
-      { type: 'color', messageKey: 'SettingSidebarBgColorRight', label: 'Right sidebar widget-area background',
-        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
-    ],
-  },
-
-  // --------------------------------------------------------------- Widgets
-  {
-    type: 'section',
-    items: [
-      { type: 'heading', defaultValue: 'Widgets' },
-      { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
-      { type: 'radiogroup', messageKey: 'SettingSecondaryAlwaysOn', label: 'Show secondary widgets',
-        defaultValue: '1', options: [{ label: 'Always', value: '1' }, { label: 'With status only', value: '0' }] },
-      { type: 'radiogroup', messageKey: 'SettingSidebarOnLeft', label: 'Sidebar position',
-        defaultValue: '1', options: [{ label: 'Left', value: '1' }, { label: 'Right', value: '0' }] },
-      { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
-        defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },
-      { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',
-        defaultValue: '1', options: [{ label: 'Icon & percent', value: '1' }, { label: 'Icon only', value: '0' }] },
-      { type: 'radiogroup', messageKey: 'SettingDisableAutobattery', label: 'Automatic battery meter (at 10%)',
-        defaultValue: '0', options: [{ label: 'Automatic (on)', value: '0' }, { label: 'Never (off)', value: '1' }] },
-      { type: 'radiogroup', messageKey: 'SettingHealthUseDistance', label: 'Steps widget displays',
-        defaultValue: '0', options: [{ label: 'Number of steps', value: '0' }, { label: 'Distance', value: '1' }] },
-      { type: 'radiogroup', messageKey: 'SettingHealthUseRestfulSleep', label: 'Sleep widget uses',
-        defaultValue: '0', options: [{ label: 'Total Sleep', value: '0' }, { label: 'Restful Sleep', value: '1' }] },
-    ],
-  },
-
-  // ---------------------------------------------------------- Time Display
-  {
-    type: 'section',
-    items: [
-      { type: 'heading', defaultValue: 'Time Display' },
+      { type: 'heading', defaultValue: 'Clock' },
       { type: 'radiogroup', messageKey: 'SettingShowLeadingZero', label: 'Leading zero',
         defaultValue: '0', options: [{ label: 'No', value: '0' }, { label: 'Yes', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingClockFontId', label: 'Clock font',
@@ -154,6 +107,61 @@ const config = [
         ] },
       { type: 'radiogroup', messageKey: 'SettingBigDate', label: 'Large date above clock',
         defaultValue: '1', options: [{ label: 'None', value: '0' }, { label: 'Show', value: '1' }] },
+    ],
+  },
+
+  // ---------------------------------------------------------------- Colors
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Colors' },
+      { type: 'color', messageKey: 'SettingColorTime', label: 'Time text color',
+        defaultValue: '0x000000', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingColorBG', label: 'Background color',
+        defaultValue: '0xFFFFFF', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingDateBgColor', label: 'Date background',
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingTwtStatusBgColor', label: 'Status area background',
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingColorSidebar', label: 'Sidebar color',
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingSidebarTextColor', label: 'Sidebar text color',
+        defaultValue: '0x000000', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingSidebarBgColorLeft', label: 'Left sidebar widget-area background',
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingSidebarBgColorRight', label: 'Right sidebar widget-area background',
+        defaultValue: '0xAAFFAA', sunlight: false, allowGray: true },
+    ],
+  },
+
+  // --------------------------------------------------------------- Widgets
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Widgets' },
+      { type: 'radiogroup', messageKey: 'SettingSidebarOnLeft', label: 'Primary sidebar position',
+        defaultValue: '1', options: [{ label: 'Left', value: '1' }, { label: 'Right', value: '0' }] },
+      { type: 'radiogroup', messageKey: 'SettingSecondaryAlwaysOn', label: 'Show secondary sidebar',
+        defaultValue: '1', options: [{ label: 'Always', value: '1' }, { label: 'Only when there is content in status area', value: '0' }] },
+      { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
+      { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
+        defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },
+      { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',
+        defaultValue: '1', options: [{ label: 'Icon & percent', value: '1' }, { label: 'Icon only', value: '0' }] },
+      { type: 'radiogroup', messageKey: 'SettingDisableAutobattery', label: 'Auto-show battery meter at 10%',
+        defaultValue: '0', options: [{ label: 'On', value: '0' }, { label: 'Off', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingHealthUseDistance', label: 'Steps widget displays',
+        defaultValue: '0', options: [{ label: 'Number of steps', value: '0' }, { label: 'Distance', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingHealthUseRestfulSleep', label: 'Sleep widget uses',
+        defaultValue: '0', options: [{ label: 'Total Sleep', value: '0' }, { label: 'Restful Sleep', value: '1' }] },
+    ],
+  },
+
+  // ------------------------------------------------------------- Work time
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Work time' },
       { type: 'radiogroup', messageKey: 'SettingTwtShowRemaining', label: 'Work time display',
         defaultValue: '0', options: [{ label: 'Worked', value: '0' }, { label: 'Remaining', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingTwtTargetVibe', label: 'Vibrate when daily target reached',
@@ -166,7 +174,7 @@ const config = [
     type: 'section',
     items: [
       { type: 'heading', id: 'heading-weather', defaultValue: 'Weather' },
-      { type: 'radiogroup', messageKey: 'SettingUseMetric', label: 'Units',
+      { type: 'radiogroup', messageKey: 'SettingUseMetric', label: 'Temperature units',
         defaultValue: '1', options: [{ label: 'Celsius', value: '1' }, { label: 'Fahrenheit', value: '0' }] },
       { type: 'radiogroup', messageKey: 'weather_loc_mode', label: 'Location',
         defaultValue: 'auto', options: [{ label: 'Automatic (GPS)', value: 'auto' }, { label: 'Manual', value: 'manual' }] },
@@ -184,6 +192,24 @@ const config = [
     ],
   },
 
+  // ----------------------------------------------------------- Electricity
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', id: 'heading-electricity', defaultValue: 'Electricity' },
+      { type: 'input', messageKey: 'SettingElecQuietStart', label: 'Quiet hours start (0-23)',
+        attributes: { type: 'number', min: 0, max: 23, placeholder: '23' }, defaultValue: '23' },
+      { type: 'input', messageKey: 'SettingElecQuietEnd', label: 'Quiet hours end (0-23)',
+        attributes: { type: 'number', min: 0, max: 23, placeholder: '7' }, defaultValue: '7' },
+      { type: 'input', messageKey: 'SettingElecCheapFactorPct', label: 'Cheap factor (% of average)',
+        attributes: { type: 'number', min: 1, max: 100, placeholder: '70' }, defaultValue: '70' },
+      { type: 'input', messageKey: 'elec_cheap_floor', label: 'Cheap floor (snt/kWh)',
+        attributes: { type: 'number', step: 0.1, placeholder: '2.0' }, defaultValue: '2.0' },
+      { type: 'input', messageKey: 'elec_cheap_ceiling', label: 'Cheap ceiling (snt/kWh)',
+        attributes: { type: 'number', step: 0.1, placeholder: '8.0' }, defaultValue: '8.0' },
+    ],
+  },
+
   // ------------------------------------------------------------- Bluetooth
   {
     type: 'section',
@@ -196,21 +222,21 @@ const config = [
     ],
   },
 
-  // ------------------------------------------------------------------ MIDI
+  // ----------------------------------------------------------- MIDI recorder
   {
     type: 'section',
     items: [
-      { type: 'heading', defaultValue: 'MIDI' },
-      { type: 'radiogroup', messageKey: 'SettingMidiVibe', label: 'MIDI recording start/stop',
+      { type: 'heading', defaultValue: 'MIDI recorder' },
+      { type: 'radiogroup', messageKey: 'SettingMidiVibe', label: 'Vibrate on recording start/stop',
         defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
     ],
   },
 
-  // ---------------------------------------------------------- Notification
+  // ------------------------------------------------------ Periodic vibration
   {
     type: 'section',
     items: [
-      { type: 'heading', defaultValue: 'Notification' },
+      { type: 'heading', defaultValue: 'Periodic vibration' },
       { type: 'radiogroup', messageKey: 'SettingHourlyVibe', label: 'Vibration on interval',
         defaultValue: '0', options: [
           { label: 'No vibration', value: '0' },
@@ -232,24 +258,6 @@ const config = [
         defaultValue: 0, options: ALT_CLOCK_OFFSETS },
       { type: 'radiogroup', messageKey: 'SettingDecimalSep', label: 'Decimal separator',
         defaultValue: '.', options: [{ label: '.', value: '.' }, { label: ',', value: ',' }] },
-    ],
-  },
-
-  // ----------------------------------------------------------- Electricity
-  {
-    type: 'section',
-    items: [
-      { type: 'heading', id: 'heading-electricity', defaultValue: 'Electricity' },
-      { type: 'input', messageKey: 'SettingElecQuietStart', label: 'Quiet hours start (0-23)',
-        attributes: { type: 'number', min: 0, max: 23, placeholder: '23' }, defaultValue: '23' },
-      { type: 'input', messageKey: 'SettingElecQuietEnd', label: 'Quiet hours end (0-23)',
-        attributes: { type: 'number', min: 0, max: 23, placeholder: '7' }, defaultValue: '7' },
-      { type: 'input', messageKey: 'SettingElecCheapFactorPct', label: 'Cheap factor (% of average)',
-        attributes: { type: 'number', min: 1, max: 100, placeholder: '70' }, defaultValue: '70' },
-      { type: 'input', messageKey: 'elec_cheap_floor', label: 'Cheap floor (snt/kWh)',
-        attributes: { type: 'number', step: 0.1, placeholder: '2.0' }, defaultValue: '2.0' },
-      { type: 'input', messageKey: 'elec_cheap_ceiling', label: 'Cheap ceiling (snt/kWh)',
-        attributes: { type: 'number', step: 0.1, placeholder: '8.0' }, defaultValue: '8.0' },
     ],
   },
 
