@@ -474,6 +474,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       } else {
         vibes_long_pulse();     // recording stopped
       }
+      light_enable_interaction();   // briefly light the backlight, per the user's watch light settings
     }
     s_midiSeen = true;
   }

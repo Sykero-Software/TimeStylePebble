@@ -307,6 +307,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
       VibePattern pat = { .durations = segs, .num_segments = ARRAY_LENGTH(segs) };
       vibes_enqueue_custom_pattern(pat);
       TwtStatus_startFlash();
+      light_enable_interaction();   // briefly light the backlight, per the user's watch light settings
     }
   }
 
@@ -331,6 +332,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
       VibePattern pat = { .durations = segs, .num_segments = ARRAY_LENGTH(segs) };
       vibes_enqueue_custom_pattern(pat);
       TwtStatus_startFlash();
+      light_enable_interaction();   // briefly light the backlight, per the user's watch light settings
     }
   }
 
