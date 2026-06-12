@@ -122,7 +122,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
     return (typeof v === 'string') ? (parseInt(v.replace(/^0x/, ''), 16) & 0xFFFFFF) : (v & 0xFFFFFF);
   }
   ['SettingColorTime', 'SettingColorBG', 'SettingColorSidebar', 'SettingSidebarTextColor',
-    'SettingTwtStatusBgColor', 'SettingDateBgColor', 'SettingSidebarBgColorLeft',
+    'SettingTwtStatusBgColor', 'SettingTwtFlashColor', 'SettingDateBgColor', 'SettingSidebarBgColorLeft',
     'SettingSidebarBgColorRight'].forEach((k) => {
     if (s[k] !== undefined && s[k] !== null) { dict[k] = colorInt(s[k]); }
   });
@@ -133,7 +133,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
   const STRING_KEYS: Record<string, boolean> = { SettingAltClockName: true, SettingDecimalSep: true };
   ['SettingLanguageID', 'SettingShowLeadingZero', 'SettingClockFontId', 'SettingDisconnectIcon',
     'SettingBluetoothVibe', 'SettingMidiVibe', 'SettingBigDate', 'SettingTwtShowRemaining',
-    'SettingTwtTargetVibe', 'SettingHourlyVibe',
+    'SettingTwtTargetVibe', 'SettingTwtBudgetVibe', 'SettingHourlyVibe',
     'SettingSecondaryAlwaysOn', 'SettingSidebarOnLeft', 'SettingUseLargeFonts', 'SettingUseMetric',
     'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
     'SettingDecimalSep', 'SettingHealthUseDistance', 'SettingHealthUseRestfulSleep',
