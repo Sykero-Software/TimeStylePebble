@@ -56,3 +56,11 @@ void TwtStatus_redraw();
 // Worked minutes today INCLUDING the live running segment (workedBeforeMin + running).
 // Shared by the status strip and the daily-target-reached vibration in main.c.
 int32_t TwtStatus_workedTotalMin(void);
+
+// All-time worked minutes on the CURRENT task INCLUDING the live running segment
+// (taskTotalBeforeMin + running). Shared by the budget-reached vibration in main.c.
+int32_t TwtStatus_taskTotalMin(void);
+
+// Flash the status strip (settings.twtFlashColor) for ~5s. Called when a
+// target-reached vibration fires, so the user sees which alert caused the buzz.
+void TwtStatus_startFlash(void);

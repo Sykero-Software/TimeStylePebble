@@ -9,6 +9,13 @@ TwtStatus twt_status;
 
 static Layer* s_status_layer;
 
+// Status-strip flash (target-reached alert): ~5s = 10 toggles x 500ms.
+static AppTimer* s_flash_timer;
+static int s_flash_toggles_left;
+static bool s_flash_on;
+#define TWT_FLASH_TOGGLES 10
+#define TWT_FLASH_INTERVAL_MS 500
+
 bool TwtStatus_isSupported() {
 #if defined(PBL_RECT) && !defined(PBL_PLATFORM_APLITE)
   return true;
@@ -53,11 +60,29 @@ int32_t TwtStatus_workedTotalMin(void) {
   return twt_status.workedBeforeMin + running;
 }
 
+int32_t TwtStatus_taskTotalMin(void) {
+  int32_t running = 0;
+  if (twt_status.isTracking && twt_status.segmentStartEpoch > 0) {
+    running = ((int32_t)time(NULL) - twt_status.segmentStartEpoch) / 60;
+    if (running < 0) running = 0;
+  }
+  return twt_status.taskTotalBeforeMin + running;
+}
+
 static void status_update_proc(Layer* layer, GContext* ctx) {
   GRect b = layer_get_bounds(layer);
 
-  // configurable strip background; GColorClear = inherit watchface bg (no fill)
-  if (!gcolor_equal(settings.twtStatusBgColor, GColorClear)) {
+  // During a flash "on" tick, fill the whole strip with the bright flash colour and
+  // draw text/bar in a contrasting colour, so the alert is unmistakable. Otherwise the
+  // configurable strip background (GColorClear = inherit watchface bg, no fill).
+  GColor text_color = settings.timeColor;
+  if (s_flash_on) {
+    graphics_context_set_fill_color(ctx, settings.twtFlashColor);
+    graphics_fill_rect(ctx, b, 0, GCornerNone);
+    // luminance of the flash colour -> black text on light, white text on dark
+    unsigned r = settings.twtFlashColor.r, g = settings.twtFlashColor.g, bl = settings.twtFlashColor.b;
+    text_color = ((r * 3 + g * 6 + bl) >= 15) ? GColorBlack : GColorWhite;  // (3+6+1)*1.5 threshold on 0..3 channels
+  } else if (!gcolor_equal(settings.twtStatusBgColor, GColorClear)) {
     graphics_context_set_fill_color(ctx, settings.twtStatusBgColor);
     graphics_fill_rect(ctx, b, 0, GCornerNone);
   }
@@ -83,7 +108,7 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   snprintf(task_buf, sizeof(task_buf), "%d:%02d", (int)(task_shown / 60), (int)(task_shown % 60));
   if (day_pct >= 0)  snprintf(day_pct_buf, sizeof(day_pct_buf), "(%d%%)", day_pct > 999 ? 999 : day_pct);
 
-  graphics_context_set_text_color(ctx, settings.timeColor);
+  graphics_context_set_text_color(ctx, text_color);
 
   GFont big = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
   GFont small = fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD);
@@ -115,9 +140,9 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   if (twt_status.dailyTargetMin > 0) {
     int bar_y = 28, bar_h = 3, bar_w = b.size.w;
     int fill = twt_bar_fill_px(total, twt_status.dailyTargetMin, bar_w);
-    graphics_context_set_stroke_color(ctx, settings.timeColor);
+    graphics_context_set_stroke_color(ctx, text_color);
     graphics_draw_rect(ctx, GRect(0, bar_y, bar_w, bar_h));
-    graphics_context_set_fill_color(ctx, settings.timeColor);
+    graphics_context_set_fill_color(ctx, text_color);
     graphics_fill_rect(ctx, GRect(0, bar_y, fill, bar_h), 0, GCornerNone);
   }
 
@@ -132,6 +157,28 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   graphics_draw_text(ctx, twt_status.taskName, big,
       GRect(0, 32, task_x - 2, 30),
       GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);
+}
+
+static void flash_timer_cb(void* data) {
+  s_flash_timer = NULL;
+  if (s_flash_toggles_left <= 0) {
+    s_flash_on = false;
+    if (s_status_layer) layer_mark_dirty(s_status_layer);
+    return;
+  }
+  s_flash_toggles_left--;
+  s_flash_on = !s_flash_on;
+  if (s_status_layer) layer_mark_dirty(s_status_layer);
+  s_flash_timer = app_timer_register(TWT_FLASH_INTERVAL_MS, flash_timer_cb, NULL);
+}
+
+void TwtStatus_startFlash(void) {
+  if (!s_status_layer) return;
+  if (s_flash_timer) { app_timer_cancel(s_flash_timer); s_flash_timer = NULL; }
+  s_flash_toggles_left = TWT_FLASH_TOGGLES;
+  s_flash_on = true;
+  layer_mark_dirty(s_status_layer);
+  s_flash_timer = app_timer_register(TWT_FLASH_INTERVAL_MS, flash_timer_cb, NULL);
 }
 
 void TwtStatus_redraw() {
@@ -155,6 +202,8 @@ void TwtStatus_setHidden(bool hidden) {
 }
 
 void TwtStatus_deinitLayer() {
+  if (s_flash_timer) { app_timer_cancel(s_flash_timer); s_flash_timer = NULL; }
+  s_flash_on = false;
   if (s_status_layer) {
     layer_destroy(s_status_layer);
     s_status_layer = NULL;
