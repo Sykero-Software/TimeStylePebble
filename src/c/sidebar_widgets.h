@@ -38,6 +38,10 @@ typedef enum {
 // settings clamp and the config-message bounds checks.
 #define MAX_WIDGET_TYPE CHEAPEST_ELEC_HOUR
 
+// Maximum length of the configurable widget priority list (storage + protocol
+// buffer). The watch shows as many as fit by height; this only bounds the buffer.
+#define MAX_WIDGET_LIST 16
+
 typedef struct {
   /*
    * Returns the pixel height of the widget, taking into account all current

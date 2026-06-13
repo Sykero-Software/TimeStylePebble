@@ -102,6 +102,20 @@ typedef struct {
   // primary one. See sidebar.c drawWidgetColumn / drawRoundSidebar.
   GColor sidebarBgColorLeft;  // PRIMARY sidebar background
   GColor sidebarBgColorRight; // SECONDARY sidebar background
+
+  // Variable-length widget priority list (replaces the fixed widgets[3] +
+  // widgets2[3] model). The watch packs as many as fit by fixed height into the
+  // primary column, overflow into the secondary. Appended fields, zero-default
+  // on load of an older blob; migrated from widgets/widgets2 in
+  // Settings_loadFromStorage when widgetCount==0. The legacy widgets[]/widgets2[]
+  // arrays above are retained for that migration and for round-board mirroring.
+  uint8_t widgetList[MAX_WIDGET_LIST];
+  uint8_t widgetCount;
+
+  // Status strip layout: false (default) = side columns stay full height and the
+  // strip is inset between them; true = columns shorten to the strip top and the
+  // strip spans full width. Appended field, zero-default (=false).
+  bool statusStripFullWidth;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

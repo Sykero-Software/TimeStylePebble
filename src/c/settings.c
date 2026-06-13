@@ -59,6 +59,12 @@ void Settings_loadFromStorage() {
   settings.widgets2[1] = EMPTY;
   settings.widgets2[2] = EMPTY;
   settings.secondaryAlwaysOn = false;   // auto-hide by default; appended field, no settings-version bump
+  // Default priority list mirrors the historical widgets[0..2] defaults.
+  settings.widgetList[0] = HEARTRATE;
+  settings.widgetList[1] = BTC_PRICE;
+  settings.widgetList[2] = EURUSD_RATE;
+  settings.widgetCount = 3;
+  settings.statusStripFullWidth = false;   // full-height columns by default; appended field
   settings.elecQuietStart = 23;        // appended field, no settings-version bump
   settings.elecQuietEnd = 7;
   settings.elecCheapFactorPct = 70;
@@ -102,6 +108,22 @@ void Settings_loadFromStorage() {
     }
   }
 
+  // Migration to the variable-length widget list: an older persisted blob has
+  // widgetCount==0 (the field zero-defaulted). Rebuild the priority list from the
+  // legacy widgets[0..2] + widgets2[0..2] (compacting EMPTY entries), once.
+  if (settings.widgetCount == 0) {
+    int n = 0;
+    for (int i = 0; i < 3; i++) {
+      if (settings.widgets[i] != EMPTY && settings.widgets[i] <= MAX_WIDGET_TYPE)
+        settings.widgetList[n++] = settings.widgets[i];
+    }
+    for (int i = 0; i < 3; i++) {
+      if (settings.widgets2[i] != EMPTY && settings.widgets2[i] <= MAX_WIDGET_TYPE)
+        settings.widgetList[n++] = settings.widgets2[i];
+    }
+    settings.widgetCount = n;
+  }
+
   // Sanitize loaded settings: a value that is out of range (e.g. from an
   // earlier build whose message-key IDs were shifted, writing a color/garbage
   // value into languageId) would index arrays like dayNames[37] out of bounds
@@ -116,6 +138,10 @@ void Settings_loadFromStorage() {
   for (int i = 0; i < 3; i++) {
     if (settings.widgets[i] > MAX_WIDGET_TYPE) { settings.widgets[i] = EMPTY; clamped = true; }
     if (settings.widgets2[i] > MAX_WIDGET_TYPE) { settings.widgets2[i] = EMPTY; clamped = true; }
+  }
+  if (settings.widgetCount > MAX_WIDGET_LIST) { settings.widgetCount = MAX_WIDGET_LIST; clamped = true; }
+  for (int i = 0; i < settings.widgetCount; i++) {
+    if (settings.widgetList[i] > MAX_WIDGET_TYPE) { settings.widgetList[i] = EMPTY; clamped = true; }
   }
   if (settings.decimalSeparator != '.' && settings.decimalSeparator != ',') {
     settings.decimalSeparator = '.'; clamped = true;
@@ -159,38 +185,18 @@ void Settings_updateDynamicSettings() {
   dynamicSettings.enableBeats = false;
   dynamicSettings.enableAltTimeZone = false;
 
-  // Scan both panels: a widget in either the primary sidebar or the secondary
-  // panel should toggle its corresponding dynamic flag / fetcher.
-  for (int pass = 0; pass < 2; pass++) {
-    const SidebarWidgetType *w = (pass == 0) ? settings.widgets : settings.widgets2;
-    for (int i = 0; i < 3; i++) {
-      // if there are any weather widgets, enable weather checking
-      if (w[i] == WEATHER_CURRENT ||
-          w[i] == WEATHER_FORECAST_TODAY ||
-          w[i] == WEATHER_UV_INDEX) {
-        dynamicSettings.disableWeather = false;
-      }
-
-      // if any widget is "seconds", we'll need to update the sidebar every second
-      if (w[i] == SECONDS) {
-        dynamicSettings.updateScreenEverySecond = true;
-      }
-
-      // if any widget is "battery", disable the automatic battery indication
-      if (w[i] == BATTERY_METER) {
-        dynamicSettings.enableAutoBatteryWidget = false;
-      }
-
-      // if any widget is "beats", enable the beats calculation
-      if (w[i] == BEATS) {
-        dynamicSettings.enableBeats = true;
-      }
-
-      // if any widget is "alt_time_zone", enable the alternative time calculation
-      if (w[i] == ALT_TIME_ZONE) {
-        dynamicSettings.enableAltTimeZone = true;
-      }
+  // Scan the full priority list: a widget anywhere in it (even one currently not
+  // visible because it didn't fit) should keep its data source / tick enabled,
+  // since it can become visible when the status strip toggles.
+  for (int i = 0; i < settings.widgetCount; i++) {
+    SidebarWidgetType w = settings.widgetList[i];
+    if (w == WEATHER_CURRENT || w == WEATHER_FORECAST_TODAY || w == WEATHER_UV_INDEX) {
+      dynamicSettings.disableWeather = false;
     }
+    if (w == SECONDS) { dynamicSettings.updateScreenEverySecond = true; }
+    if (w == BATTERY_METER) { dynamicSettings.enableAutoBatteryWidget = false; }
+    if (w == BEATS) { dynamicSettings.enableBeats = true; }
+    if (w == ALT_TIME_ZONE) { dynamicSettings.enableAltTimeZone = true; }
   }
 
   // if the (primary) sidebar background is black, use inverted icon colors.
