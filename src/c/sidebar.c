@@ -382,12 +382,9 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   int compact_mode_threshold = bounds.size.h - V_PADDING_DEFAULT * 2 - 3;
   int v_padding = V_PADDING_DEFAULT;
 
-  SidebarWidgets_useCompactMode =
-      false; // ensure that we compare the non-compacted heights
   int totalHeight = displayWidgets[0].getHeight() +
                     displayWidgets[1].getHeight() +
                     displayWidgets[2].getHeight();
-  SidebarWidgets_useCompactMode = (totalHeight > compact_mode_threshold);
   // printf("Total Height: %i, Threshold: %i", totalHeight,
   // compact_mode_threshold);
 

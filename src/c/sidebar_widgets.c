@@ -9,7 +9,6 @@
 #include "electricity.h"
 #include "crypto.h"
 
-bool SidebarWidgets_useCompactMode = false;
 int SidebarWidgets_xOffset;
 
 // sidebar icons
@@ -728,8 +727,7 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
 /********** current date widget **********/
 
 int DateWidget_getHeight() {
-  return SidebarWidgets_useCompactMode ? layout.dateHeightCompact
-                                       : layout.dateHeight;
+  return layout.dateHeight;
 }
 
 void DateWidget_draw(GContext *ctx, int yPosition) {
@@ -790,15 +788,13 @@ void DateWidget_draw(GContext *ctx, int yPosition) {
   // switch back to normal color for the rest
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
-  // don't draw the month if we're in compact mode
-  if (!SidebarWidgets_useCompactMode) {
-    yOffset = layout.dateMonthY;
+  // draw the month
+  yOffset = layout.dateMonthY;
 
-    graphics_draw_text(ctx, currentMonth, currentSidebarFont,
-                       GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + yOffset, layout.textRectWidth, 20),
-                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-  }
+  graphics_draw_text(ctx, currentMonth, currentSidebarFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           yPosition + yOffset, layout.textRectWidth, 20),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
 /********** current weather widget **********/

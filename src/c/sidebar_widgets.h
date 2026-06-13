@@ -2,13 +2,6 @@
 #include <pebble.h>
 
 /*
- * "Compact Mode" is a global setting shared by all widgets, which determines
- * whether they should try to reduce their padding. Intended to allow larger
- * widgets to fit when vertical screen space is lacking
- */
-extern bool SidebarWidgets_useCompactMode;
-
-/*
  * A global x offset used for nudging the widgets left and right
  * Included for round support
  */
