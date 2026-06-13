@@ -37,7 +37,7 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
 Layer *sidebarLayer;
 
 #ifndef PBL_ROUND
-Layer *secondarySidebarLayer;   // shown opposite the primary while a status display is visible
+Layer *secondarySidebarLayer;   // right column; shown when rightWidgetList is non-empty
 #endif
 
 #ifdef PBL_ROUND
@@ -115,6 +115,9 @@ void Sidebar_redraw() {
   if (!TwtStatus_isSupported()) {
     // No status layout here (aplite): single sidebar = the LEFT (primary) list,
     // drawn in full (overflow clipped). The secondary panel stays hidden.
+    // Known limitation: aplite has no right column, so an upgrade user whose list
+    // was migrated to the right (sidebarOnLeft==false) sees an empty sidebar until
+    // they reconfigure. Aplite is a legacy/non-goal platform; accepted.
     Sidebar_distributeWidgets(NULL, NULL);
     if (!settings.sidebarOnLeft) {
       layer_set_frame(sidebarLayer, GRect(screen_rect.size.w - sidebarWidth, 0,
@@ -181,6 +184,8 @@ int getReplacableWidget() {
 // returns the best candidate widget for replacement by the auto battery
 // or the disconnection icon
 static int getReplacableWidget(const SidebarWidgetType widgetTypes[], int count) {
+  // (rect columns are pre-filtered of EMPTY by copyWidgetList, so in practice the
+  //  weather-preference and last-slot fallback below are what fire)
   // empty slot is the obvious choice
   for (int i = 0; i < count; i++) {
     if (widgetTypes[i] == EMPTY) { return i; }

@@ -111,34 +111,43 @@ void Settings_loadFromStorage() {
     }
   }
 
-  // Migration to the variable-length widget list: an older persisted blob has
-  // widgetCount==0 (the field zero-defaulted). Rebuild the priority list from the
-  // legacy widgets[0..2] + widgets2[0..2] (compacting EMPTY entries), once.
-  if (settings.widgetCount == 0) {
-    int n = 0;
-    for (int i = 0; i < 3; i++) {
-      if (settings.widgets[i] != EMPTY && settings.widgets[i] <= MAX_WIDGET_TYPE)
-        settings.widgetList[n++] = settings.widgets[i];
-    }
-    for (int i = 0; i < 3; i++) {
-      if (settings.widgets2[i] != EMPTY && settings.widgets2[i] <= MAX_WIDGET_TYPE)
-        settings.widgetList[n++] = settings.widgets2[i];
-    }
-    settings.widgetCount = n;
-  }
-
-  // One-time dual-list split: an older blob stored a single list (widgetList) and
-  // the legacy sidebarOnLeft. Move it to the side it used to render on, once.
+  // One-time widget-list migration, gated by the dualListInit sentinel (an older
+  // blob zero-defaults it to false), so neither half re-runs on later boots:
+  //   (a) Rebuild the single widgetList from the legacy widgets[0..2] +
+  //       widgets2[0..2] arrays when an older blob predates widgetList
+  //       (widgetCount==0). Gated here so it does NOT re-run every boot and
+  //       repopulate the left column after (b) clears widgetCount.
+  //   (b) Split onto left/right: for an UPGRADE (a persisted blob already
+  //       existed) whose primary sidebar was on the right (sidebarOnLeft==false),
+  //       move the single list into the right column. A fresh install (no
+  //       persisted blob) keeps the default list on the LEFT, matching the Clay
+  //       config default.
   bool migrated = false;
   if (!settings.dualListInit) {
     settings.dualListInit = true;
     migrated = true;
-    if (!settings.sidebarOnLeft) {
-      // primary was on the right -> move the single list into the right column
-      for (int i = 0; i < settings.widgetCount && i < MAX_WIDGET_LIST; i++) {
+
+    if (settings.widgetCount == 0) {
+      int n = 0;
+      for (int i = 0; i < 3; i++) {
+        if (settings.widgets[i] != EMPTY && settings.widgets[i] <= MAX_WIDGET_TYPE)
+          settings.widgetList[n++] = settings.widgets[i];
+      }
+      for (int i = 0; i < 3; i++) {
+        if (settings.widgets2[i] != EMPTY && settings.widgets2[i] <= MAX_WIDGET_TYPE)
+          settings.widgetList[n++] = settings.widgets2[i];
+      }
+      settings.widgetCount = n;
+    }
+
+    if (persist_exists(SETTINGS_PERSIST_KEY) && !settings.sidebarOnLeft) {
+      // upgrade whose primary was on the right -> move the single list right
+      int moved = settings.widgetCount;
+      if (moved > MAX_WIDGET_LIST) moved = MAX_WIDGET_LIST;
+      for (int i = 0; i < moved; i++) {
         settings.rightWidgetList[i] = settings.widgetList[i];
       }
-      settings.rightWidgetCount = settings.widgetCount;
+      settings.rightWidgetCount = moved;
       settings.widgetCount = 0;
     }
   }
@@ -179,8 +188,9 @@ void Settings_loadFromStorage() {
     settings.elecCheapFactorPct = 70; clamped = true;
   }
 
+  if (migrated) { APP_LOG(APP_LOG_LEVEL_INFO, "settings: one-time widget-list migration applied"); }
+  if (clamped)  { APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, clamped to safe values"); }
   if (clamped || migrated) {
-    APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, reset to defaults");
     persist_write_data(SETTINGS_PERSIST_KEY, &settings, sizeof(settings));
     persist_write_int(SETTINGS_VERSION_PERSIST_KEY, CURRENT_SETTINGS_VERSION);
   }

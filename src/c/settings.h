@@ -40,7 +40,7 @@ typedef struct {
 
   // sidebar settings
   SidebarWidgetType widgets[3];
-  bool sidebarOnLeft;
+  bool sidebarOnLeft;   // legacy: drives only the one-time dual-list migration + aplite/round side; no longer the rect layout side
   bool useLargeFonts;
   bool activateDisconnectIcon;
   
