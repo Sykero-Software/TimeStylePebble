@@ -114,7 +114,9 @@
       "SettingSidebarBgColorLeft",
       "SettingSidebarBgColorRight",
       "SettingTwtBudgetVibe",
-      "SettingTwtFlashColor"
+      "SettingTwtFlashColor",
+      "SettingWidgetList",
+      "SettingStatusStripFullWidth"
     ],
     "resources": {
       "media": [
