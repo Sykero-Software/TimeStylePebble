@@ -73,10 +73,13 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     const p = (row && row.p !== undefined && row.p !== null) ? row.p : -3;
     const label = (row && typeof row.label === 'string') ? row.label : '';
     const wid = (row && row.wid !== undefined) ? parseInt(row.wid, 10) : 0;
-    let isCustom = true;
-    for (let i = 0; i < COINS.length; i++) { if (COINS[i].id === coin) { isCustom = false; } }
-    // One compact line: coin | vs | precision | label | remove. The free-text
-    // CoinGecko id sits on a second line, shown only when "Custom…" is picked.
+    const sym = symbolFor(coin);              // '' for a custom/unknown coin
+    const isCustom = (sym === '');
+    // A known coin's sidebar label is its symbol (BTC, ETH...), auto-filled and
+    // hidden. A custom coin needs both a free-text CoinGecko id and a short label
+    // (the raw id would render long/ugly), so both inputs are shown on a 2nd line.
+    const labelVal = isCustom ? label : sym;
+    const custHidden = isCustom ? '' : ' style="display:none"';
     return '<div class="cl-row" data-wid="' + wid + '">' +
       '<div class="cl-line">' +
         '<select class="cl-coin">' + coinOptionsHtml(coin) + '</select>' +
@@ -86,17 +89,24 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
         '</select>' +
         '<input class="cl-p" type="number" step="1" title="precision (decimals; negative rounds)" value="' +
           escAttr(String(p)) + '">' +
-        '<input class="cl-label" type="text" placeholder="label" maxlength="5" value="' + escAttr(label) + '">' +
         '<button type="button" class="cl-del" title="Remove">&#10005;</button>' +
       '</div>' +
       '<input class="cl-custom" type="text" placeholder="coingecko id" value="' +
-        (isCustom ? escAttr(coin) : '') + '"' + (isCustom ? '' : ' style="display:none"') + '>' +
+        (isCustom ? escAttr(coin) : '') + '"' + custHidden + '>' +
+      '<input class="cl-label" type="text" placeholder="label" maxlength="5" value="' +
+        escAttr(labelVal) + '"' + custHidden + '>' +
       '</div>';
   }
 
   function defaultPFor(coinId: string): number {
     for (let i = 0; i < COINS.length; i++) { if (COINS[i].id === coinId) { return COINS[i].p; } }
     return 2;
+  }
+
+  // The display symbol for a known coin (BTC, ETH...), or '' if not in the table.
+  function symbolFor(coinId: string): string {
+    for (let i = 0; i < COINS.length; i++) { if (COINS[i].id === coinId) { return COINS[i].label; } }
+    return '';
   }
 
   function rowCoinId(rowEl: HTMLElement): string {
@@ -207,10 +217,15 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
         const sel = t as HTMLSelectElement;
         const cust = rowEl.querySelector('.cl-custom') as HTMLInputElement;
         const pIn = rowEl.querySelector('.cl-p') as HTMLInputElement;
+        const labelIn = rowEl.querySelector('.cl-label') as HTMLInputElement;
         if (sel.value === 'custom') {
-          if (cust) { cust.style.display = ''; }
+          // Custom: reveal both the gecko-id and label inputs (cleared to prompt).
+          if (cust) { cust.style.display = ''; cust.value = ''; }
+          if (labelIn) { labelIn.style.display = ''; labelIn.value = ''; }
         } else {
+          // Known coin: hide both; auto-fill label with the symbol, p with default.
           if (cust) { cust.style.display = 'none'; }
+          if (labelIn) { labelIn.value = symbolFor(sel.value); labelIn.style.display = 'none'; }
           if (pIn) { pIn.value = String(defaultPFor(sel.value)); }
         }
       }
@@ -231,16 +246,20 @@ const cryptoListComponent = {
   // Clay's dark controls (gray-7 #767676, white text). One flex row per coin;
   // flex-wrap keeps it usable if a very narrow screen can't fit all controls.
   style:
-    '.cl-row{border-bottom:1px solid #555;padding:6px 0;margin:0 0 6px 0}' +
-    '.cl-line{display:flex;flex-wrap:wrap;align-items:center;margin:0}' +
+    // .cl-row is a flex-wrap container: the first line (coin/vs/p/✕) spans 100%,
+    // so the custom-id + label inputs (only shown for a custom coin) wrap onto a
+    // second line beneath it.
+    '.cl-row{display:flex;flex-wrap:wrap;align-items:center;' +
+      'border-bottom:1px solid #555;padding:6px 0;margin:0 0 6px 0}' +
+    '.cl-line{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;margin:0}' +
     '.cl-row select,.cl-row input{min-width:0;height:2.6rem;margin:0 4px 0 0;' +
       'background-color:#767676;color:#fff;border:none;border-radius:0.3rem;' +
       'padding:0 0.4rem;color-scheme:dark}' +
     '.cl-row .cl-coin{flex:1 1 5rem}' +
     '.cl-row .cl-vs{flex:0 0 3.8rem}' +
     '.cl-row .cl-p{flex:0 0 3rem}' +
-    '.cl-row .cl-label{flex:0 0 4rem}' +
-    '.cl-row .cl-custom{flex:1 1 100%;margin-top:4px}' +
+    '.cl-row .cl-custom{flex:1 1 auto;margin-top:4px}' +
+    '.cl-row .cl-label{flex:0 0 5rem;margin-top:4px}' +
     '.cl-row button{flex:0 0 auto;min-width:0;width:2.6rem;height:2.6rem;margin:0;padding:0}' +
     '.cl-add{margin:8px 0 10px 0}',
   manipulator: {
