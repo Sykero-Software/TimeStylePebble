@@ -182,6 +182,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   Tuple *widgetList_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidgetList);
   Tuple *statusStripFullWidth_tuple = dict_find(iterator, MESSAGE_KEY_SettingStatusStripFullWidth);
+  Tuple *rightWidgetList_tuple = dict_find(iterator, MESSAGE_KEY_SettingRightWidgetList);
 
   Tuple *altclockName_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockName);
   Tuple *altclockOffset_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockOffset);
@@ -378,6 +379,20 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     for (int i = 0; i < 3; i++) {
       settings.widgets[i] = (i < n) ? settings.widgetList[i] : EMPTY;
     }
+  }
+
+  // Right (secondary) sidebar list: a byte array, one widget id per byte. Parsed
+  // exactly like SettingWidgetList; never mirrored into the legacy widgets[]
+  // (round uses the left list only).
+  if (rightWidgetList_tuple != NULL) {
+    int len = rightWidgetList_tuple->length;
+    if (len > MAX_WIDGET_LIST) { len = MAX_WIDGET_LIST; }
+    const uint8_t *bytes = rightWidgetList_tuple->value->data;
+    int n = 0;
+    for (int i = 0; i < len; i++) {
+      if (bytes[i] <= MAX_WIDGET_TYPE) { settings.rightWidgetList[n++] = bytes[i]; }
+    }
+    settings.rightWidgetCount = n;
   }
 
   if (statusStripFullWidth_tuple != NULL) {

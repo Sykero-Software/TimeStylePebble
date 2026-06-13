@@ -116,7 +116,8 @@
       "SettingTwtBudgetVibe",
       "SettingTwtFlashColor",
       "SettingWidgetList",
-      "SettingStatusStripFullWidth"
+      "SettingStatusStripFullWidth",
+      "SettingRightWidgetList"
     ],
     "resources": {
       "media": [
