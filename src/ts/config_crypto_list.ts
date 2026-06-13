@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (c) 2026 Tuomas Airaksinen
 
-/* Clay custom component "cryptoList": a reorderable list of crypto/currency
-   coins. Value = array of { wid, coin, vs, p, label }. Each row has a popular-
-   coin <select> (+ "Custom…" revealing a free-text CoinGecko id), a vs-currency
-   <select> (USD/EUR), a numeric precision input `p`, an optional label input,
-   and up/down/remove buttons. Each row carries a STABLE wid (data-wid): legacy
-   migrated rows keep 15/16/17; new rows get the smallest free id in [200,216).
-   The widget-list component reads these rows live from the DOM to build its
-   crypto options (see config_widget_list.ts).
+/* Clay custom component "cryptoList": the SET of crypto/currency coins to track.
+   Value = array of { wid, coin, vs, p, label }. Each row is one compact line: a
+   popular-coin <select> (+ "Custom…" revealing a free-text CoinGecko id on a
+   second line), a vs-currency <select> (USD/EUR), a numeric precision input `p`,
+   an optional label input, and a remove button. There is NO ordering here — a
+   coin's position in the sidebar is decided in the widget list, so row order is
+   irrelevant (it only affects the order coins appear in the widget picker's
+   dropdown). Each row carries a STABLE wid (data-wid): legacy migrated rows keep
+   15/16/17; new rows get the smallest free id in [200,216). The widget-list
+   component reads these rows live from the DOM to build its crypto options
+   (see config_widget_list.ts).
 
    Serialized via toSource() + re-eval'd in the webview -> fully self-contained:
    no imports at runtime, no spread/destructuring, no module-scope helpers, no
@@ -72,6 +75,8 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     const wid = (row && row.wid !== undefined) ? parseInt(row.wid, 10) : 0;
     let isCustom = true;
     for (let i = 0; i < COINS.length; i++) { if (COINS[i].id === coin) { isCustom = false; } }
+    // One compact line: coin | vs | precision | label | remove. The free-text
+    // CoinGecko id sits on a second line, shown only when "Custom…" is picked.
     return '<div class="cl-row" data-wid="' + wid + '">' +
       '<div class="cl-line">' +
         '<select class="cl-coin">' + coinOptionsHtml(coin) + '</select>' +
@@ -79,18 +84,13 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
           '<option value="usd"' + (vs === 'usd' ? ' selected' : '') + '>USD</option>' +
           '<option value="eur"' + (vs === 'eur' ? ' selected' : '') + '>EUR</option>' +
         '</select>' +
-      '</div>' +
-      '<div class="cl-line">' +
-        '<input class="cl-custom" type="text" placeholder="coingecko id" value="' +
-          (isCustom ? escAttr(coin) : '') + '"' + (isCustom ? '' : ' style="display:none"') + '>' +
-        '<input class="cl-p" type="number" step="1" title="precision" value="' + escAttr(String(p)) + '">' +
+        '<input class="cl-p" type="number" step="1" title="precision (decimals; negative rounds)" value="' +
+          escAttr(String(p)) + '">' +
         '<input class="cl-label" type="text" placeholder="label" maxlength="5" value="' + escAttr(label) + '">' +
-      '</div>' +
-      '<div class="cl-line">' +
-        '<button type="button" class="cl-up" title="Move up">&#9650;</button>' +
-        '<button type="button" class="cl-down" title="Move down">&#9660;</button>' +
         '<button type="button" class="cl-del" title="Remove">&#10005;</button>' +
       '</div>' +
+      '<input class="cl-custom" type="text" placeholder="coingecko id" value="' +
+        (isCustom ? escAttr(coin) : '') + '"' + (isCustom ? '' : ' style="display:none"') + '>' +
       '</div>';
   }
 
@@ -146,13 +146,8 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     return CRYPTO_BASE;
   }
 
-  function updateButtons(): void {
+  function updateAddButton(): void {
     const rowEls = root.querySelectorAll('.cl-row');
-    for (let i = 0; i < rowEls.length; i++) {
-      (rowEls[i].querySelector('.cl-up') as HTMLButtonElement).disabled = (i === 0);
-      (rowEls[i].querySelector('.cl-down') as HTMLButtonElement).disabled =
-        (i === rowEls.length - 1);
-    }
     const add = root.querySelector('.cl-add') as HTMLButtonElement;
     if (add) { add.style.display = (rowEls.length >= MAX_CRYPTO) ? 'none' : ''; }
   }
@@ -162,7 +157,7 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     let html = '';
     for (let i = 0; i < rows.length && i < MAX_CRYPTO; i++) { html += rowHtml(rows[i]); }
     list.innerHTML = html;
-    updateButtons();
+    updateAddButton();
   }
 
   self._clCurrentRows = currentRows;
@@ -172,9 +167,6 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     const rowEls = root.querySelectorAll('.cl-row');
     for (let i = 0; i < rowEls.length; i++) { if (rowEls[i] === node) { return i; } }
     return -1;
-  }
-  function swap(arr: any[], a: number, b: number): void {
-    const tmp = arr[a]; arr[a] = arr[b]; arr[b] = tmp;
   }
 
   root.addEventListener('click', function(ev: Event) {
@@ -195,20 +187,12 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
       return;
     }
 
-    const rowEl = (target.closest ? target.closest('.cl-row') : null) as HTMLElement;
-    const idx = rowIndexOf(rowEl);
-    if (idx === -1) { return; }
-    const rows = currentRows();
     if (target.classList.contains('cl-del')) {
+      const rowEl = (target.closest ? target.closest('.cl-row') : null) as HTMLElement;
+      const idx = rowIndexOf(rowEl);
+      if (idx === -1) { return; }
+      const rows = currentRows();
       rows.splice(idx, 1);
-      rebuild(rows);
-      self.trigger('change');
-    } else if (target.classList.contains('cl-up') && idx > 0) {
-      swap(rows, idx, idx - 1);
-      rebuild(rows);
-      self.trigger('change');
-    } else if (target.classList.contains('cl-down') && idx < rows.length - 1) {
-      swap(rows, idx, idx + 1);
       rebuild(rows);
       self.trigger('change');
     }
@@ -242,15 +226,22 @@ const cryptoListComponent = {
     '<div class="cl-list"></div>' +
     '<button type="button" class="cl-add">+ Add crypto</button>' +
     '</div>',
+  // Clay's base theme forces `button { min-width: 12rem }`; row buttons override
+  // it. Native <select>/<input> render light by default; theme them to match
+  // Clay's dark controls (gray-7 #767676, white text). One flex row per coin;
+  // flex-wrap keeps it usable if a very narrow screen can't fit all controls.
   style:
     '.cl-row{border-bottom:1px solid #555;padding:6px 0;margin:0 0 6px 0}' +
-    '.cl-line{display:flex;align-items:center;margin:0 0 4px 0}' +
-    '.cl-row select,.cl-row input{flex:1 1 auto;min-width:0;height:2.6rem;margin:0 4px 0 0;' +
+    '.cl-line{display:flex;flex-wrap:wrap;align-items:center;margin:0}' +
+    '.cl-row select,.cl-row input{min-width:0;height:2.6rem;margin:0 4px 0 0;' +
       'background-color:#767676;color:#fff;border:none;border-radius:0.3rem;' +
       'padding:0 0.4rem;color-scheme:dark}' +
-    '.cl-row .cl-p{flex:0 0 4rem}' +
-    '.cl-row button{flex:0 0 auto;min-width:0;width:2.6rem;height:2.6rem;margin:0 6px 0 0;padding:0}' +
-    '.cl-row button[disabled]{opacity:.35}' +
+    '.cl-row .cl-coin{flex:1 1 5rem}' +
+    '.cl-row .cl-vs{flex:0 0 3.8rem}' +
+    '.cl-row .cl-p{flex:0 0 3rem}' +
+    '.cl-row .cl-label{flex:0 0 4rem}' +
+    '.cl-row .cl-custom{flex:1 1 100%;margin-top:4px}' +
+    '.cl-row button{flex:0 0 auto;min-width:0;width:2.6rem;height:2.6rem;margin:0;padding:0}' +
     '.cl-add{margin:8px 0 10px 0}',
   manipulator: {
     get: function(this: any): any[] {
