@@ -33,12 +33,13 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   const clayConfig = this;
 
   function widgetIds(): number[] {
-    const v = clayConfig.getItemByMessageKey('WidgetList').get();
-    if (!v || !v.length) { return []; }
     const ids: number[] = [];
-    for (let i = 0; i < v.length; i++) {
-      ids.push(parseInt(v[i], 10) || 0);
-    }
+    ['WidgetList', 'WidgetListRight'].forEach((k) => {
+      const v = clayConfig.getItemByMessageKey(k).get();
+      if (v && v.length) {
+        for (let i = 0; i < v.length; i++) { ids.push(parseInt(v[i], 10) || 0); }
+      }
+    });
     return ids;
   }
   function has(ids: number[], set: number[]): boolean {
@@ -92,7 +93,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   // has no AFTER_RENDER); items are show/hide-able and getters valid by then.
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, () => {
     update();
-    ['WidgetList', 'weather_loc_mode', 'SettingDisableAutobattery']
+    ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', update); });
   });
 }

@@ -24,13 +24,14 @@ function makeItem(value) {
   };
 }
 
-// widgetVals: array of up to 6 widget IDs (numbers). opts: {locMode, autoBatteryDisabled}
+// widgetVals: left-list widget IDs. opts: {locMode, autoBatteryDisabled, rightVals}
 function makeClay(widgetVals, opts) {
   opts = opts || {};
   const byKey = {};
   const byId = {};
   // widgetList component value is the array of selected widget ids (ints)
   byKey['WidgetList'] = makeItem((widgetVals || []).map((v) => parseInt(v, 10) || 0));
+  byKey['WidgetListRight'] = makeItem((opts.rightVals || []).map((v) => parseInt(v, 10) || 0));
   GATED_KEYS.forEach((k) => { byKey[k] = makeItem(''); });
   byKey['weather_loc_mode'].value = opts.locMode || 'auto';
   byKey['SettingDisableAutobattery'].value = String(opts.autoBatteryDisabled ? 1 : 0);
@@ -184,4 +185,18 @@ test('live change: disabling auto-battery hides battery style when no battery wi
   c.byKey['SettingDisableAutobattery'].value = '1';
   c.byKey['SettingDisableAutobattery'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, false);
+});
+
+test('right-list weather widget reveals weather section', () => {
+  const c = render([], { rightVals: [7] });
+  assert.strictEqual(c.byId['heading-weather'].shown, true);
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
+});
+
+test('live change: adding a weather widget to the right list reveals weather', () => {
+  const c = render([]);
+  assert.strictEqual(c.byId['heading-weather'].shown, false);
+  c.byKey['WidgetListRight'].value = [7];
+  c.byKey['WidgetListRight'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byId['heading-weather'].shown, true);
 });
