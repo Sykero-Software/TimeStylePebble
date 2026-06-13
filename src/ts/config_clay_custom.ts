@@ -77,6 +77,11 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     toggle(key('elec_cheap_floor'), nextCheap);
     toggle(key('elec_cheap_ceiling'), nextCheap);
 
+    // Crypto: show the section heading once any crypto coin widget is placed.
+    const anyCrypto = ids.some((id) =>
+      id === 15 || id === 16 || id === 17 || (id >= 200 && id < 216));
+    toggle(byId('heading-crypto'), anyCrypto);
+
     // Regional (alternate clock)
     toggle(key('SettingAltClockName'), has(ids, [3]));
     toggle(key('SettingAltClockOffset'), has(ids, [3]));
