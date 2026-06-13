@@ -24,3 +24,15 @@ export function slotsToList(settings: Record<string, any>): number[] | null {
   while (ids.length > 0 && ids[ids.length - 1] === 0) { ids.pop(); }
   return ids;
 }
+
+// Split a single ordered widget list onto the new left/right columns based on the
+// legacy `SettingSidebarOnLeft` value ('1' = the old single sidebar was on the
+// left). The list goes entirely to the side it used to render on; the other side
+// starts empty. Used for the one-time config-side dual-list migration.
+export function splitListByPosition(
+  list: number[], sidebarOnLeftRaw: any): { left: number[]; right: number[] } {
+  const onLeft = (sidebarOnLeftRaw === undefined || sidebarOnLeftRaw === null)
+    ? true : (parseInt(sidebarOnLeftRaw, 10) !== 0);
+  const arr = Array.isArray(list) ? list.slice() : [];
+  return onLeft ? { left: arr, right: [] } : { left: [], right: arr };
+}

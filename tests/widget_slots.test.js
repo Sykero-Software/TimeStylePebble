@@ -46,3 +46,25 @@ test('slotsToList: all-Empty legacy config -> empty list (present keys, all trim
     SettingWidget2_0ID: 0, SettingWidget2_1ID: 0, SettingWidget2_2ID: 0,
   }), []);
 });
+
+const { splitListByPosition } = require('../src/pkjs/widget_slots');
+
+test('splitListByPosition: left when sidebarOnLeft is "1"', () => {
+  assert.deepStrictEqual(splitListByPosition([12, 15, 17], '1'),
+    { left: [12, 15, 17], right: [] });
+});
+
+test('splitListByPosition: right when sidebarOnLeft is "0"', () => {
+  assert.deepStrictEqual(splitListByPosition([12, 15, 17], '0'),
+    { left: [], right: [12, 15, 17] });
+});
+
+test('splitListByPosition: missing position defaults to left', () => {
+  assert.deepStrictEqual(splitListByPosition([5], undefined),
+    { left: [5], right: [] });
+});
+
+test('splitListByPosition: non-array list yields empty sides', () => {
+  assert.deepStrictEqual(splitListByPosition(undefined, '1'),
+    { left: [], right: [] });
+});
