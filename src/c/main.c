@@ -92,43 +92,39 @@ static void apply_twt_layout() {
   int topReserved = settings.showBigDate ? BIG_DATE_HEIGHT : 0;
   int statusTop = root.size.h - statusHeight;   // == root.size.h when no status
 
-  bool primaryOnLeft = settings.sidebarOnLeft;
-
   // Column inner height available for widgets. With the strip full-width, columns
   // shorten to the strip top; otherwise (default) they stay full height and the
   // strip is inset between them.
   bool stripFullWidth = settings.statusStripFullWidth;
   int columnFrameHeight = (statusVisible && stripFullWidth) ? statusTop : root.size.h;
-  int innerHeight = columnFrameHeight - V_PADDING_DEFAULT * 2;
 
-  // The secondary column may receive overflow while a status is visible or when
-  // always-on is set. Pack the list; showSecondary follows from actual overflow.
-  bool allowSecondary = statusVisible || settings.secondaryAlwaysOn;
+  // Two independent lists: left column = widgetList, right column = rightWidgetList.
+  // A column is shown iff its list is non-empty (no priority cursor / overflow
+  // between columns; each list is drawn in full and clipped if it overflows).
   int primaryCount, secondaryCount;
-  bool showSecondary = Sidebar_distributeWidgets(innerHeight, allowSecondary,
-                                                 &primaryCount, &secondaryCount);
-  (void)primaryCount; (void)secondaryCount;
+  Sidebar_distributeWidgets(&primaryCount, &secondaryCount);
+  bool showPrimary = primaryCount > 0;
+  bool showSecondary = secondaryCount > 0;
 
-  // Primary sidebar frame (always present).
-  int primaryX = primaryOnLeft ? 0 : (root.size.w - sidebarWidth);
-  Sidebar_setPrimaryFrame(GRect(primaryX, 0, sidebarWidth, columnFrameHeight));
+  // Left (primary) column, always on the left.
+  if (showPrimary) {
+    Sidebar_setPrimaryFrame(GRect(0, 0, sidebarWidth, columnFrameHeight));
+    Sidebar_setPrimaryHidden(false);
+  } else {
+    Sidebar_setPrimaryHidden(true);
+  }
 
-  // Secondary panel frame (opposite side), shown only when it has overflow.
+  // Right (secondary) column, always on the right.
   if (showSecondary) {
-    int secondaryX = primaryOnLeft ? (root.size.w - sidebarWidth) : 0;
-    Sidebar_setSecondaryFrame(GRect(secondaryX, 0, sidebarWidth, columnFrameHeight));
+    Sidebar_setSecondaryFrame(GRect(root.size.w - sidebarWidth, 0, sidebarWidth, columnFrameHeight));
     Sidebar_setSecondaryHidden(false);
   } else {
     Sidebar_setSecondaryHidden(true);
   }
 
-  // Horizontal insets for the clock/date: always inset by the primary; inset the
-  // opposite side too when the secondary is shown.
-  int leftInset = 0, rightInset = 0;
-  if (primaryOnLeft) { leftInset = sidebarWidth; } else { rightInset = sidebarWidth; }
-  if (showSecondary) {
-    if (primaryOnLeft) { rightInset = sidebarWidth; } else { leftInset = sidebarWidth; }
-  }
+  // Horizontal insets for the clock/date: inset each side that shows a column.
+  int leftInset = showPrimary ? sidebarWidth : 0;
+  int rightInset = showSecondary ? sidebarWidth : 0;
   int contentX = leftInset;
   int contentW = root.size.w - leftInset - rightInset;
 

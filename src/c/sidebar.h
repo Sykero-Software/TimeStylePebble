@@ -23,10 +23,10 @@ void Sidebar_updateTime(struct tm* timeInfo);
 void Sidebar_setPrimaryFrame(GRect frame);
 void Sidebar_setSecondaryFrame(GRect frame);
 void Sidebar_setSecondaryHidden(bool hidden);
+void Sidebar_setPrimaryHidden(bool hidden);
 
-// Packs settings.widgetList into the primary column (filled first) and, when
-// allowSecondary is set and there is overflow, the secondary column. innerHeight
-// is the per-column height available for widgets (frame height minus padding).
-// Returns true when the secondary column receives >=1 widget.
-bool Sidebar_distributeWidgets(int innerHeight, bool allowSecondary,
-                               int *primaryCountOut, int *secondaryCountOut);
+// Fills the left column from settings.widgetList and the right column from
+// settings.rightWidgetList, each in full (overflow is clipped at draw time, not
+// dropped). Writes the per-column visible-candidate counts (number of non-EMPTY
+// entries) to the out params.
+void Sidebar_distributeWidgets(int *primaryCountOut, int *secondaryCountOut);

@@ -103,12 +103,10 @@ typedef struct {
   GColor sidebarBgColorLeft;  // PRIMARY sidebar background
   GColor sidebarBgColorRight; // SECONDARY sidebar background
 
-  // Variable-length widget priority list (replaces the fixed widgets[3] +
-  // widgets2[3] model). The watch packs as many as fit by fixed height into the
-  // primary column, overflow into the secondary. Appended fields, zero-default
-  // on load of an older blob; migrated from widgets/widgets2 in
-  // Settings_loadFromStorage when widgetCount==0. The legacy widgets[]/widgets2[]
-  // arrays above are retained for that migration and for round-board mirroring.
+  // LEFT sidebar widget list (ordered). Drawn in full in the left column:
+  // space-between when it fits, top-anchored + clipped when it overflows. The
+  // legacy widgets[]/widgets2[] arrays above are retained only for the one-time
+  // migration and for round-board mirroring (settings.widgets[0]/[2]).
   uint8_t widgetList[MAX_WIDGET_LIST];
   uint8_t widgetCount;
 
@@ -116,6 +114,16 @@ typedef struct {
   // strip is inset between them; true = columns shorten to the strip top and the
   // strip spans full width. Appended field, zero-default (=false).
   bool statusStripFullWidth;
+
+  // RIGHT sidebar widget list (ordered), independent of the left list. Appended
+  // fields, zero-default on load of an older blob.
+  uint8_t rightWidgetList[MAX_WIDGET_LIST];
+  uint8_t rightWidgetCount;
+
+  // One-time dual-list migration sentinel. false on a pre-dual-list blob; on the
+  // first load we split the single widgetList onto left/right per the legacy
+  // sidebarOnLeft, then set this true and persist. Appended field, zero-default.
+  bool dualListInit;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

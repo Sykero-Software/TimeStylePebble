@@ -66,6 +66,8 @@ void Settings_loadFromStorage() {
   // leaves the tail at this 0 default, so the migration fires.)
   settings.widgetCount = 0;
   settings.statusStripFullWidth = false;   // full-height columns by default; appended field
+  settings.rightWidgetCount = 0;   // right column empty by default; appended field
+  settings.dualListInit = false;   // appended field; one-time split migration below fires once
   settings.elecQuietStart = 23;        // appended field, no settings-version bump
   settings.elecQuietEnd = 7;
   settings.elecCheapFactorPct = 70;
@@ -125,6 +127,22 @@ void Settings_loadFromStorage() {
     settings.widgetCount = n;
   }
 
+  // One-time dual-list split: an older blob stored a single list (widgetList) and
+  // the legacy sidebarOnLeft. Move it to the side it used to render on, once.
+  bool migrated = false;
+  if (!settings.dualListInit) {
+    settings.dualListInit = true;
+    migrated = true;
+    if (!settings.sidebarOnLeft) {
+      // primary was on the right -> move the single list into the right column
+      for (int i = 0; i < settings.widgetCount && i < MAX_WIDGET_LIST; i++) {
+        settings.rightWidgetList[i] = settings.widgetList[i];
+      }
+      settings.rightWidgetCount = settings.widgetCount;
+      settings.widgetCount = 0;
+    }
+  }
+
   // Sanitize loaded settings: a value that is out of range (e.g. from an
   // earlier build whose message-key IDs were shifted, writing a color/garbage
   // value into languageId) would index arrays like dayNames[37] out of bounds
@@ -144,6 +162,10 @@ void Settings_loadFromStorage() {
   for (int i = 0; i < settings.widgetCount; i++) {
     if (settings.widgetList[i] > MAX_WIDGET_TYPE) { settings.widgetList[i] = EMPTY; clamped = true; }
   }
+  if (settings.rightWidgetCount > MAX_WIDGET_LIST) { settings.rightWidgetCount = MAX_WIDGET_LIST; clamped = true; }
+  for (int i = 0; i < settings.rightWidgetCount; i++) {
+    if (settings.rightWidgetList[i] > MAX_WIDGET_TYPE) { settings.rightWidgetList[i] = EMPTY; clamped = true; }
+  }
   if (settings.decimalSeparator != '.' && settings.decimalSeparator != ',') {
     settings.decimalSeparator = '.'; clamped = true;
   }
@@ -157,7 +179,7 @@ void Settings_loadFromStorage() {
     settings.elecCheapFactorPct = 70; clamped = true;
   }
 
-  if (clamped) {
+  if (clamped || migrated) {
     APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, reset to defaults");
     persist_write_data(SETTINGS_PERSIST_KEY, &settings, sizeof(settings));
     persist_write_int(SETTINGS_VERSION_PERSIST_KEY, CURRENT_SETTINGS_VERSION);
@@ -191,6 +213,16 @@ void Settings_updateDynamicSettings() {
   // since it can become visible when the status strip toggles.
   for (int i = 0; i < settings.widgetCount; i++) {
     SidebarWidgetType w = settings.widgetList[i];
+    if (w == WEATHER_CURRENT || w == WEATHER_FORECAST_TODAY || w == WEATHER_UV_INDEX) {
+      dynamicSettings.disableWeather = false;
+    }
+    if (w == SECONDS) { dynamicSettings.updateScreenEverySecond = true; }
+    if (w == BATTERY_METER) { dynamicSettings.enableAutoBatteryWidget = false; }
+    if (w == BEATS) { dynamicSettings.enableBeats = true; }
+    if (w == ALT_TIME_ZONE) { dynamicSettings.enableAltTimeZone = true; }
+  }
+  for (int i = 0; i < settings.rightWidgetCount; i++) {
+    SidebarWidgetType w = settings.rightWidgetList[i];
     if (w == WEATHER_CURRENT || w == WEATHER_FORECAST_TODAY || w == WEATHER_UV_INDEX) {
       dynamicSettings.disableWeather = false;
     }

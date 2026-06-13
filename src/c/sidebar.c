@@ -113,11 +113,9 @@ void Sidebar_redraw() {
   // (apply_twt_layout); don't fight it here. Elsewhere, keep positioning the
   // primary ourselves.
   if (!TwtStatus_isSupported()) {
-    // No status layout here (aplite): the primary always shows the list head;
-    // the secondary panel stays hidden (always-on needs the status layout's
-    // clock-inset machinery, which doesn't run on this platform).
-    int innerHeight = screen_rect.size.h - V_PADDING_DEFAULT * 2;
-    Sidebar_distributeWidgets(innerHeight, /*allowSecondary=*/false, NULL, NULL);
+    // No status layout here (aplite): single sidebar = the LEFT (primary) list,
+    // drawn in full (overflow clipped). The secondary panel stays hidden.
+    Sidebar_distributeWidgets(NULL, NULL);
     if (!settings.sidebarOnLeft) {
       layer_set_frame(sidebarLayer, GRect(screen_rect.size.w - sidebarWidth, 0,
                                           sidebarWidth, screen_rect.size.h));
@@ -243,13 +241,10 @@ void updateRoundSidebarLeft(Layer *l, GContext *ctx) {
   drawRoundSidebar(ctx, bgBounds, displayWidget, 7);
 }
 
-bool Sidebar_distributeWidgets(int innerHeight, bool allowSecondary, int *primaryCountOut, int *secondaryCountOut) {
+void Sidebar_distributeWidgets(int *primaryCountOut, int *secondaryCountOut) {
   // Round keeps its fixed two-widget rendering (settings.widgets[0]/[2]).
-  (void)innerHeight;
-  (void)allowSecondary;
-  if (primaryCountOut) *primaryCountOut = 0;
-  if (secondaryCountOut) *secondaryCountOut = 0;
-  return false;
+  if (primaryCountOut) { *primaryCountOut = 0; }
+  if (secondaryCountOut) { *secondaryCountOut = 0; }
 }
 
 void drawRoundSidebar(GContext *ctx, GRect bgBounds,
@@ -282,41 +277,41 @@ static int primaryColumnCount = 0;
 static SidebarWidgetType secondaryColumn[MAX_WIDGET_LIST];
 static int secondaryColumnCount = 0;
 
-// Greedily take widgets from settings.widgetList starting at *cursor while their
-// fixed heights fit innerHeight. The first widget is always placed (even if taller
-// than the column) so the highest-priority widget never silently vanishes.
-static int packColumn(SidebarWidgetType *out, int *cursor, int innerHeight) {
-  int count = 0;
-  int used = 0;
-  while (*cursor < settings.widgetCount && count < MAX_WIDGET_LIST) {
-    SidebarWidgetType type = settings.widgetList[*cursor];
-    if (type == EMPTY) { (*cursor)++; continue; }
-    int h = getSidebarWidgetByType(type).getHeight();
-    if (count > 0 && used + h > innerHeight) { break; }
-    out[count++] = type;
-    used += h;
-    (*cursor)++;
+// Copy a settings widget list into a column array, skipping EMPTY / out-of-range
+// ids and clamping to the buffer. Returns the number copied.
+static int copyWidgetList(SidebarWidgetType *out, const uint8_t *list, int count) {
+  int n = 0;
+  for (int i = 0; i < count && n < MAX_WIDGET_LIST; i++) {
+    if (list[i] != EMPTY && list[i] <= MAX_WIDGET_TYPE) { out[n++] = (SidebarWidgetType)list[i]; }
   }
-  return count;
+  return n;
 }
 
-bool Sidebar_distributeWidgets(int innerHeight, bool allowSecondary,
-                               int *primaryCountOut, int *secondaryCountOut) {
+// Number of widgets (from the top) FULLY visible in a column of inner height
+// `innerHeight`, using the overflow layout (top-anchored, fixed V_PADDING gaps).
+// In the fits case this equals `count`. The auto-battery / disconnect
+// substitution uses this so the icon only ever lands on a widget the user sees.
+static int columnVisibleCount(const SidebarWidgetType types[], int count, int innerHeight) {
+  if (count <= 0) { return 0; }
+  int total = 0;
+  for (int i = 0; i < count; i++) { total += getSidebarWidgetByType(types[i]).getHeight(); }
+  if (total + (count - 1) * V_PADDING_DEFAULT <= innerHeight) { return count; }
+  int y = 0, visible = 0;
+  for (int i = 0; i < count; i++) {
+    int h = getSidebarWidgetByType(types[i]).getHeight();
+    if (y + h <= innerHeight) { visible++; y += h + V_PADDING_DEFAULT; } else { break; }
+  }
+  return visible;
+}
+
+void Sidebar_distributeWidgets(int *primaryCountOut, int *secondaryCountOut) {
   SidebarWidgets_updateFonts();  // ensure `layout` heights are valid before packing
-  int cursor = 0;
-  primaryColumnCount = packColumn(primaryColumn, &cursor, innerHeight);
-  secondaryColumnCount = 0;
-  if (allowSecondary && cursor < settings.widgetCount) {
-    secondaryColumnCount = packColumn(secondaryColumn, &cursor, innerHeight);
-  }
-  if (primaryCountOut) *primaryCountOut = primaryColumnCount;
-  if (secondaryCountOut) *secondaryCountOut = secondaryColumnCount;
-  return secondaryColumnCount >= 1;
+  primaryColumnCount = copyWidgetList(primaryColumn, settings.widgetList, settings.widgetCount);
+  secondaryColumnCount = copyWidgetList(secondaryColumn, settings.rightWidgetList, settings.rightWidgetCount);
+  if (primaryCountOut) { *primaryCountOut = primaryColumnCount; }
+  if (secondaryCountOut) { *secondaryCountOut = secondaryColumnCount; }
 }
 
-// Draw a packed column of widgets into the layer's frame. Shared by the primary
-// sidebar and the secondary panel. `allowReplacement` enables the auto-battery /
-// disconnect-icon substitution (primary only).
 static void drawWidgetColumn(Layer *l, GContext *ctx,
                              const SidebarWidgetType widgetTypes[], int widgetCount,
                              bool allowReplacement, bool isPrimary) {
@@ -324,35 +319,14 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 
   // zero on every rectangular platform besides emery
   SidebarWidgets_xOffset = (sidebarWidth - 30) / 2;
-
   SidebarWidgets_updateFonts();
 
-  // Role-based configurable background (primary vs secondary color).
+  // Role-based configurable background (left vs right color).
   GColor sidebarBg = isPrimary ? settings.sidebarBgColorLeft : settings.sidebarBgColorRight;
-  if (gcolor_equal(sidebarBg, GColorClear)) sidebarBg = settings.sidebarColor;
+  if (gcolor_equal(sidebarBg, GColorClear)) { sidebarBg = settings.sidebarColor; }
   graphics_context_set_fill_color(ctx, sidebarBg);
   graphics_fill_rect(ctx, layer_get_bounds(l), 0, GCornerNone);
-
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
-
-  SidebarWidget displayWidgets[MAX_WIDGET_LIST];
-  for (int i = 0; i < widgetCount; i++) {
-    displayWidgets[i] = getSidebarWidgetByType(widgetTypes[i]);
-  }
-
-  // auto-battery / disconnect-icon replacement applies to the primary only
-  if (allowReplacement && widgetCount > 0) {
-    bool showDisconnectIcon = settings.activateDisconnectIcon && !bluetooth_connection_service_peek();
-    bool showAutoBattery = isAutoBatteryShown();
-    if (showAutoBattery || showDisconnectIcon) {
-      int widget_to_replace = getReplacableWidget(widgetTypes, widgetCount);
-      if (showAutoBattery) {
-        displayWidgets[widget_to_replace] = getSidebarWidgetByType(BATTERY_METER);
-      } else if (showDisconnectIcon) {
-        displayWidgets[widget_to_replace] = getSidebarWidgetByType(BLUETOOTH_DISCONNECT);
-      }
-    }
-  }
 
   if (widgetCount == 0) { return; }
 
@@ -360,8 +334,34 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   int innerTop = v_padding;
   int innerHeight = bounds.size.h - v_padding * 2;
 
-  int totalHeight = 0;
-  for (int i = 0; i < widgetCount; i++) { totalHeight += displayWidgets[i].getHeight(); }
+  SidebarWidget displayWidgets[MAX_WIDGET_LIST];
+  for (int i = 0; i < widgetCount; i++) {
+    displayWidgets[i] = getSidebarWidgetByType(widgetTypes[i]);
+  }
+
+  // Auto-battery / disconnect-icon replacement -- only onto a FULLY VISIBLE
+  // widget. Column preference: the left column hosts the icon if it has any
+  // visible widget; the right column hosts it only when the left has none.
+  if (allowReplacement) {
+    bool showDisconnectIcon = settings.activateDisconnectIcon && !bluetooth_connection_service_peek();
+    bool showAutoBattery = isAutoBatteryShown();
+    if (showAutoBattery || showDisconnectIcon) {
+      int myVisible = columnVisibleCount(widgetTypes, widgetCount, innerHeight);
+      bool hostHere;
+      if (isPrimary) {
+        hostHere = (myVisible > 0);
+      } else {
+        int leftVisible = columnVisibleCount(primaryColumn, primaryColumnCount, innerHeight);
+        hostHere = (leftVisible == 0 && myVisible > 0);
+      }
+      if (hostHere) {
+        int idx = getReplacableWidget(widgetTypes, myVisible);
+        displayWidgets[idx] = showAutoBattery
+            ? getSidebarWidgetByType(BATTERY_METER)
+            : getSidebarWidgetByType(BLUETOOTH_DISCONNECT);
+      }
+    }
+  }
 
   if (widgetCount == 1) {
     // a lone widget is centered in the column
@@ -370,11 +370,20 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
     return;
   }
 
-  // space-between: first flush to innerTop, last flush to bottom, slack split
-  // into equal gaps between widgets.
-  int slack = innerHeight - totalHeight;
-  if (slack < 0) slack = 0;
-  int gap = slack / (widgetCount - 1);
+  int totalHeight = 0;
+  for (int i = 0; i < widgetCount; i++) { totalHeight += displayWidgets[i].getHeight(); }
+
+  // Gap selection: when the whole list fits with at least minimal gaps, spread the
+  // slack (space-between -> loose). Otherwise use the fixed minimal gap and let the
+  // tail run past the column bottom, where the layer bounds clip it (tight/overflow).
+  int gap;
+  if (totalHeight + (widgetCount - 1) * v_padding <= innerHeight) {
+    int slack = innerHeight - totalHeight;
+    gap = slack / (widgetCount - 1);
+  } else {
+    gap = v_padding;
+  }
+
   int y = innerTop;
   for (int i = 0; i < widgetCount; i++) {
     displayWidgets[i].draw(ctx, y);
@@ -387,7 +396,7 @@ void updateRectSidebar(Layer *l, GContext *ctx) {
 }
 
 void updateRectSecondarySidebar(Layer *l, GContext *ctx) {
-  drawWidgetColumn(l, ctx, secondaryColumn, secondaryColumnCount, /*allowReplacement=*/false, /*isPrimary=*/false);
+  drawWidgetColumn(l, ctx, secondaryColumn, secondaryColumnCount, /*allowReplacement=*/true, /*isPrimary=*/false);
 }
 
 #endif
@@ -397,6 +406,12 @@ void updateRectSecondarySidebar(Layer *l, GContext *ctx) {
 void Sidebar_setPrimaryFrame(GRect frame) {
 #ifndef PBL_ROUND
   layer_set_frame(sidebarLayer, frame);
+#endif
+}
+
+void Sidebar_setPrimaryHidden(bool hidden) {
+#ifndef PBL_ROUND
+  layer_set_hidden(sidebarLayer, hidden);
 #endif
 }
 
