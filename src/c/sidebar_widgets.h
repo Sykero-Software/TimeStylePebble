@@ -8,6 +8,14 @@
 extern int SidebarWidgets_xOffset;
 
 /*
+ * Set to the widget type/id about to be drawn, immediately before each
+ * widget.draw() call (same idiom as SidebarWidgets_xOffset). The generic crypto
+ * draw reads it to know WHICH coin (wid) it is rendering — the draw fn pointer
+ * carries no id.
+ */
+extern uint8_t SidebarWidgets_currentWidgetType;
+
+/*
  * The different types of sidebar widgets:
  * we'll give them numbers so that we can index them in settings
  */

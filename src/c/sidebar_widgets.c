@@ -6,10 +6,12 @@
 #include "weather.h"
 #include <math.h>
 #include <pebble.h>
+#include <string.h>
 #include "electricity.h"
 #include "crypto.h"
 
 int SidebarWidgets_xOffset;
+uint8_t SidebarWidgets_currentWidgetType = 0;
 
 // sidebar icons
 GDrawCommandImage *dateImage;
@@ -139,17 +141,9 @@ SidebarWidget cheapestHourWidget;
 int CheapestHour_getHeight();
 void CheapestHour_draw(GContext *ctx, int yPosition);
 
-SidebarWidget btcWidget;
-int BtcPrice_getHeight();
-void BtcPrice_draw(GContext *ctx, int yPosition);
-
-SidebarWidget xmrWidget;
-int XmrPrice_getHeight();
-void XmrPrice_draw(GContext *ctx, int yPosition);
-
-SidebarWidget eurUsdWidget;
-int EurUsd_getHeight();
-void EurUsd_draw(GContext *ctx, int yPosition);
+SidebarWidget cryptoWidget;
+int  CryptoSlot_getHeight();
+void CryptoSlot_draw(GContext *ctx, int yPosition);
 
 SidebarWidget uvIndexWidget;
 int UVIndex_getHeight();
@@ -306,14 +300,8 @@ void SidebarWidgets_init() {
   cheapestHourWidget.getHeight = CheapestHour_getHeight;
   cheapestHourWidget.draw = CheapestHour_draw;
 
-  btcWidget.getHeight = BtcPrice_getHeight;
-  btcWidget.draw = BtcPrice_draw;
-
-  xmrWidget.getHeight = XmrPrice_getHeight;
-  xmrWidget.draw = XmrPrice_draw;
-
-  eurUsdWidget.getHeight = EurUsd_getHeight;
-  eurUsdWidget.draw = EurUsd_draw;
+  cryptoWidget.getHeight = CryptoSlot_getHeight;
+  cryptoWidget.draw      = CryptoSlot_draw;
 
   electricityBoltPath = gpath_create(&ELEC_BOLT_PATH_INFO);
 }
@@ -587,6 +575,7 @@ void SidebarWidgets_updateTime(struct tm *timeInfo) {
 
 /* Sidebar Widget Selection */
 SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
+  if (Crypto_isWid((uint8_t)type)) { return cryptoWidget; }
   switch (type) {
   case BATTERY_METER:
     return batteryMeterWidget;
@@ -619,12 +608,6 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return nextCheapWidget;
   case CHEAPEST_ELEC_HOUR:
     return cheapestHourWidget;
-  case BTC_PRICE:
-    return btcWidget;
-  case XMR_PRICE:
-    return xmrWidget;
-  case EURUSD_RATE:
-    return eurUsdWidget;
 #ifdef PBL_HEALTH
   case STEP_COUNTER:
     return stepCounterWidget;
@@ -1354,68 +1337,34 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
   }
 }
 
-/***** Bitcoin (BTC USD) widget *****/
+/***** Generic crypto / currency widget *****/
 
-int BtcPrice_getHeight() { return layout.basicWidgetHeight; }
+int CryptoSlot_getHeight() { return layout.basicWidgetHeight; }
 
-void BtcPrice_draw(GContext *ctx, int yPosition) {
+void CryptoSlot_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
-  char btcStr[8];
-  if (Crypto_info[CRYPTO_BTC].valid) {
-    snprintf(btcStr, sizeof(btcStr), "%d", Crypto_info[CRYPTO_BTC].value);
+  uint8_t wid = SidebarWidgets_currentWidgetType;
+  CryptoSlot *s = Crypto_find(wid);
+  const char *label = (s && s->label[0]) ? s->label : "--";
+  const char *value = (s && s->valid) ? s->value : "--";
+
+  // A long value (e.g. "104000.00", "1.1552") overflows the sidebar in the
+  // basic-widget value font on every board (verified for the old EUR widget), so
+  // render label + value on two lines with the small sidebar font when the value
+  // is wide; otherwise use the basic-widget layout.
+  if (strlen(value) > 4) {
+    graphics_draw_text(ctx, label, smSidebarFont,
+                       GRect(layout.textRectX + SidebarWidgets_xOffset,
+                             yPosition + layout.basicWidgetLabelY,
+                             layout.textRectWidth, 20),
+                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+    graphics_draw_text(ctx, value, smSidebarFont,
+                       GRect(layout.textRectX + SidebarWidgets_xOffset,
+                             yPosition + layout.basicWidgetY + 3,
+                             layout.textRectWidth, 20),
+                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   } else {
-    strcpy(btcStr, "--");
+    draw_basic_widget(ctx, yPosition, label, value, layout.basicWidgetY);
   }
-
-  // "BTC" label on top, thousands value below (reuses the basic-widget layout).
-  draw_basic_widget(ctx, yPosition, "BTC", btcStr, layout.basicWidgetY);
-}
-
-/***** Monero (XMR USD) widget *****/
-
-int XmrPrice_getHeight() { return layout.basicWidgetHeight; }
-
-void XmrPrice_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
-
-  char xmrStr[8];
-  if (Crypto_info[CRYPTO_XMR].valid) {
-    snprintf(xmrStr, sizeof(xmrStr), "%d", Crypto_info[CRYPTO_XMR].value);
-  } else {
-    strcpy(xmrStr, "--");
-  }
-
-  draw_basic_widget(ctx, yPosition, "XMR", xmrStr, layout.basicWidgetY);
-}
-
-/***** EUR/USD rate widget *****/
-
-int EurUsd_getHeight() { return layout.basicWidgetHeight; }
-
-void EurUsd_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
-
-  char eurStr[8];
-  if (Crypto_info[CRYPTO_EURUSD].valid) {
-    int16_t v = Crypto_info[CRYPTO_EURUSD].value;
-    snprintf(eurStr, sizeof(eurStr), "%d%c%03d",
-             v / 1000, settings.decimalSeparator, v % 1000);
-  } else {
-    strcpy(eurStr, "--");
-  }
-
-  // "1.155" overflows the sidebar in currentSidebarFont on every board
-  // (verified via emery + diorite screenshots), so the value uses the small
-  // font on a single line instead of the basic-widget value font.
-  graphics_draw_text(ctx, "EUR", smSidebarFont,
-                     GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.basicWidgetLabelY,
-                           layout.textRectWidth, 20),
-                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-  graphics_draw_text(ctx, eurStr, smSidebarFont,
-                     GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.basicWidgetY + 3,
-                           layout.textRectWidth, 20),
-                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
