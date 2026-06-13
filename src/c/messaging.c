@@ -123,20 +123,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     Electricity_saveData();
   }
 
-  // MESSAGE_KEY_* are extern uint32_t (not compile-time constants), so the
-  // table must be function-local rather than file-scope static const.
-  const struct { uint32_t key; CryptoCoin coin; } cryptoKeys[] = {
-    { MESSAGE_KEY_BtcPriceThousands, CRYPTO_BTC },
-    { MESSAGE_KEY_XmrPriceDollars,   CRYPTO_XMR },
-    { MESSAGE_KEY_EurUsdMilli,       CRYPTO_EURUSD },
-  };
-  for (size_t i = 0; i < sizeof(cryptoKeys) / sizeof(cryptoKeys[0]); i++) {
-    Tuple *crypto_tuple = dict_find(iterator, cryptoKeys[i].key);
-    if (crypto_tuple != NULL) {
-      Crypto_info[cryptoKeys[i].coin].value = (int16_t)crypto_tuple->value->int32;
-      Crypto_info[cryptoKeys[i].coin].valid = true;
-      Crypto_saveData(cryptoKeys[i].coin);
-    }
+  // Crypto: one packed string of wid/label/value triplets; parse + persist it.
+  Tuple *crypto_tuple = dict_find(iterator, MESSAGE_KEY_CryptoData);
+  if (crypto_tuple != NULL && crypto_tuple->type == TUPLE_CSTRING) {
+    Crypto_parse(crypto_tuple->value->cstring);
+    persist_write_string(CRYPTO_PERSIST_KEY_DATA, crypto_tuple->value->cstring);
   }
 
   // does this message contain new config information?
@@ -371,7 +362,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     const uint8_t *bytes = widgetList_tuple->value->data;
     int n = 0;
     for (int i = 0; i < len; i++) {
-      if (bytes[i] <= MAX_WIDGET_TYPE) settings.widgetList[n++] = bytes[i];
+      if (bytes[i] <= MAX_WIDGET_TYPE || Crypto_isWid(bytes[i])) settings.widgetList[n++] = bytes[i];
     }
     settings.widgetCount = n;
     // Mirror the list head into the legacy slots so the (unchanged) round path,
@@ -390,7 +381,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     const uint8_t *bytes = rightWidgetList_tuple->value->data;
     int n = 0;
     for (int i = 0; i < len; i++) {
-      if (bytes[i] <= MAX_WIDGET_TYPE) { settings.rightWidgetList[n++] = bytes[i]; }
+      if (bytes[i] <= MAX_WIDGET_TYPE || Crypto_isWid(bytes[i])) { settings.rightWidgetList[n++] = bytes[i]; }
     }
     settings.rightWidgetCount = n;
   }
