@@ -15,7 +15,7 @@ interface LegacyCoin { flag: string; wid: number; coin: string; p: number; label
 const LEGACY: LegacyCoin[] = [
   { flag: 'disable_btc',    wid: 15, coin: 'bitcoin',   p: -3, label: 'BTC' },
   { flag: 'disable_xmr',    wid: 16, coin: 'monero',    p: 0,  label: 'XMR' },
-  { flag: 'disable_eurusd', wid: 17, coin: 'euro-coin', p: 4,  label: 'EUR' },
+  { flag: 'disable_eurusd', wid: 17, coin: 'euro-coin', p: 3,  label: 'EUR' },
 ];
 
 export function seedCryptoList(flags: Record<string, any>): CoinRow[] {

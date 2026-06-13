@@ -42,7 +42,7 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     { id: 'cosmos', label: 'ATOM', p: 2 },
     { id: 'uniswap', label: 'UNI', p: 2 },
     { id: 'shiba-inu', label: 'SHIB', p: 8 },
-    { id: 'euro-coin', label: 'EUR', p: 4 },
+    { id: 'euro-coin', label: 'EUR', p: 3 },
   ];
 
   function escAttr(s: string): string {
