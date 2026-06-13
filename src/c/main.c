@@ -93,29 +93,30 @@ static void apply_twt_layout() {
   int statusTop = root.size.h - statusHeight;   // == root.size.h when no status
 
   bool primaryOnLeft = settings.sidebarOnLeft;
-  // Distribute the widget priority list across the panels. The secondary panel
-  // may show while a status is visible, or always if so configured.
-  bool secondaryWanted = statusVisible || settings.secondaryAlwaysOn;
-  int primaryCount, secondaryCount;
-  Sidebar_distributeWidgets(secondaryWanted, &primaryCount, &secondaryCount);
-  bool showSecondary = secondaryCount >= 1;
 
-  // A side with exactly 3 widgets stays full height (blocks the status strip on
-  // that side); a side with <=2 widgets is shortened to the status-strip top so
-  // the status strip flows under it to the screen edge. The primary is full
-  // height whenever no status is visible.
-  int primaryHeight   = (primaryCount == 3) ? root.size.h
-                                            : (statusVisible ? statusTop : root.size.h);
-  int secondaryHeight = (secondaryCount == 3) ? root.size.h : statusTop;
+  // Column inner height available for widgets. With the strip full-width, columns
+  // shorten to the strip top; otherwise (default) they stay full height and the
+  // strip is inset between them.
+  bool stripFullWidth = settings.statusStripFullWidth;
+  int columnFrameHeight = (statusVisible && stripFullWidth) ? statusTop : root.size.h;
+  int innerHeight = columnFrameHeight - V_PADDING_DEFAULT * 2;
+
+  // The secondary column may receive overflow while a status is visible or when
+  // always-on is set. Pack the list; showSecondary follows from actual overflow.
+  bool allowSecondary = statusVisible || settings.secondaryAlwaysOn;
+  int primaryCount, secondaryCount;
+  bool showSecondary = Sidebar_distributeWidgets(innerHeight, allowSecondary,
+                                                 &primaryCount, &secondaryCount);
+  (void)primaryCount; (void)secondaryCount;
 
   // Primary sidebar frame (always present).
   int primaryX = primaryOnLeft ? 0 : (root.size.w - sidebarWidth);
-  Sidebar_setPrimaryFrame(GRect(primaryX, 0, sidebarWidth, primaryHeight));
+  Sidebar_setPrimaryFrame(GRect(primaryX, 0, sidebarWidth, columnFrameHeight));
 
-  // Secondary panel frame (opposite side), shown only while a status is visible.
+  // Secondary panel frame (opposite side), shown only when it has overflow.
   if (showSecondary) {
     int secondaryX = primaryOnLeft ? (root.size.w - sidebarWidth) : 0;
-    Sidebar_setSecondaryFrame(GRect(secondaryX, 0, sidebarWidth, secondaryHeight));
+    Sidebar_setSecondaryFrame(GRect(secondaryX, 0, sidebarWidth, columnFrameHeight));
     Sidebar_setSecondaryHidden(false);
   } else {
     Sidebar_setSecondaryHidden(true);
@@ -144,21 +145,12 @@ static void apply_twt_layout() {
     DateHeader_setHidden(true);
   }
 
-  // Status strip span: reaches the screen edge on a side unless a FULL-HEIGHT
-  // panel sits there. Determine per physical side which panel is present and
-  // whether it is full height.
+  // Status strip span: full width when stripFullWidth, otherwise inset between the
+  // sidebars (same horizontal band as the clock).
   if (statusVisible) {
-    bool leftFull, rightFull;
-    if (primaryOnLeft) {
-      leftFull  = (primaryCount == 3);
-      rightFull = showSecondary && (secondaryCount == 3);
-    } else {
-      rightFull = (primaryCount == 3);
-      leftFull  = showSecondary && (secondaryCount == 3);
-    }
-    int statusLeft  = leftFull  ? sidebarWidth : 0;
-    int statusRight = rightFull ? (root.size.w - sidebarWidth) : root.size.w;
-    GRect statusFrame = GRect(statusLeft, statusTop, statusRight - statusLeft, statusHeight);
+    int statusLeft  = stripFullWidth ? 0 : contentX;
+    int statusWidth = stripFullWidth ? root.size.w : contentW;
+    GRect statusFrame = GRect(statusLeft, statusTop, statusWidth, statusHeight);
 
     if (showMidi) {
       MidiStatus_setFrame(statusFrame);
