@@ -18,11 +18,13 @@ function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void
   const root: HTMLElement = self.$element[0];
   const MAX = 16;   // matches MAX_WIDGET_LIST in src/c/sidebar_widgets.h
 
-  // The 19 widget options, embedded here (cannot reference config_clay's WIDGETS
-  // at runtime — this function is re-eval'd in isolation). id -> label.
-  // KEEP IN SYNC with the widget ids/labels in config_clay.ts's old WIDGETS list
-  // and src/c/sidebar_widgets.c.
-  const OPTIONS: { id: number; label: string }[] = [
+  // Static widget options, embedded here (cannot reference module scope at
+  // runtime — this function is re-eval'd in isolation). id -> label.
+  // Crypto coin entries are NOT listed here; they are read live from the
+  // cryptoList component's DOM and appended dynamically by currentOptions().
+  // KEEP IN SYNC with the widget ids/labels in config_clay.ts and
+  // src/c/sidebar_widgets.c.
+  const STATIC_OPTIONS: { id: number; label: string }[] = [
     { id: 0, label: 'Empty' },
     { id: 3, label: 'Alternate Time Zone' },
     { id: 5, label: 'Seconds' },
@@ -35,19 +37,53 @@ function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void
     { id: 14, label: 'Porssisahko' },
     { id: 18, label: 'Seuraava halpa sahko' },
     { id: 19, label: 'Halvin sahkotunti' },
-    { id: 15, label: 'Bitcoin (BTC)' },
-    { id: 16, label: 'Monero (XMR)' },
-    { id: 17, label: 'EUR/USD rate' },
     { id: 9, label: 'Sleep' },
     { id: 10, label: 'Steps' },
     { id: 12, label: 'Heart Rate' },
     { id: 2, label: 'Battery' },
   ];
 
+  // Build the option list live: static widgets + one per cryptoList row.
+  // Read the crypto rows straight from the cryptoList component's DOM (same
+  // config page), so a coin added there appears here without a save/reopen.
+  function readCryptoRows(): { wid: number; coin: string; label: string }[] {
+    const out: { wid: number; coin: string; label: string }[] = [];
+    const rowEls = document.querySelectorAll('.cl-root .cl-row');
+    for (let i = 0; i < rowEls.length; i++) {
+      const el = rowEls[i] as HTMLElement;
+      const wid = parseInt(el.getAttribute('data-wid') || '0', 10) || 0;
+      const coinSel = el.querySelector('.cl-coin') as HTMLSelectElement;
+      let coin = coinSel ? coinSel.value : '';
+      if (coin === 'custom') {
+        const cust = el.querySelector('.cl-custom') as HTMLInputElement;
+        coin = cust ? cust.value : '';
+      }
+      const labelIn = el.querySelector('.cl-label') as HTMLInputElement;
+      out.push({ wid: wid, coin: coin, label: labelIn ? labelIn.value : '' });
+    }
+    return out;
+  }
+  function currentOptions(): { id: number; label: string }[] {
+    const out: { id: number; label: string }[] = STATIC_OPTIONS.slice();
+    const arr = readCryptoRows();
+    for (let i = 0; i < arr.length; i++) {
+      const r = arr[i];
+      if (!r) { continue; }
+      const wid = r.wid;
+      if (isNaN(wid) || wid === 0) { continue; }
+      const coin = (typeof r.coin === 'string') ? r.coin : '';
+      const label = (typeof r.label === 'string' && r.label !== '')
+        ? r.label : coin.toUpperCase();
+      out.push({ id: wid, label: label });
+    }
+    return out;
+  }
+
   function optionsHtml(selected: number): string {
+    const opts = currentOptions();
     let html = '';
-    for (let i = 0; i < OPTIONS.length; i++) {
-      const o = OPTIONS[i];
+    for (let i = 0; i < opts.length; i++) {
+      const o = opts[i];
       html += '<option value="' + o.id + '"' +
         (o.id === selected ? ' selected' : '') + '>' + o.label + '</option>';
     }
@@ -152,6 +188,17 @@ function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void
   root.addEventListener('change', function(ev: Event) {
     const t = ev.target as HTMLElement;
     if (t && t.tagName === 'SELECT') { self.trigger('change'); }
+  });
+
+  // Rebuild a row <select>'s options from the live crypto rows when the user
+  // opens it (focus/mousedown), preserving the current selection.
+  root.addEventListener('mousedown', function(ev: Event) {
+    const t = ev.target as HTMLElement;
+    if (t && t.tagName === 'SELECT' && t.classList.contains('wl-sel')) {
+      const sel = t as HTMLSelectElement;
+      const cur = parseInt(sel.value, 10) || 0;
+      sel.innerHTML = optionsHtml(cur);
+    }
   });
 }
 
