@@ -59,11 +59,12 @@ void Settings_loadFromStorage() {
   settings.widgets2[1] = EMPTY;
   settings.widgets2[2] = EMPTY;
   settings.secondaryAlwaysOn = false;   // auto-hide by default; appended field, no settings-version bump
-  // Default priority list mirrors the historical widgets[0..2] defaults.
-  settings.widgetList[0] = HEARTRATE;
-  settings.widgetList[1] = BTC_PRICE;
-  settings.widgetList[2] = EURUSD_RATE;
-  settings.widgetCount = 3;
+  // widgetCount defaults to 0 so the migration below always (re)builds the list
+  // from the legacy widgets[]/widgets2[] arrays -- which carry both the
+  // fresh-install defaults (seeded above) and an upgrading user's real config.
+  // (An older persisted blob predates these appended fields; persist_read_data
+  // leaves the tail at this 0 default, so the migration fires.)
+  settings.widgetCount = 0;
   settings.statusStripFullWidth = false;   // full-height columns by default; appended field
   settings.elecQuietStart = 23;        // appended field, no settings-version bump
   settings.elecQuietEnd = 7;
