@@ -180,6 +180,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   Tuple *secondaryAlwaysOn_tuple = dict_find(iterator, MESSAGE_KEY_SettingSecondaryAlwaysOn);
 
+  Tuple *widgetList_tuple = dict_find(iterator, MESSAGE_KEY_SettingWidgetList);
+  Tuple *statusStripFullWidth_tuple = dict_find(iterator, MESSAGE_KEY_SettingStatusStripFullWidth);
+
   Tuple *altclockName_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockName);
   Tuple *altclockOffset_tuple = dict_find(iterator, MESSAGE_KEY_SettingAltClockOffset);
 
@@ -355,6 +358,30 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   if(secondaryAlwaysOn_tuple != NULL) {
     settings.secondaryAlwaysOn = (bool)secondaryAlwaysOn_tuple->value->int8;
+  }
+
+  // Variable-length widget priority list: a byte array, one widget id per byte,
+  // length = number of widgets. Preferred over the 6 legacy SettingWidget*ID keys
+  // (still parsed above as a fallback for an un-updated phone). Clamp count to the
+  // buffer and reject out-of-range ids.
+  if (widgetList_tuple != NULL) {
+    int len = widgetList_tuple->length;
+    if (len > MAX_WIDGET_LIST) len = MAX_WIDGET_LIST;
+    const uint8_t *bytes = widgetList_tuple->value->data;
+    int n = 0;
+    for (int i = 0; i < len; i++) {
+      if (bytes[i] <= MAX_WIDGET_TYPE) settings.widgetList[n++] = bytes[i];
+    }
+    settings.widgetCount = n;
+    // Mirror the list head into the legacy slots so the (unchanged) round path,
+    // which reads settings.widgets[0]/[2], keeps tracking the configured widgets.
+    for (int i = 0; i < 3; i++) {
+      settings.widgets[i] = (i < n) ? settings.widgetList[i] : EMPTY;
+    }
+  }
+
+  if (statusStripFullWidth_tuple != NULL) {
+    settings.statusStripFullWidth = (bool)statusStripFullWidth_tuple->value->int8;
   }
 
   if(altclockName_tuple != NULL) {
