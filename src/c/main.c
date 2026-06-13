@@ -234,10 +234,11 @@ static void main_window_unload(Window *window) {
 }
 
 
-// Widgets whose data comes from the phone JS on the shared poll.
+// Widgets whose data comes from the phone JS on the shared poll. Crypto covers
+// every coin wid (legacy 15/16/17 and the configurable 200+ range).
 static bool isPhoneDataWidget(SidebarWidgetType w) {
   return w == ELECTRICITY || w == NEXT_CHEAP_ELEC || w == CHEAPEST_ELEC_HOUR
-      || w == BTC_PRICE || w == XMR_PRICE || w == EURUSD_RATE;
+      || Crypto_isWid((uint8_t)w);
 }
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -247,10 +248,13 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // of power-save. The JS side throttles per source (electricity ~2/day; crypto
   // sends only on change), so a short interval does not over-fetch slow sources.
   bool needsPhoneData = !dynamicSettings.disableWeather;
-  for (int i = 0; i < 3; i++) {
-    if (isPhoneDataWidget(settings.widgets[i]) || isPhoneDataWidget(settings.widgets2[i])) {
-      needsPhoneData = true;
-    }
+  // Scan the actual rendered lists (not the legacy 3-slot widgets[] mirror), so a
+  // phone-data widget in ANY slot of either column triggers the poll.
+  for (int i = 0; i < settings.widgetCount; i++) {
+    if (isPhoneDataWidget(settings.widgetList[i])) { needsPhoneData = true; }
+  }
+  for (int i = 0; i < settings.rightWidgetCount; i++) {
+    if (isPhoneDataWidget(settings.rightWidgetList[i])) { needsPhoneData = true; }
   }
   if (needsPhoneData && tick_time->tm_sec == 0) {
     int intervalSec = (int)settings.pollIntervalMin * 60;
