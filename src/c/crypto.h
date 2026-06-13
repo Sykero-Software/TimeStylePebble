@@ -4,28 +4,29 @@
 #pragma once
 #include <pebble.h>
 
-// Persist keys (free range; in use elsewhere: 100, 4, 200, 223, 310-312).
-// 313 is the pre-existing BTC blob — CryptoInfo has the same layout as the old
-// BtcInfo {int16_t; bool}, so a watch upgrading keeps its last BTC value.
-#define CRYPTO_PERSIST_KEY_BTC    313
-#define CRYPTO_PERSIST_KEY_XMR    314
-#define CRYPTO_PERSIST_KEY_EURUSD 315
+// The whole CryptoData wire string (the bytes the phone sent) is persisted under
+// this one key and re-parsed on boot. Pebble persist values cap at 256 bytes, so
+// the stored string is truncated to 255 + NUL; realistic coin counts fit easily.
+#define CRYPTO_PERSIST_KEY_DATA 313   // was the legacy BtcInfo blob; repurposed
 
-typedef enum {
-  CRYPTO_BTC = 0,
-  CRYPTO_XMR,
-  CRYPTO_EURUSD,
-  CRYPTO_COUNT
-} CryptoCoin;
+#define MAX_CRYPTO       16           // matches MAX_CRYPTO in the TS config
+#define CRYPTO_WID_BASE  200          // new-coin wid range [200, 200+MAX_CRYPTO)
+#define CRYPTO_LABEL_LEN 6            // up to 5 chars + NUL
+#define CRYPTO_VALUE_LEN 12           // formatted value + NUL
 
 typedef struct {
-  int16_t value;  // wire value: BTC = kUSD, XMR = USD, EUR/USD = milli (1155 = 1.155)
-  bool    valid;  // false until the first value has ever been received
-} CryptoInfo;
+  uint8_t wid;                  // stable widget id (15/16/17 or 200+)
+  char    label[CRYPTO_LABEL_LEN];
+  char    value[CRYPTO_VALUE_LEN];
+  bool    valid;                // false until a usable value parsed for this slot
+} CryptoSlot;
 
-extern CryptoInfo Crypto_info[CRYPTO_COUNT];
+extern CryptoSlot Crypto_slots[MAX_CRYPTO];
+extern uint8_t    Crypto_count;
 
-void Crypto_init();                  // load last-known values from persist
-void Crypto_saveData(CryptoCoin c);  // persist one coin
-// No Crypto_deinit: Crypto_saveData() runs immediately whenever a value
-// arrives (the only write path), so there is nothing to flush at shutdown.
+// True iff `wid` is a crypto coin widget id (legacy 15/16/17 or the 200+ range).
+bool Crypto_isWid(uint8_t wid);
+
+void        Crypto_init();                       // load + parse persisted string
+void        Crypto_parse(const char *data);      // parse wire string -> slots (no persist)
+CryptoSlot *Crypto_find(uint8_t wid);            // slot for a wid, or NULL
