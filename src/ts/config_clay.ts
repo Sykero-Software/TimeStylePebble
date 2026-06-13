@@ -152,6 +152,8 @@ const config = [
         defaultValue: '1', options: [{ label: 'Left', value: '1' }, { label: 'Right', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingSecondaryAlwaysOn', label: 'Show secondary sidebar',
         defaultValue: '1', options: [{ label: 'Always', value: '1' }, { label: 'Only when there is content in status area', value: '0' }] },
+      { type: 'toggle', messageKey: 'SettingStatusStripFullWidth',
+        label: 'Status strip full width (shorten widget columns)', defaultValue: false },
       { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
       { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
         defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },

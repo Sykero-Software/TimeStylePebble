@@ -10,7 +10,8 @@ import Clay from 'pebble-clay';
 import clayConfig from './config_clay';
 import clayConfigCustom from './config_clay_custom';
 import widgetListComponent from './config_widget_list';
-import { listToSlots, slotsToList } from './widget_slots';
+import { widgetListToPayload } from './widget_list_payload';
+import { slotsToList } from './widget_slots';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
@@ -134,7 +135,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
   ['SettingLanguageID', 'SettingShowLeadingZero', 'SettingClockFontId', 'SettingDisconnectIcon',
     'SettingBluetoothVibe', 'SettingMidiVibe', 'SettingBigDate', 'SettingTwtShowRemaining',
     'SettingTwtTargetVibe', 'SettingTwtBudgetVibe', 'SettingHourlyVibe',
-    'SettingSecondaryAlwaysOn', 'SettingSidebarOnLeft', 'SettingUseLargeFonts', 'SettingUseMetric',
+    'SettingSecondaryAlwaysOn', 'SettingStatusStripFullWidth', 'SettingSidebarOnLeft', 'SettingUseLargeFonts', 'SettingUseMetric',
     'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
     'SettingDecimalSep', 'SettingHealthUseDistance', 'SettingHealthUseRestfulSleep',
     'SettingPollIntervalMin', 'SettingElecQuietStart', 'SettingElecQuietEnd',
@@ -169,18 +170,12 @@ Pebble.addEventListener('webviewclosed', (e) => {
     window.localStorage.setItem('weather_api_key', '');
   }
 
-  // widget list -> the 6 fixed slot keys the watch reads (pad/truncate to 6).
-  const slots = listToSlots(s.WidgetList);
-  dict.SettingWidget0ID = slots[0];
-  dict.SettingWidget1ID = slots[1];
-  dict.SettingWidget2ID = slots[2];
-  dict.SettingWidget2_0ID = slots[3];
-  dict.SettingWidget2_1ID = slots[4];
-  dict.SettingWidget2_2ID = slots[5];
+  // widget list -> one byte-array key the watch packs by height (variable length).
+  const widgetPayload = widgetListToPayload(s.WidgetList);
+  dict.SettingWidgetList = widgetPayload;
 
-  // derive disable_* flags from selected widget IDs (preserved from old index.js)
-  const widgetIDs = [dict.SettingWidget0ID, dict.SettingWidget1ID, dict.SettingWidget2ID,
-    dict.SettingWidget2_0ID, dict.SettingWidget2_1ID, dict.SettingWidget2_2ID];
+  // derive disable_* flags from the selected widget IDs (full list)
+  const widgetIDs = widgetPayload;
   window.localStorage.setItem('disable_weather',
     (widgetIDs.indexOf(7) !== -1 || widgetIDs.indexOf(8) !== -1 || widgetIDs.indexOf(13) !== -1) ? 'no' : 'yes');
   window.localStorage.setItem('disable_electricity',
