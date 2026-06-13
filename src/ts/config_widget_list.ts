@@ -13,7 +13,7 @@
 
 // `initialize` runs before `set` (clay-config.js build order), so it stashes the
 // render/read closures on the item instance for the manipulator to call.
-function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void {
+function widgetListInitialize(this: any, _minified: any, clayConfig: any): void {
   const self = this;
   const root: HTMLElement = self.$element[0];
   const MAX = 16;   // matches MAX_WIDGET_LIST in src/c/sidebar_widgets.h
@@ -82,10 +82,20 @@ function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void
   function optionsHtml(selected: number): string {
     const opts = currentOptions();
     let html = '';
+    let found = false;
     for (let i = 0; i < opts.length; i++) {
       const o = opts[i];
+      if (o.id === selected) { found = true; }
       html += '<option value="' + o.id + '"' +
         (o.id === selected ? ' selected' : '') + '>' + o.label + '</option>';
+    }
+    // Preserve a placed wid whose option isn't available right now -- e.g. the
+    // cryptoList component hasn't built its rows yet (it builds after this one),
+    // or the coin was removed. WITHOUT this the <select> silently falls back to
+    // the first option (Empty=0) and saving WIPES the slot. The mousedown refresh
+    // restores the real coin label once the cryptoList DOM exists.
+    if (!found && selected !== 0) {
+      html += '<option value="' + selected + '" selected>Crypto #' + selected + '</option>';
     }
     return html;
   }
@@ -200,6 +210,22 @@ function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void
       sel.innerHTML = optionsHtml(cur);
     }
   });
+
+  // This component builds BEFORE the cryptoList one, so at our build time the
+  // crypto coin options don't exist yet -- a placed crypto wid renders via the
+  // fallback option ("Crypto #N") and would show that label. Once ALL components
+  // are built (AFTER_BUILD), the cryptoList DOM exists, so rebuild every row
+  // <select> with the real coin labels, preserving each current selection.
+  if (clayConfig && clayConfig.on && clayConfig.EVENTS) {
+    clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function() {
+      const selects = root.querySelectorAll('.wl-row .wl-sel');
+      for (let i = 0; i < selects.length; i++) {
+        const sel = selects[i] as HTMLSelectElement;
+        const cur = parseInt(sel.value, 10) || 0;
+        sel.innerHTML = optionsHtml(cur);
+      }
+    });
+  }
 }
 
 const widgetListComponent = {
