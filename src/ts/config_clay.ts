@@ -214,7 +214,8 @@ const config = [
     items: [
       { type: 'heading', id: 'heading-crypto', defaultValue: 'Crypto / currency' },
       { type: 'text', defaultValue:
-        'Add coins, then place each in the sidebar widget list above. ' +
+        'Prices load from CoinGecko; the Data Refresh interval (bottom of this page) ' +
+        'sets how often. Add coins, then place each in the sidebar widget list above. ' +
         'Precision: positive = decimals (2 → 104000.00), negative = round (−3 → 104).' },
       { type: 'cryptoList', messageKey: 'CryptoList', defaultValue: [] },
     ],
@@ -278,6 +279,11 @@ const config = [
     type: 'section',
     items: [
       { type: 'heading', defaultValue: 'Data Refresh' },
+      { type: 'text', defaultValue:
+        'How often the watch asks the phone for fresh online data: weather, ' +
+        'electricity (porssisahko) and crypto / currency prices. Lower = more ' +
+        'up-to-date but more battery/Bluetooth use. (Electricity self-limits to ' +
+        '~2 fetches/day; crypto is sent only when a displayed price changes.)' },
       { type: 'input', messageKey: 'SettingPollIntervalMin', label: 'Data refresh interval (min)',
         attributes: { type: 'number', min: 5, max: 240, step: 1, placeholder: '30' }, defaultValue: '30' },
     ],
