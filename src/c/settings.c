@@ -1,5 +1,6 @@
 #include "settings.h"
 #include "languages.h"
+#include "crypto.h"
 #include <pebble.h>
 
 Settings settings;
@@ -169,11 +170,13 @@ void Settings_loadFromStorage() {
   }
   if (settings.widgetCount > MAX_WIDGET_LIST) { settings.widgetCount = MAX_WIDGET_LIST; clamped = true; }
   for (int i = 0; i < settings.widgetCount; i++) {
-    if (settings.widgetList[i] > MAX_WIDGET_TYPE) { settings.widgetList[i] = EMPTY; clamped = true; }
+    if (settings.widgetList[i] > MAX_WIDGET_TYPE && !Crypto_isWid(settings.widgetList[i]))
+      { settings.widgetList[i] = EMPTY; clamped = true; }
   }
   if (settings.rightWidgetCount > MAX_WIDGET_LIST) { settings.rightWidgetCount = MAX_WIDGET_LIST; clamped = true; }
   for (int i = 0; i < settings.rightWidgetCount; i++) {
-    if (settings.rightWidgetList[i] > MAX_WIDGET_TYPE) { settings.rightWidgetList[i] = EMPTY; clamped = true; }
+    if (settings.rightWidgetList[i] > MAX_WIDGET_TYPE && !Crypto_isWid(settings.rightWidgetList[i]))
+      { settings.rightWidgetList[i] = EMPTY; clamped = true; }
   }
   if (settings.decimalSeparator != '.' && settings.decimalSeparator != ',') {
     settings.decimalSeparator = '.'; clamped = true;

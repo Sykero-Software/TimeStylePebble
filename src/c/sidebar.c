@@ -4,6 +4,7 @@
 #include "sidebar_widgets.h"
 #include "weather.h"
 #include "twt_status.h"
+#include "crypto.h"
 #include <ctype.h>
 #include <math.h>
 #include <pebble.h>
@@ -270,6 +271,7 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
 
   // calculate center position of the widget
   int widgetPosition = bgBounds.size.h / 4 - widget.getHeight() / 2;
+  SidebarWidgets_currentWidgetType = (uint8_t)widgetType;
   widget.draw(ctx, widgetPosition);
 }
 
@@ -287,7 +289,9 @@ static int secondaryColumnCount = 0;
 static int copyWidgetList(SidebarWidgetType *out, const uint8_t *list, int count) {
   int n = 0;
   for (int i = 0; i < count && n < MAX_WIDGET_LIST; i++) {
-    if (list[i] != EMPTY && list[i] <= MAX_WIDGET_TYPE) { out[n++] = (SidebarWidgetType)list[i]; }
+    if (list[i] != EMPTY && (list[i] <= MAX_WIDGET_TYPE || Crypto_isWid(list[i]))) {
+      out[n++] = (SidebarWidgetType)list[i];
+    }
   }
   return n;
 }
@@ -371,6 +375,7 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   if (widgetCount == 1) {
     // a lone widget is centered in the column
     int y = innerTop + (innerHeight - displayWidgets[0].getHeight()) / 2;
+    SidebarWidgets_currentWidgetType = (uint8_t)widgetTypes[0];
     displayWidgets[0].draw(ctx, y);
     return;
   }
@@ -391,6 +396,7 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 
   int y = innerTop;
   for (int i = 0; i < widgetCount; i++) {
+    SidebarWidgets_currentWidgetType = (uint8_t)widgetTypes[i];
     displayWidgets[i].draw(ctx, y);
     y += displayWidgets[i].getHeight() + gap;
   }
