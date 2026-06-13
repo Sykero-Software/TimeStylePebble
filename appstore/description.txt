@@ -1,0 +1,1 @@
+Sykerö TimeStyle is a clean, highly configurable watchface. See the time, date, weather and a row of optional widgets — battery, steps, electricity price and more — at a glance. Paired with the Sykerö Track Work Time app it also shows your live work-time status: current task, time worked, and progress toward your daily target. Configure everything from your phone.
