@@ -11,7 +11,7 @@ import clayConfig from './config_clay';
 import clayConfigCustom from './config_clay_custom';
 import widgetListComponent from './config_widget_list';
 import { widgetListToPayload } from './widget_list_payload';
-import { slotsToList } from './widget_slots';
+import { slotsToList, splitListByPosition } from './widget_slots';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
@@ -90,10 +90,18 @@ function migrateWidgetListSettings() {
   } catch (e) {
     return;
   }
-  if (stored.WidgetList !== undefined) { return; } // already present/migrated
-  const list = slotsToList(stored);
-  if (!list) { return; } // no legacy slots to migrate
-  stored.WidgetList = list;
+  // Step 1: legacy 6 SettingWidget*ID slots -> single WidgetList (if not present).
+  if (stored.WidgetList === undefined) {
+    const list = slotsToList(stored);
+    if (list) { stored.WidgetList = list; }
+  }
+  // Step 2: single WidgetList -> left/right per legacy SettingSidebarOnLeft, once.
+  if (stored.WidgetListRight === undefined) {
+    const single = Array.isArray(stored.WidgetList) ? stored.WidgetList : [];
+    const split = splitListByPosition(single, stored.SettingSidebarOnLeft);
+    stored.WidgetList = split.left;
+    stored.WidgetListRight = split.right;
+  }
   window.localStorage.setItem('clay-settings', JSON.stringify(stored));
 }
 
@@ -135,7 +143,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
   ['SettingLanguageID', 'SettingShowLeadingZero', 'SettingClockFontId', 'SettingDisconnectIcon',
     'SettingBluetoothVibe', 'SettingMidiVibe', 'SettingBigDate', 'SettingTwtShowRemaining',
     'SettingTwtTargetVibe', 'SettingTwtBudgetVibe', 'SettingHourlyVibe',
-    'SettingSecondaryAlwaysOn', 'SettingStatusStripFullWidth', 'SettingSidebarOnLeft', 'SettingUseLargeFonts', 'SettingUseMetric',
+    'SettingStatusStripFullWidth', 'SettingUseLargeFonts', 'SettingUseMetric',
     'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
     'SettingDecimalSep', 'SettingHealthUseDistance', 'SettingHealthUseRestfulSleep',
     'SettingPollIntervalMin', 'SettingElecQuietStart', 'SettingElecQuietEnd',
@@ -170,12 +178,14 @@ Pebble.addEventListener('webviewclosed', (e) => {
     window.localStorage.setItem('weather_api_key', '');
   }
 
-  // widget list -> one byte-array key the watch packs by height (variable length).
+  // widget lists -> two byte-array keys the watch draws per column (variable length).
   const widgetPayload = widgetListToPayload(s.WidgetList);
+  const widgetPayloadRight = widgetListToPayload(s.WidgetListRight);
   dict.SettingWidgetList = widgetPayload;
+  dict.SettingRightWidgetList = widgetPayloadRight;
 
-  // derive disable_* flags from the selected widget IDs (full list)
-  const widgetIDs = widgetPayload;
+  // derive disable_* flags from the selected widget IDs across BOTH lists
+  const widgetIDs = widgetPayload.concat(widgetPayloadRight);
   window.localStorage.setItem('disable_weather',
     (widgetIDs.indexOf(7) !== -1 || widgetIDs.indexOf(8) !== -1 || widgetIDs.indexOf(13) !== -1) ? 'no' : 'yes');
   window.localStorage.setItem('disable_electricity',
