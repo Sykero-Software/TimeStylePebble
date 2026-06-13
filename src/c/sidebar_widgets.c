@@ -649,13 +649,11 @@ void EmptyWidget_draw(GContext *ctx, int yPosition) { return; }
 /********** functions for the battery meter widget **********/
 
 int BatteryMeter_getHeight() {
-  BatteryChargeState chargeState = battery_state_service_peek();
-
-  if (chargeState.is_charging || !settings.showBatteryPct) {
-    return layout.batteryGraphicOnlyHeight;
-  } else {
-    return layout.batteryWithPctHeight;
-  }
+  // Fixed per the showBatteryPct setting (not the live charging state): a widget
+  // must reserve a constant height so neighbours don't reflow when charging
+  // starts/stops. The draw code still hides the % while charging.
+  return settings.showBatteryPct ? layout.batteryWithPctHeight
+                                 : layout.batteryGraphicOnlyHeight;
 }
 
 void BatteryMeter_draw(GContext *ctx, int yPosition) {
