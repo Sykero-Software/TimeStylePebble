@@ -19,3 +19,8 @@ test('returns an empty list when no legacy coin was enabled', () => {
   assert.deepStrictEqual(
     seedCryptoList({ disable_btc: 'yes', disable_xmr: 'yes', disable_eurusd: 'yes' }), []);
 });
+
+test('fresh install (null flags) seeds nothing', () => {
+  assert.deepStrictEqual(
+    seedCryptoList({ disable_btc: null, disable_xmr: null, disable_eurusd: null }), []);
+});

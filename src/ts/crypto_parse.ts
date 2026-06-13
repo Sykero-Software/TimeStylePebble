@@ -32,7 +32,10 @@ export function normalizeRows(raw: any): CoinRow[] {
     if (isNaN(wid) || isNaN(p) || coin === '') { continue; }
     const vs = (r.vs === 'eur') ? 'eur' : 'usd';
     const label = (typeof r.label === 'string') ? r.label : '';
-    out.push({ wid: wid, coin: coin, vs: vs, p: p, label: label });
+    let pc = p;
+    if (pc > 8) { pc = 8; }
+    if (pc < -8) { pc = -8; }
+    out.push({ wid: wid, coin: coin, vs: vs, p: pc, label: label });
   }
   return out;
 }

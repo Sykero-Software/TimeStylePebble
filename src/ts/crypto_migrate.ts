@@ -22,7 +22,7 @@ export function seedCryptoList(flags: Record<string, any>): CoinRow[] {
   const out: CoinRow[] = [];
   for (let i = 0; i < LEGACY.length; i++) {
     const L = LEGACY[i];
-    if (flags[L.flag] !== undefined && flags[L.flag] !== 'yes') {
+    if (flags[L.flag] != null && flags[L.flag] !== 'yes') {
       out.push({ wid: L.wid, coin: L.coin, vs: 'usd', p: L.p, label: L.label });
     }
   }

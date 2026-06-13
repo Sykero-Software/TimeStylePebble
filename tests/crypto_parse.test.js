@@ -50,6 +50,15 @@ test('packCryptoData emits -- for a missing price but keeps the slot', () => {
   assert.strictEqual(packed, ['15', 'BTC', '104', '200', 'ETH', '--'].join(DELIM));
 });
 
+test('normalizeRows clamps precision to [-8, 8]', () => {
+  const out = normalizeRows([
+    { wid: 200, coin: 'shiba-inu', vs: 'usd', p: 200, label: 'SHIB' },
+    { wid: 201, coin: 'bitcoin', vs: 'usd', p: -50, label: 'BTC' },
+  ]);
+  assert.strictEqual(out[0].p, 8);
+  assert.strictEqual(out[1].p, -8);
+});
+
 test('label falls back to the uppercased coin id when empty', () => {
   const packed = packCryptoData(
     [{ wid: 200, coin: 'dogecoin', vs: 'usd', p: 4, label: '' }],
