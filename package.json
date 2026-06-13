@@ -117,7 +117,8 @@
       "SettingTwtFlashColor",
       "SettingWidgetList",
       "SettingStatusStripFullWidth",
-      "SettingRightWidgetList"
+      "SettingRightWidgetList",
+      "CryptoData"
     ],
     "resources": {
       "media": [
