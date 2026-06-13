@@ -208,6 +208,18 @@ const config = [
     ],
   },
 
+  // --------------------------------------------------------------- Crypto
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', id: 'heading-crypto', defaultValue: 'Crypto / currency' },
+      { type: 'text', defaultValue:
+        'Add coins, then place each in the sidebar widget list above. ' +
+        'Precision: positive = decimals (2 → 104000.00), negative = round (−3 → 104).' },
+      { type: 'cryptoList', messageKey: 'CryptoList', defaultValue: [] },
+    ],
+  },
+
   // ------------------------------------------------------------- Work time
   {
     type: 'section',

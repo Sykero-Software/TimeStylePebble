@@ -4,7 +4,8 @@
 import * as weather from './weather';
 import * as electricity from './electricity';
 import * as crypto from './crypto';
-import { COINS } from './crypto_parse';
+import cryptoListComponent from './config_crypto_list';
+import { migrateCryptoList } from './crypto_migrate';
 
 import Clay from 'pebble-clay';
 import clayConfig from './config_clay';
@@ -15,6 +16,7 @@ import { slotsToList, splitListByPosition } from './widget_slots';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
+clay.registerComponent(cryptoListComponent);
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', () => {
@@ -44,23 +46,15 @@ Pebble.addEventListener('ready', () => {
     electricity.updateElectricity(true);
   }
 
-  // crypto coins: each defaults to disabled until a widget selects it (set
-  // in webviewclosed). When enabled, force a send on (re)launch for the same
-  // reason as electricity above: the watch's persisted values are wiped by a
-  // reinstall/reboot, but the *_last_* keys survive in phone localStorage,
-  // so a non-forced call would suppress the send as "unchanged" and leave
-  // the widget empty until the price next moves. Periodic refresh is driven
-  // by the watch's data request (see the appmessage handler), not a JS timer.
-  let anyCryptoEnabled = false;
-  COINS.forEach((c) => {
-    if (window.localStorage.getItem(c.disableKey) === null) {
-      window.localStorage.setItem(c.disableKey, 'yes');
-    }
-    if (window.localStorage.getItem(c.disableKey) !== 'yes') {
-      anyCryptoEnabled = true;
-    }
-  });
-  if (anyCryptoEnabled) {
+  // crypto: disabled until a widget selects a coin (set in webviewclosed).
+  // Force a send on (re)launch for the same reason as electricity above (the
+  // watch's persisted CryptoData is wiped by a reinstall/reboot, but
+  // crypto_last_sent survives in phone localStorage, so a non-forced call would
+  // suppress the send as "unchanged"). Periodic refresh is watch-driven.
+  if (window.localStorage.getItem('disable_crypto') === null) {
+    window.localStorage.setItem('disable_crypto', 'yes');
+  }
+  if (window.localStorage.getItem('disable_crypto') !== 'yes') {
     crypto.updateCrypto(true);
   }
 });
@@ -107,6 +101,7 @@ function migrateWidgetListSettings() {
 
 Pebble.addEventListener('showConfiguration', () => {
   migrateWidgetListSettings();
+  migrateCryptoList();
   Pebble.openURL(clay.generateUrl());
 });
 
@@ -190,9 +185,10 @@ Pebble.addEventListener('webviewclosed', (e) => {
     (widgetIDs.indexOf(7) !== -1 || widgetIDs.indexOf(8) !== -1 || widgetIDs.indexOf(13) !== -1) ? 'no' : 'yes');
   window.localStorage.setItem('disable_electricity',
     (widgetIDs.indexOf(14) !== -1 || widgetIDs.indexOf(18) !== -1 || widgetIDs.indexOf(19) !== -1) ? 'no' : 'yes');
-  COINS.forEach((c) => {
-    window.localStorage.setItem(c.disableKey, (widgetIDs.indexOf(c.widgetId) !== -1) ? 'no' : 'yes');
-  });
+  // crypto: enabled iff any placed widget id is in the crypto range (15/16/17 or 200+)
+  const anyCrypto = widgetIDs.some((id) =>
+    id === 15 || id === 16 || id === 17 || (id >= 200 && id < 216));
+  window.localStorage.setItem('disable_crypto', anyCrypto ? 'no' : 'yes');
 
   console.log('Preparing message: ' + JSON.stringify(dict));
   Pebble.sendAppMessage(dict, () => {
