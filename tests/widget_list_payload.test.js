@@ -21,3 +21,9 @@ test('truncates to the 16-entry cap', () => {
 test('non-array input yields an empty payload', () => {
   assert.deepStrictEqual(widgetListToPayload(undefined), []);
 });
+
+test('keeps crypto wids (legacy 15/16/17 and the 200+ range), drops other out-of-range', () => {
+  assert.deepStrictEqual(widgetListToPayload([15, 16, 17, 200, 215]), [15, 16, 17, 200, 215]);
+  assert.deepStrictEqual(widgetListToPayload([216, 100, 199, 20]), []);
+  assert.deepStrictEqual(widgetListToPayload([7, 200, 999]), [7, 200]);
+});
