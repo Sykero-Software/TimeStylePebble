@@ -16,7 +16,7 @@
 function widgetListInitialize(this: any, _minified: any, _clayConfig: any): void {
   const self = this;
   const root: HTMLElement = self.$element[0];
-  const MAX = 6;
+  const MAX = 16;   // matches MAX_WIDGET_LIST in src/c/sidebar_widgets.h
 
   // The 19 widget options, embedded here (cannot reference config_clay's WIDGETS
   // at runtime — this function is re-eval'd in isolation). id -> label.
