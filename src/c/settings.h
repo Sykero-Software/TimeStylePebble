@@ -125,9 +125,10 @@ typedef struct {
   // sidebarOnLeft, then set this true and persist. Appended field, zero-default.
   bool dualListInit;
 
-  // MIDI recorder: elapsed-time precision. false (default) = minutes (h:mm,
-  // MINUTE_UNIT tick while recording); true = seconds (m:ss, SECOND_UNIT tick).
-  // Appended field, zero-default on load of an older blob (= minutes).
+  // MIDI recorder: show the live recording timer. false (default) = off — strip
+  // shows only the REC dot + device name (MINUTE_UNIT tick while recording);
+  // true = seconds timer (m:ss / h:mm:ss, SECOND_UNIT tick).
+  // Appended field, zero-default on load of an older blob (= off).
   bool midiSecondPrecision;
 } Settings;
 

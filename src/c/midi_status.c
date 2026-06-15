@@ -26,8 +26,8 @@ void MidiStatus_save() {
   persist_write_data(MIDI_STATUS_PERSIST_KEY, &midi_status, sizeof(MidiStatus));
 }
 
-// Compose "m:ss  DeviceName" (h:mm:ss past an hour) in seconds precision, or
-// "h:mm  DeviceName" in minutes precision (settings.midiSecondPrecision). The recording indicator is a
+// Compose "m:ss  DeviceName" (h:mm:ss past an hour) when the recording timer is
+// on (settings.midiSecondPrecision), or just "DeviceName" when off. The recording indicator is a
 // drawn red dot (see status_update_proc), not text — the Pebble GOTHIC system fonts
 // only cover Latin-1 + limited Latin-Extended, so a U+25CF BLACK CIRCLE (●) would
 // render as a missing-glyph box.
@@ -50,9 +50,9 @@ static void build_status_text() {
                m, s, midi_status.deviceName);
     }
   } else {
-    // minutes precision: always h:mm (e.g. 0:03, 1:05)
-    snprintf(s_status_buffer, sizeof(s_status_buffer), "%d:%02d  %s",
-             h, m, midi_status.deviceName);
+    // timer off: hide the elapsed time entirely — just the REC dot (drawn in
+    // status_update_proc) + device name.
+    snprintf(s_status_buffer, sizeof(s_status_buffer), "%s", midi_status.deviceName);
   }
 }
 
