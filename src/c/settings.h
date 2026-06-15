@@ -124,6 +124,11 @@ typedef struct {
   // first load we split the single widgetList onto left/right per the legacy
   // sidebarOnLeft, then set this true and persist. Appended field, zero-default.
   bool dualListInit;
+
+  // MIDI recorder: elapsed-time precision. false (default) = minutes (h:mm,
+  // MINUTE_UNIT tick while recording); true = seconds (m:ss, SECOND_UNIT tick).
+  // Appended field, zero-default on load of an older blob (= minutes).
+  bool midiSecondPrecision;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

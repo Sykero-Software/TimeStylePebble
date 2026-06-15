@@ -51,6 +51,7 @@ void Settings_loadFromStorage() {
   settings.clockFontId = FONT_SETTING_LECO;   // LECO clock font by default (configurable)
   settings.showBatteryPct = true;
   settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
+  settings.midiSecondPrecision = false;   // minutes by default; appended field, no settings-version bump
   settings.showBigDate = true;   // on by default (configurable); appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
   settings.twtTargetVibe = false;   // opt-in default; appended field, no settings-version bump
