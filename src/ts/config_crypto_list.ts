@@ -71,6 +71,7 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     const coin = (row && typeof row.coin === 'string') ? row.coin : 'bitcoin';
     const vs = (row && row.vs === 'eur') ? 'eur' : 'usd';
     const p = (row && row.p !== undefined && row.p !== null) ? row.p : -3;
+    const t = (row && row.t !== undefined && row.t !== null) ? row.t : 0;
     const label = (row && typeof row.label === 'string') ? row.label : '';
     const wid = (row && row.wid !== undefined) ? parseInt(row.wid, 10) : 0;
     const sym = symbolFor(coin);              // '' for a custom/unknown coin
@@ -89,6 +90,8 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
         '</select>' +
         '<input class="cl-p" type="number" step="1" title="precision (decimals; negative rounds)" value="' +
           escAttr(String(p)) + '">' +
+        '<input class="cl-t" type="number" step="1" min="0" title="trim: leading digits to cut (1.160, trim 2 -> 60)" value="' +
+          escAttr(String(t)) + '">' +
         '<button type="button" class="cl-del" title="Remove">&#10005;</button>' +
       '</div>' +
       '<input class="cl-custom" type="text" placeholder="coingecko id" value="' +
@@ -125,14 +128,18 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
       const el = rowEls[i] as HTMLElement;
       const vsSel = el.querySelector('.cl-vs') as HTMLSelectElement;
       const pIn = el.querySelector('.cl-p') as HTMLInputElement;
+      const tIn = el.querySelector('.cl-t') as HTMLInputElement;
       const labelIn = el.querySelector('.cl-label') as HTMLInputElement;
       const wid = parseInt(el.getAttribute('data-wid') || '0', 10) || 0;
       const p = parseInt(pIn ? pIn.value : '0', 10);
+      let tv = parseInt(tIn ? tIn.value : '0', 10);
+      if (isNaN(tv) || tv < 0) { tv = 0; }
       rows.push({
         wid: wid,
         coin: rowCoinId(el),
         vs: (vsSel && vsSel.value === 'eur') ? 'eur' : 'usd',
         p: isNaN(p) ? 0 : p,
+        t: tv,
         label: labelIn ? labelIn.value : '',
       });
     }
@@ -190,7 +197,7 @@ function cryptoListInitialize(this: any, _minified: any, _clayConfig: any): void
     if (target.classList.contains('cl-add')) {
       const rows = currentRows();
       if (rows.length < MAX_CRYPTO) {
-        rows.push({ wid: nextFreeWid(), coin: 'bitcoin', vs: 'usd', p: defaultPFor('bitcoin'), label: '' });
+        rows.push({ wid: nextFreeWid(), coin: 'bitcoin', vs: 'usd', p: defaultPFor('bitcoin'), t: 0, label: '' });
         rebuild(rows);
         self.trigger('change');
       }
@@ -258,6 +265,7 @@ const cryptoListComponent = {
     '.cl-row .cl-coin{flex:1 1 5rem}' +
     '.cl-row .cl-vs{flex:0 0 3.8rem}' +
     '.cl-row .cl-p{flex:0 0 3rem}' +
+    '.cl-row .cl-t{flex:0 0 3rem}' +
     '.cl-row .cl-custom{flex:1 1 auto;margin-top:4px}' +
     '.cl-row .cl-label{flex:0 0 5rem;margin-top:4px}' +
     '.cl-row button{flex:0 0 auto;min-width:0;width:2.6rem;height:2.6rem;margin:0;padding:0}' +
