@@ -176,7 +176,8 @@ static void unobstructed_did_change(void *context) {
 void redrawScreen() {
 
   // check if the tick handler frequency should be changed
-  bool wantEverySecond = dynamicSettings.updateScreenEverySecond || midi_status.isRecording;
+  bool wantEverySecond = dynamicSettings.updateScreenEverySecond
+      || (midi_status.isRecording && settings.midiSecondPrecision);
   if(wantEverySecond != updatingEverySecond) {
     tick_timer_service_unsubscribe();
 
