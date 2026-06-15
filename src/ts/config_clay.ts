@@ -216,7 +216,8 @@ const config = [
       { type: 'text', defaultValue:
         'Prices load from CoinGecko; the Data Refresh interval (bottom of this page) ' +
         'sets how often. Add coins, then place each in the sidebar widget list above. ' +
-        'Precision: positive = decimals (2 → 104000.00), negative = round (−3 → 104).' },
+        'Precision: positive = decimals (2 → 104000.00), negative = round (−3 → 104). ' +
+        'Trim: cut N leading digits (1.160 with trim 2 → 60).' },
       { type: 'cryptoList', messageKey: 'CryptoList', defaultValue: [] },
     ],
   },
