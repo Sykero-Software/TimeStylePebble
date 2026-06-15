@@ -4,7 +4,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const {
-  buildPriceUrl, normalizeRows, packCryptoData, DELIM,
+  buildPriceUrl, normalizeRows, packCryptoData, countValidPrices, DELIM,
 } = require('../src/pkjs/crypto_parse');
 
 const ROWS = [
@@ -64,4 +64,26 @@ test('label falls back to the uppercased coin id when empty', () => {
     [{ wid: 200, coin: 'dogecoin', vs: 'usd', p: 4, label: '' }],
     { dogecoin: { usd: 0.1234 } });
   assert.strictEqual(packed, ['200', 'DOGECOIN', '0.1234'].join(DELIM));
+});
+
+test('countValidPrices counts coins with a finite price', () => {
+  const json = { bitcoin: { usd: 104235 }, ethereum: { eur: 3520 } };
+  assert.strictEqual(countValidPrices(ROWS, json), 2);
+});
+
+test('countValidPrices ignores missing / non-finite prices', () => {
+  // ethereum price absent -> only bitcoin counts
+  assert.strictEqual(countValidPrices(ROWS, { bitcoin: { usd: 104235 } }), 1);
+});
+
+test('countValidPrices is 0 for a CoinGecko rate-limit (429) error body', () => {
+  // a 429 JSON body has none of the requested coin keys -> nothing valid.
+  // This is the signal updateCrypto uses to AVOID overwriting good prices with "--".
+  const errBody = { status: { error_code: 429, error_message: 'rate limited' } };
+  assert.strictEqual(countValidPrices(ROWS, errBody), 0);
+});
+
+test('countValidPrices is 0 for an empty / non-object response', () => {
+  assert.strictEqual(countValidPrices(ROWS, {}), 0);
+  assert.strictEqual(countValidPrices(ROWS, null), 0);
 });

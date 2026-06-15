@@ -13,6 +13,7 @@ import clayConfigCustom from './config_clay_custom';
 import widgetListComponent from './config_widget_list';
 import { widgetListToPayload } from './widget_list_payload';
 import { slotsToList, splitListByPosition } from './widget_slots';
+import { isWatchPollRequest } from './poll_request';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
@@ -64,6 +65,14 @@ Pebble.addEventListener('ready', () => {
 // (weather + electricity + crypto) -- this is the single shared, watch-driven poll.
 Pebble.addEventListener('appmessage', (msg) => {
   console.log('Recieved message: ' + JSON.stringify(msg.payload));
+
+  // Companion Android apps (trackworktime, MIDI Recorder) push their status to
+  // THIS watchface's UUID, so those messages are delivered here too. Only the
+  // watch's own (empty) data-poll request should trigger a phone fetch -- else a
+  // tracking toggle would hit the rate-limited crypto API and blank the widgets.
+  if (!isWatchPollRequest(msg.payload)) {
+    return;
+  }
 
   // in the case of recieving this, we assume the watch does, in fact, need weather data
   window.localStorage.setItem('disable_weather', 'no');

@@ -70,3 +70,17 @@ export function packCryptoData(rows: CoinRow[], json: any): string {
   }
   return fields.join(DELIM);
 }
+
+/* How many configured coins resolved to a usable price in this response. A
+   rate-limited / error response (e.g. CoinGecko's 429 JSON body) carries none of
+   the requested coin keys, so this is 0 — the caller uses that to skip sending,
+   leaving the watch's last-good prices intact instead of blanking them to "--". */
+export function countValidPrices(rows: CoinRow[], json: any): number {
+  let n = 0;
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const price = json && json[r.coin] ? json[r.coin][r.vs] : undefined;
+    if (typeof price === 'number' && isFinite(price)) { n++; }
+  }
+  return n;
+}
