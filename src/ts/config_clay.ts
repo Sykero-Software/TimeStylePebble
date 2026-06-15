@@ -245,6 +245,8 @@ const config = [
       { type: 'heading', defaultValue: 'MIDI recorder' },
       { type: 'radiogroup', messageKey: 'SettingMidiVibe', label: 'Vibrate on recording start/stop',
         defaultValue: '0', options: [{ label: 'Vibrate', value: '1' }, { label: 'None', value: '0' }] },
+      { type: 'radiogroup', messageKey: 'SettingMidiSecondPrecision', label: 'Recording time precision',
+        defaultValue: '0', options: [{ label: 'Minutes', value: '0' }, { label: 'Seconds', value: '1' }] },
     ],
   },
 

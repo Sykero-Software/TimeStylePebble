@@ -145,7 +145,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
   // string settings (alt-clock name, decimal separator char) stay as-is.
   const STRING_KEYS: Record<string, boolean> = { SettingAltClockName: true, SettingDecimalSep: true };
   ['SettingLanguageID', 'SettingShowLeadingZero', 'SettingClockFontId', 'SettingDisconnectIcon',
-    'SettingBluetoothVibe', 'SettingMidiVibe', 'SettingBigDate', 'SettingTwtShowRemaining',
+    'SettingBluetoothVibe', 'SettingMidiVibe', 'SettingMidiSecondPrecision', 'SettingBigDate', 'SettingTwtShowRemaining',
     'SettingTwtTargetVibe', 'SettingTwtBudgetVibe', 'SettingHourlyVibe',
     'SettingStatusStripFullWidth', 'SettingUseLargeFonts', 'SettingUseMetric',
     'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
