@@ -23,3 +23,30 @@ test('handles non-finite input defensively', () => {
   assert.strictEqual(formatPrice(NaN, 2), '--');
   assert.strictEqual(formatPrice(Infinity, -3), '--');
 });
+
+test('t = 0 (or omitted) leaves the formatted value unchanged', () => {
+  assert.strictEqual(formatPrice(1.160, 3, 0), '1.160');
+  assert.strictEqual(formatPrice(104000, 2, 0), '104000.00');
+});
+
+test('t > 0 drops that many leading digits and the orphaned separator', () => {
+  assert.strictEqual(formatPrice(1.160, 3, 1), '160');
+  assert.strictEqual(formatPrice(1.160, 3, 2), '60');
+});
+
+test('t keeps leading zeros in the remainder', () => {
+  assert.strictEqual(formatPrice(1.060, 3, 1), '060');
+});
+
+test('a separator after the trimmed region is retained', () => {
+  assert.strictEqual(formatPrice(1234.56, 2, 2), '34.56');
+});
+
+test('over-trimming every digit yields --', () => {
+  assert.strictEqual(formatPrice(1.160, 3, 4), '--');
+  assert.strictEqual(formatPrice(1.160, 3, 9), '--');
+});
+
+test('negative t is treated as no trim', () => {
+  assert.strictEqual(formatPrice(1.160, 3, -2), '1.160');
+});

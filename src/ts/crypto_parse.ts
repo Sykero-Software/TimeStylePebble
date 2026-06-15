@@ -14,6 +14,7 @@ export interface CoinRow {
   coin: string;     // CoinGecko id, e.g. 'bitcoin'
   vs: string;       // 'usd' | 'eur'
   p: number;        // display precision (see formatPrice)
+  t: number;        // leading digits to trim (see formatPrice); 0 = none
   label: string;    // sidebar label; '' -> uppercased coin id
 }
 
@@ -35,7 +36,10 @@ export function normalizeRows(raw: any): CoinRow[] {
     let pc = p;
     if (pc > 8) { pc = 8; }
     if (pc < -8) { pc = -8; }
-    out.push({ wid: wid, coin: coin, vs: vs, p: pc, label: label });
+    let tc = parseInt(r.t, 10);
+    if (isNaN(tc) || tc < 0) { tc = 0; }
+    if (tc > 15) { tc = 15; }
+    out.push({ wid: wid, coin: coin, vs: vs, p: pc, t: tc, label: label });
   }
   return out;
 }
@@ -65,7 +69,7 @@ export function packCryptoData(rows: CoinRow[], json: any): string {
     const r = rows[i];
     const price = json && json[r.coin] ? json[r.coin][r.vs] : undefined;
     const value = (typeof price === 'number' && isFinite(price))
-      ? formatPrice(price, r.p) : '--';
+      ? formatPrice(price, r.p, r.t) : '--';
     fields.push(String(r.wid), labelFor(r), value);
   }
   return fields.join(DELIM);

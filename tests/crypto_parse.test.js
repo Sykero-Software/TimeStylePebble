@@ -35,7 +35,7 @@ test('normalizeRows drops malformed rows and coerces types', () => {
     'garbage',
   ]);
   assert.strictEqual(out.length, 1);
-  assert.deepStrictEqual(out[0], { wid: 15, coin: 'bitcoin', vs: 'usd', p: -3, label: 'BTC' });
+  assert.deepStrictEqual(out[0], { wid: 15, coin: 'bitcoin', vs: 'usd', p: -3, t: 0, label: 'BTC' });
 });
 
 test('packCryptoData formats each row and joins wid/label/value triplets', () => {
@@ -86,4 +86,29 @@ test('countValidPrices is 0 for a CoinGecko rate-limit (429) error body', () => 
 test('countValidPrices is 0 for an empty / non-object response', () => {
   assert.strictEqual(countValidPrices(ROWS, {}), 0);
   assert.strictEqual(countValidPrices(ROWS, null), 0);
+});
+
+test('normalizeRows parses t, defaults missing/NaN to 0', () => {
+  const out = normalizeRows([
+    { wid: 15, coin: 'bitcoin', vs: 'usd', p: -3, t: 2, label: 'BTC' },
+    { wid: 200, coin: 'euro-coin', vs: 'eur', p: 3, label: 'EUR' },
+  ]);
+  assert.strictEqual(out[0].t, 2);
+  assert.strictEqual(out[1].t, 0);
+});
+
+test('normalizeRows clamps t to [0, 15]', () => {
+  const out = normalizeRows([
+    { wid: 200, coin: 'bitcoin', vs: 'usd', p: 0, t: 99, label: 'BTC' },
+    { wid: 201, coin: 'ethereum', vs: 'usd', p: 0, t: -5, label: 'ETH' },
+  ]);
+  assert.strictEqual(out[0].t, 15);
+  assert.strictEqual(out[1].t, 0);
+});
+
+test('packCryptoData applies the per-row trim', () => {
+  const packed = packCryptoData(
+    [{ wid: 17, coin: 'euro-coin', vs: 'eur', p: 3, t: 2, label: 'EUR' }],
+    { 'euro-coin': { eur: 1.160 } });
+  assert.strictEqual(packed, '17' + DELIM + 'EUR' + DELIM + '60');
 });

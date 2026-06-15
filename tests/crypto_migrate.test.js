@@ -9,8 +9,8 @@ test('seeds only legacy coins whose disable flag was not "yes"', () => {
   const flags = { disable_btc: 'no', disable_xmr: 'yes', disable_eurusd: 'no' };
   const list = seedCryptoList(flags);
   assert.deepStrictEqual(list, [
-    { wid: 15, coin: 'bitcoin', vs: 'usd', p: -3, label: 'BTC' },
-    { wid: 17, coin: 'euro-coin', vs: 'usd', p: 3, label: 'EUR' },
+    { wid: 15, coin: 'bitcoin', vs: 'usd', p: -3, t: 0, label: 'BTC' },
+    { wid: 17, coin: 'euro-coin', vs: 'usd', p: 3, t: 0, label: 'EUR' },
   ]);
 });
 
