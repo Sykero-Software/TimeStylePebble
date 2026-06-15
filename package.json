@@ -118,7 +118,8 @@
       "SettingWidgetList",
       "SettingStatusStripFullWidth",
       "SettingRightWidgetList",
-      "CryptoData"
+      "CryptoData",
+      "SettingMidiSecondPrecision"
     ],
     "resources": {
       "media": [
