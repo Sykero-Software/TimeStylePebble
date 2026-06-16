@@ -19,9 +19,8 @@ Watchfaces need **no category and no icons**.
 - **Banner** — optional for a watchface. `project_banner.png` exists in the repo
   root.
 - **Screenshots** — ≥1 per supported platform, **unframed**, native resolution.
-  Generated on the emulator via the superrepo's
-  `scripts/pebble-appstore-screenshots.sh`; output is gitignored under the
-  superrepo `appstore/` (regenerable).
+  Generated on the emulator with `pebble-appstore-screenshots.sh`; output is
+  gitignored (regenerable).
 
 ## Status
 
