@@ -15,6 +15,7 @@ void (*message_processed_callback)(void);
 static bool s_midiSeen = false;
 
 void messaging_requestNewWeatherData() {
+  APP_LOG(APP_LOG_LEVEL_INFO, "DIAG: watchface TX refresh request (key 0)");
   // just send an empty message for now
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
@@ -23,6 +24,7 @@ void messaging_requestNewWeatherData() {
 }
 
 void messaging_init(void (*processed_callback)(void)) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "DIAG: watchface messaging_init (LAUNCH)");
   s_midiSeen = false;
   // register my custom callback
   message_processed_callback = processed_callback;
@@ -502,6 +504,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if (midiRec_tuple != NULL) {
     bool wasRecording = midi_status.isRecording;
     bool isRecording = (midiRec_tuple->value->uint8 != 0);
+    APP_LOG(APP_LOG_LEVEL_INFO, "DIAG: watchface RX MIDI_IS_RECORDING=%d", (int)isRecording);
     midi_status.isRecording = isRecording;
     midiUpdated = true;
 
