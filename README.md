@@ -43,3 +43,7 @@ Files added by this fork (e.g. the TWT, electricity-price, BTC-price and
 date-header features and their tests) carry an `SPDX-License-Identifier:
 GPL-3.0-only` header and are © 2026 Tuomas Airaksinen. All contributions made to
 this fork going forward are licensed under GPL-3.0-only.
+
+## Support
+
+Questions, feedback or bug reports: <pebble.trackworktime@sykero.fi>
