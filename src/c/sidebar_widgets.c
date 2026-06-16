@@ -785,9 +785,9 @@ int CurrentWeather_getHeight() {
   // Open-Meteo / no-name case is laid out exactly as before). Names longer than
   // 4 chars wrap to a second stacked line.
   if (Weather_weatherInfo.stationName[0] != '\0') {
-    // wrap to a second line only when it would hold >= 3 chars (a lone 1-2 char
+    // wrap to a second line only when it would hold >= 2 chars (a lone 1-char
     // tail looks worse than just truncating to the first line)
-    int extra = strlen(Weather_weatherInfo.stationName) >= 7 ? 27 : 16;
+    int extra = strlen(Weather_weatherInfo.stationName) >= 6 ? 27 : 16;
     return layout.weatherStationY + extra;
   }
   return layout.weatherHeight;
@@ -832,7 +832,7 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
     // chars; we stack them as two 4-char lines below the temperature.
     if (Weather_weatherInfo.stationName[0] != '\0') {
       GFont nameFont = fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD);
-      int nameX = 3 + SidebarWidgets_xOffset;
+      int nameX = 1 + SidebarWidgets_xOffset;
       char line1[5] = {0}, line2[5] = {0};
       size_t nlen = strlen(Weather_weatherInfo.stationName);
       size_t n1 = nlen < 4 ? nlen : 4;
@@ -841,7 +841,7 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
                          GRect(nameX, yPosition + layout.weatherStationY,
                                layout.textRectWidth, 16),
                          GTextOverflowModeFill, GTextAlignmentLeft, NULL);
-      if (nlen >= 7) {   // only show line 2 if it holds >= 3 chars
+      if (nlen >= 6) {   // only show line 2 if it holds >= 2 chars
         size_t n2 = (nlen - 4) < 4 ? (nlen - 4) : 4;
         memcpy(line2, Weather_weatherInfo.stationName + 4, n2);
         graphics_draw_text(ctx, line2, nameFont,
