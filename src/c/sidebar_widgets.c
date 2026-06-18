@@ -995,11 +995,15 @@ int UVIndex_getHeight() { return layout.basicWidgetHeight; }
 void UVIndex_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
   char uvString[5];
-  if (Weather_weatherInfo.currentUVIndex != INT32_MIN) {
+  // A real UV index is always >= 0. A negative value (INT32_MIN before any data,
+  // or -1 sent by the provider when no reading could be obtained -- e.g. FMI at
+  // night or its sparse UV station network returned only NaN) means "no data":
+  // show a placeholder rather than a misleading 0.
+  if (Weather_weatherInfo.currentUVIndex >= 0) {
     snprintf(uvString, sizeof(uvString), "%d",
              (int)Weather_weatherInfo.currentUVIndex);
   } else {
-    snprintf(uvString, sizeof(uvString), "...");
+    snprintf(uvString, sizeof(uvString), "--");
   }
   draw_basic_widget(ctx, yPosition, "UV", uvString, layout.basicWidgetY);
 }

@@ -26,6 +26,13 @@ import { isUvWidgetConfigured } from './uv_widget';
 const STORED_QUERY = 'fmi::forecast::edited::weather::scandinavia::point::timevaluepair';
 const UV_STORED_QUERY = 'fmi::observations::radiation::timevaluepair';
 
+// Sentinel for "no UV reading obtained" -- a real UV index is always >= 0, so the
+// watch (sidebar_widgets.c UVIndex_draw) renders any negative value as "--"
+// instead of a misleading 0. FMI has no UV in its forecast, so this is what the
+// widget shows whenever the radiation obs gives nothing (night / all stations NaN
+// / request failed).
+const UV_NO_DATA = -1;
+
 // Cap the location name sent to the watch; the C side stacks it as two 4-char
 // lines (8 chars total). Truncated plainly, no ellipsis, first char uppercased.
 const LOCATION_NAME_MAXLEN = 8;
@@ -64,7 +71,7 @@ export function getWeatherFromCoords(pos: GeoPosition): void {
       WeatherForecastHighTemp: f.forecastHigh,
       WeatherForecastLowTemp: f.forecastLow,
       WeatherForecastCondition: smartSymbolToIcon(f.forecastSymbol, icons),
-      WeatherUVIndex: 0,   // FMI forecast has no UV; filled from observations below
+      WeatherUVIndex: UV_NO_DATA,   // FMI forecast has no UV; filled from observations below
       WeatherStationName: abbreviateLocationName(f.name, LOCATION_NAME_MAXLEN),
     };
 
@@ -106,7 +113,7 @@ function fetchUvIndexThenSend(lat: number, lon: number, dictionary: WeatherDict)
         dictionary.WeatherUVIndex = uv.uvIndex;
         console.log('FMI UV index ' + uv.uvIndex + ' from ' + uv.station);
       } else {
-        console.log('FMI UV: no usable observation (night/gap); UV stays 0');
+        console.log('FMI UV: no usable observation (night/gap); showing "--"');
       }
     }
     console.log('FMI weather: ' + JSON.stringify(dictionary));
