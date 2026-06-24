@@ -111,6 +111,33 @@ int main(void) {
   { WidgetSlot s; s.count = 1; s.members[0] = 12;
     assert(WidgetSlot_activeMember(&s, 12345) == 12); } // plain ignores time
 
+  // --- parse: hide flag split into hide[]; members stay clean base ids ---
+  { WidgetSlot s[MAX_WIDGET_SLOTS]; uint8_t b[] = {7 | 0x20, 0xFF, 2, 1, 15, 16 | 0x20};
+    int n = WidgetList_parse(b, 6, s, MAX_WIDGET_SLOTS);
+    assert(n == 2);
+    assert(s[0].count == 1 && s[0].members[0] == 7 && s[0].hide[0] == true);
+    assert(s[1].count == 2 && s[1].members[0] == 15 && s[1].hide[0] == false
+           && s[1].members[1] == 16 && s[1].hide[1] == true); }
+
+  // --- sanitize: preserves the flag byte verbatim ---
+  { uint8_t b[] = {7 | 0x20, 200 | 0x20}; int n = WidgetList_sanitize(b, 2, 16);
+    assert(n == 2 && b[0] == (7 | 0x20) && b[1] == (200 | 0x20)); }
+  { uint8_t b[] = {0xFF, 2, 1, 15 | 0x20, 16}; int n = WidgetList_sanitize(b, 5, 16);
+    assert(n == 5 && b[3] == (15 | 0x20) && b[4] == 16); }
+
+  // --- forEachId: reports clean base ids even for hidden widgets ---
+  { collectedN = 0; uint8_t b[] = {7 | 0x20, 200 | 0x20};
+    WidgetList_forEachId(b, 2, collect_cb, NULL);
+    assert(collectedN == 2 && collected[0] == 7 && collected[1] == 200); }
+
+  // --- activeHide: tracks the active member's flag ---
+  { WidgetSlot s; s.count = 2; s.interval_code = 1; // 10s
+    s.members[0] = 15; s.members[1] = 16; s.hide[0] = true; s.hide[1] = false;
+    assert(WidgetSlot_activeHide(&s, 0)  == true);
+    assert(WidgetSlot_activeHide(&s, 10) == false); }
+  { WidgetSlot s; s.count = 1; s.members[0] = 12; s.hide[0] = true;
+    assert(WidgetSlot_activeHide(&s, 999) == true); }
+
   printf("All widget_list tests passed\n");
   return 0;
 }

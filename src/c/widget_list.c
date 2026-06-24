@@ -84,18 +84,24 @@ int WidgetList_parse(const uint8_t *bytes, int len, WidgetSlot *out, int maxSlot
       if ((int)count > avail) { count = (uint8_t)(avail < 0 ? 0 : avail); }
       int v = 0;
       for (int m = 0; m < count; m++) {
-        uint8_t id = bytes[memStart + m];
-        if (WidgetList_isDrawableId(id)) { out[n].members[v++] = id; }
+        uint8_t raw = bytes[memStart + m];
+        if (WidgetList_isDrawableId(raw)) {
+          out[n].members[v] = WidgetList_baseId(raw);
+          out[n].hide[v] = WidgetList_isHidden(raw);
+          v++;
+        }
       }
       i = memStart + count;
       if (v >= 2) {
         out[n].count = (uint8_t)v; out[n].interval_code = interval; n++;
       } else if (v == 1) {
-        out[n].count = 1; out[n].interval_code = 3; n++;   // members[0] already set
+        out[n].count = 1; out[n].interval_code = 3; n++;   // members[0]/hide[0] already set
       }
     } else {
       if (WidgetList_isDrawableId(b)) {
-        out[n].members[0] = b; out[n].count = 1; out[n].interval_code = 3; n++;
+        out[n].members[0] = WidgetList_baseId(b);
+        out[n].hide[0] = WidgetList_isHidden(b);
+        out[n].count = 1; out[n].interval_code = 3; n++;
       }
       i += 1;
     }
@@ -117,11 +123,11 @@ void WidgetList_forEachId(const uint8_t *bytes, int len,
       if ((int)count > avail) { count = (uint8_t)(avail < 0 ? 0 : avail); }
       for (int m = 0; m < count; m++) {
         uint8_t id = bytes[memStart + m];
-        if (WidgetList_isDrawableId(id)) { cb(id, ctx); }
+        if (WidgetList_isDrawableId(id)) { cb(WidgetList_baseId(id), ctx); }
       }
       i = memStart + count;
     } else {
-      if (WidgetList_isDrawableId(b)) { cb(b, ctx); }
+      if (WidgetList_isDrawableId(b)) { cb(WidgetList_baseId(b), ctx); }
       i += 1;
     }
   }
@@ -157,4 +163,13 @@ uint8_t WidgetSlot_activeMember(const WidgetSlot *slot, int secondsOfDay) {
   int idx = step % slot->count;
   if (idx < 0) { idx += slot->count; }
   return slot->members[idx];
+}
+
+bool WidgetSlot_activeHide(const WidgetSlot *slot, int secondsOfDay) {
+  if (slot->count <= 1) { return slot->hide[0]; }
+  int sec = WidgetList_intervalSeconds(slot->interval_code);
+  if (sec <= 0) { sec = 60; }
+  int idx = (secondsOfDay / sec) % slot->count;
+  if (idx < 0) { idx += slot->count; }
+  return slot->hide[idx];
 }

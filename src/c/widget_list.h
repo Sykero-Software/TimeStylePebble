@@ -31,7 +31,8 @@ uint8_t WidgetList_baseId(uint8_t b);
 bool    WidgetList_isHidden(uint8_t b);
 
 typedef struct {
-  uint8_t members[MAX_GROUP_MEMBERS];
+  uint8_t members[MAX_GROUP_MEMBERS];   // clean base ids (0x20 stripped)
+  bool    hide[MAX_GROUP_MEMBERS];      // identifier hidden, per member
   uint8_t count;          // 1 = plain slot; 2..MAX_GROUP_MEMBERS = rotating
   uint8_t interval_code;  // 0..5, meaningful only when count > 1
 } WidgetSlot;
@@ -63,3 +64,6 @@ int WidgetList_minSubMinuteIntervalSec(const uint8_t *bytes, int len);
 
 // The member a slot shows at the given seconds-of-day. count<=1 -> members[0].
 uint8_t WidgetSlot_activeMember(const WidgetSlot *slot, int secondsOfDay);
+
+// The hide flag of the member a slot shows at the given seconds-of-day.
+bool WidgetSlot_activeHide(const WidgetSlot *slot, int secondsOfDay);
