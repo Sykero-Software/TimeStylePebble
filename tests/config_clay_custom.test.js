@@ -70,7 +70,7 @@ function render(widgetVals, opts) {
   return clay;
 }
 
-test('no widgets: weather/electricity/alt/health hidden; battery style shown (auto-battery on)', () => {
+test('no widgets: weather/electricity/alt hidden; battery style shown (auto-battery on)', () => {
   const c = render([]);
   assert.strictEqual(c.byId['heading-weather'].shown, false);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, false);
