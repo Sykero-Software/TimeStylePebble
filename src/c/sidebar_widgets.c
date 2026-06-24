@@ -153,6 +153,7 @@ void UVIndex_draw(GContext *ctx, int yPosition);
 GDrawCommandImage *sleepImage;
 GDrawCommandImage *stepsImage;
 GDrawCommandImage *heartImage;
+GDrawCommandImage *deepSleepImage;
 
 SidebarWidget stepCounterWidget;
 int StepCounter_getHeight();
@@ -161,6 +162,10 @@ void StepCounter_draw(GContext *ctx, int yPosition);
 SidebarWidget sleepTimerWidget;
 int SleepTimer_getHeight();
 void SleepTimer_draw(GContext *ctx, int yPosition);
+
+SidebarWidget deepSleepWidget;
+int DeepSleep_getHeight();
+void DeepSleep_draw(GContext *ctx, int yPosition);
 
 SidebarWidget heartRateWidget;
 int HeartRate_getHeight();
@@ -241,6 +246,8 @@ void SidebarWidgets_init() {
       gdraw_command_image_create_with_resource(RESOURCE_ID_HEALTH_STEPS);
   heartImage =
       gdraw_command_image_create_with_resource(RESOURCE_ID_HEALTH_HEART);
+  deepSleepImage =
+      gdraw_command_image_create_with_resource(RESOURCE_ID_HEALTH_DEEP_SLEEP);
 #endif
 
   // set up widgets' function pointers correctly
@@ -281,6 +288,9 @@ void SidebarWidgets_init() {
   sleepTimerWidget.getHeight = SleepTimer_getHeight;
   sleepTimerWidget.draw = SleepTimer_draw;
 
+  deepSleepWidget.getHeight = DeepSleep_getHeight;
+  deepSleepWidget.draw = DeepSleep_draw;
+
   heartRateWidget.getHeight = HeartRate_getHeight;
   heartRateWidget.draw = HeartRate_draw;
 
@@ -319,6 +329,7 @@ void SidebarWidgets_deinit() {
   gdraw_command_image_destroy(stepsImage);
   gdraw_command_image_destroy(sleepImage);
   gdraw_command_image_destroy(heartImage);
+  gdraw_command_image_destroy(deepSleepImage);
 
   health_service_events_unsubscribe();
 #endif
@@ -609,6 +620,8 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return stepCounterWidget;
   case SLEEP_TIMER:
     return sleepTimerWidget;
+  case DEEP_SLEEP_TIMER:
+    return deepSleepWidget;
   case HEARTRATE:
     return heartRateWidget;
 #endif
@@ -1134,6 +1147,14 @@ static void draw_sleep_metric(GContext *ctx, int yPosition,
 
 void SleepTimer_draw(GContext *ctx, int yPosition) {
   draw_sleep_metric(ctx, yPosition, sleepImage, HealthMetricSleepSeconds);
+}
+
+/***** Deep (Restful) Sleep Widget *****/
+
+int DeepSleep_getHeight() { return layout.sleepTimerHeight; }
+
+void DeepSleep_draw(GContext *ctx, int yPosition) {
+  draw_sleep_metric(ctx, yPosition, deepSleepImage, HealthMetricSleepRestfulSeconds);
 }
 
 int HeartRate_getHeight() { return layout.heartRateHeight; }
