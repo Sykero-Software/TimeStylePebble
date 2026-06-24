@@ -183,7 +183,6 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   Tuple *decimalSeparator_tuple = dict_find(iterator, MESSAGE_KEY_SettingDecimalSep);
   Tuple *healthUseDistance_tuple = dict_find(iterator, MESSAGE_KEY_SettingHealthUseDistance);
-  Tuple *healthUseRestfulSleep_tuple = dict_find(iterator, MESSAGE_KEY_SettingHealthUseRestfulSleep);
 
   Tuple *autobattery_tuple = dict_find(iterator, MESSAGE_KEY_SettingDisableAutobattery);
 
@@ -405,10 +404,6 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   if(healthUseDistance_tuple != NULL) {
     settings.healthUseDistance = (bool)healthUseDistance_tuple->value->int8;
-  }
-
-  if(healthUseRestfulSleep_tuple != NULL) {
-    settings.healthUseRestfulSleep = (bool)healthUseRestfulSleep_tuple->value->int8;
   }
 
   if(activateDisconnectIcon_tuple != NULL) {

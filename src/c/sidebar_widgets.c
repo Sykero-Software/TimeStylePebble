@@ -70,9 +70,9 @@ typedef struct {
   // steps
   int stepCounterHeight;
   int stepsTextY;
-  // sleep
+  // sleep (single decimal line; Deep Sleep reuses these)
   int sleepTimerHeight;
-  int sleepHoursY, sleepMinutesY;
+  int sleepTextY;
   // seconds
   int secondsHeight, secondsY;
 } SidebarWidgetLayout;
@@ -370,9 +370,8 @@ void SidebarWidgets_updateFonts() {
         .heartRateAgeY = 40,
         .stepCounterHeight = 32,
         .stepsTextY = 13,
-        .sleepTimerHeight = 44,
-        .sleepHoursY = 14,
-        .sleepMinutesY = 30,
+        .sleepTimerHeight = 32,
+        .sleepTextY = 13,
         .secondsHeight = 14,
         .secondsY = -10,
     };
@@ -412,9 +411,8 @@ void SidebarWidgets_updateFonts() {
         .heartRateAgeY = 44,
         .stepCounterHeight = 36,
         .stepsTextY = 13,
-        .sleepTimerHeight = 44,
-        .sleepHoursY = 14,
-        .sleepMinutesY = 30,
+        .sleepTimerHeight = 36,
+        .sleepTextY = 13,
         .secondsHeight = 14,
         .secondsY = -10,
     };
@@ -458,9 +456,8 @@ void SidebarWidgets_updateFonts() {
     layout.heartRateAgeY = 45;
     layout.stepCounterHeight = 35;
     layout.stepsTextY = 10;
-    layout.sleepTimerHeight = 52;
-    layout.sleepHoursY = 13;
-    layout.sleepMinutesY = 34;
+    layout.sleepTimerHeight = 35;
+    layout.sleepTextY = 10;
     layout.secondsHeight = 18;
     layout.secondsY = -10;
   } else {
@@ -497,9 +494,8 @@ void SidebarWidgets_updateFonts() {
     layout.heartRateAgeY = 43;
     layout.stepCounterHeight = 32;
     layout.stepsTextY = 11;
-    layout.sleepTimerHeight = 52;
-    layout.sleepHoursY = 13;
-    layout.sleepMinutesY = 34;
+    layout.sleepTimerHeight = 32;
+    layout.sleepTextY = 11;
     layout.secondsHeight = 18;
     layout.secondsY = -10;
   }
@@ -1100,52 +1096,44 @@ void StepCounter_draw(GContext *ctx, int yPosition) {
 
 int SleepTimer_getHeight() { return layout.sleepTimerHeight; }
 
-void SleepTimer_draw(GContext *ctx, int yPosition) {
-  if (sleepImage) {
-    gdraw_command_image_recolor(sleepImage, dynamicSettings.iconFillColor,
+// Format sleep seconds as "H<sep>T" (hours dot tenths) using the configured decimal
+// separator, e.g. 7h23m -> "7.3" (tenths truncated, matching the steps widget).
+static void format_sleep_decimal(int seconds, char *buf, size_t n) {
+  if (seconds < 0) { seconds = 0; }
+  int total_tenths = seconds * 10 / 3600;  // truncated tenths of an hour
+  int hours = total_tenths / 10;
+  int tenths = total_tenths % 10;
+  snprintf(buf, n, "%d%c%d", hours, settings.decimalSeparator, tenths);
+}
+
+// Shared renderer for the Sleep / Deep Sleep widgets: recolored icon on top + one
+// centered decimal line. They differ only in icon and health metric.
+static void draw_sleep_metric(GContext *ctx, int yPosition,
+                              GDrawCommandImage *img, HealthMetric metric) {
+  if (img) {
+    gdraw_command_image_recolor(img, dynamicSettings.iconFillColor,
                                 dynamicSettings.iconStrokeColor);
-    gdraw_command_image_draw(ctx, sleepImage,
+    gdraw_command_image_draw(ctx, img,
                              GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
   }
 
-  // get sleep in seconds
-  int sleep_seconds;
-
-  HealthActivityMask metric = (settings.healthUseRestfulSleep)
-                                  ? HealthMetricSleepRestfulSeconds
-                                  : HealthMetricSleepSeconds;
-
+  int sleep_seconds = 0;
   if (is_health_metric_accessible(metric)) {
     sleep_seconds = (int)health_service_sum_today(metric);
-  } else {
-    sleep_seconds = 0;
   }
 
-  // convert to hours/minutes
-  int sleep_minutes = sleep_seconds / 60;
-  int sleep_hours = sleep_minutes / 60;
-
-  // find minutes remainder
-  sleep_minutes %= 60;
-
-  char sleep_text[4];
-
-  snprintf(sleep_text, sizeof(sleep_text), "%ih", sleep_hours);
+  char sleep_text[8];
+  format_sleep_decimal(sleep_seconds, sleep_text, sizeof(sleep_text));
 
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
   graphics_draw_text(ctx, sleep_text, mdSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.sleepHoursY, layout.textRectWidth,
-                           20),
+                           yPosition + layout.sleepTextY, layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
 
-  snprintf(sleep_text, sizeof(sleep_text), "%im", sleep_minutes);
-
-  graphics_draw_text(ctx, sleep_text, smSidebarFont,
-                     GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.sleepMinutesY,
-                           layout.textRectWidth, 20),
-                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+void SleepTimer_draw(GContext *ctx, int yPosition) {
+  draw_sleep_metric(ctx, yPosition, sleepImage, HealthMetricSleepSeconds);
 }
 
 int HeartRate_getHeight() { return layout.heartRateHeight; }

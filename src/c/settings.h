@@ -57,7 +57,7 @@ typedef struct {
 
   // health widget Settings
   bool healthUseDistance;
-  bool healthUseRestfulSleep;
+  bool healthUseRestfulSleep;  // retained for persisted-blob layout; no longer used
   char decimalSeparator;
 
   // MIDI recorder settings
