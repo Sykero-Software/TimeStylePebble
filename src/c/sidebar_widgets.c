@@ -943,12 +943,18 @@ void Seconds_draw(GContext *ctx, int yPosition) {
 
 /***** Weather Forecast Widget *****/
 
-int WeatherForecast_getHeight() { return layout.weatherForecastHeight; }
+int WeatherForecast_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.weatherForecastHeight - layout.forecastHighY)
+      : layout.weatherForecastHeight;
+}
 
 void WeatherForecast_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
-  if (Weather_forecastWeatherIcon) {
+  int hs = SidebarWidgets_hideIdentifier ? layout.forecastHighY : 0;
+
+  if (!SidebarWidgets_hideIdentifier && Weather_forecastWeatherIcon) {
     gdraw_command_image_recolor(Weather_forecastWeatherIcon,
                                 dynamicSettings.iconFillColor,
                                 dynamicSettings.iconStrokeColor);
@@ -980,13 +986,13 @@ void WeatherForecast_draw(GContext *ctx, int yPosition) {
     }
     graphics_draw_text(ctx, tempString, currentSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.forecastHighY,
+                             yPosition + layout.forecastHighY - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
     graphics_fill_rect(ctx,
                        GRect(layout.forecastDividerX + SidebarWidgets_xOffset,
-                             8 + yPosition + layout.forecastDividerY,
+                             8 + yPosition + layout.forecastDividerY - hs,
                              layout.forecastDividerWidth, 1),
                        0, GCornerNone);
 
@@ -997,14 +1003,14 @@ void WeatherForecast_draw(GContext *ctx, int yPosition) {
     }
     graphics_draw_text(ctx, tempString, currentSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.forecastLowY,
+                             yPosition + layout.forecastLowY - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   } else {
     // if the weather data isn't set, draw a loading indication
     graphics_draw_text(ctx, "...", currentSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition, layout.textRectWidth, 20),
+                             yPosition - hs, layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
 }
@@ -1195,10 +1201,15 @@ void DeepSleep_draw(GContext *ctx, int yPosition) {
   draw_sleep_metric(ctx, yPosition, deepSleepImage, HealthMetricSleepRestfulSeconds);
 }
 
-int HeartRate_getHeight() { return layout.heartRateHeight; }
+int HeartRate_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.heartRateHeight - layout.heartRateValueY) : layout.heartRateHeight;
+}
 
 void HeartRate_draw(GContext *ctx, int yPosition) {
-  if (heartImage) {
+  int hs = SidebarWidgets_hideIdentifier ? layout.heartRateValueY : 0;
+
+  if (!SidebarWidgets_hideIdentifier && heartImage) {
     gdraw_command_image_recolor(heartImage, dynamicSettings.iconFillColor,
                                 dynamicSettings.iconStrokeColor);
     gdraw_command_image_draw(ctx, heartImage,
@@ -1222,7 +1233,7 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
   graphics_draw_text(ctx, heart_rate_text, currentSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + yOffset, layout.textRectWidth, 20),
+                           yPosition + yOffset - hs, layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   // minutes since the last reading, drawn under the BPM value
@@ -1240,7 +1251,7 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
 
   graphics_draw_text(ctx, age_text, smSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.heartRateAgeY,
+                           yPosition + layout.heartRateAgeY - hs,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
@@ -1264,7 +1275,7 @@ void Beats_draw(GContext *ctx, int yPosition) {
 #define ELEC_Y_NUDGE (-6)
 
 static void elec_draw_bolt(GContext *ctx, int yPosition) {
-  if (electricityBoltPath) {
+  if (!SidebarWidgets_hideIdentifier && electricityBoltPath) {
     gpath_move_to(electricityBoltPath,
                   GPoint(9 + SidebarWidgets_xOffset, yPosition));
     graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
@@ -1274,9 +1285,10 @@ static void elec_draw_bolt(GContext *ctx, int yPosition) {
 }
 
 static void elec_draw_small_line(GContext *ctx, int yPosition, const char *small) {
+  int hs = SidebarWidgets_hideIdentifier ? (layout.heartRateValueY + ELEC_Y_NUDGE) : 0;
   graphics_draw_text(ctx, small, smSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.heartRateAgeY + ELEC_Y_NUDGE,
+                           yPosition + layout.heartRateAgeY + ELEC_Y_NUDGE - hs,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
@@ -1284,10 +1296,11 @@ static void elec_draw_small_line(GContext *ctx, int yPosition, const char *small
 static void elec_draw_two_line(GContext *ctx, int yPosition,
                                const char *big, const char *small,
                                GFont bigFont) {
+  int hs = SidebarWidgets_hideIdentifier ? (layout.heartRateValueY + ELEC_Y_NUDGE) : 0;
   elec_draw_bolt(ctx, yPosition);
   graphics_draw_text(ctx, big, bigFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.heartRateValueY + ELEC_Y_NUDGE,
+                           yPosition + layout.heartRateValueY + ELEC_Y_NUDGE - hs,
                            layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   elec_draw_small_line(ctx, yPosition, small);
@@ -1300,6 +1313,7 @@ static void elec_draw_two_line(GContext *ctx, int yPosition,
 // fits the narrow sidebar. Keeps the hour big/legible.
 static void elec_draw_split_time(GContext *ctx, int yPosition,
                                  const ElecDisplay *d, const char *small) {
+  int hs = SidebarWidgets_hideIdentifier ? (layout.heartRateValueY + ELEC_Y_NUDGE) : 0;
   elec_draw_bolt(ctx, yPosition);
   char hourStr[4], minStr[3];
   snprintf(hourStr, sizeof(hourStr), "%d", d->startHour);
@@ -1315,7 +1329,7 @@ static void elec_draw_split_time(GContext *ctx, int yPosition,
 
   int rectX = layout.textRectX + SidebarWidgets_xOffset;
   int startX = rectX + (layout.textRectWidth - (hsz.w + msz.w)) / 2;
-  int yBig = yPosition + layout.heartRateValueY + ELEC_Y_NUDGE;
+  int yBig = yPosition + layout.heartRateValueY + ELEC_Y_NUDGE - hs;
   int minX = startX + hsz.w;
   graphics_draw_text(ctx, hourStr, hourFont,
                      GRect(startX, yBig, hsz.w + 4, 30),
@@ -1333,7 +1347,11 @@ static void elec_draw_split_time(GContext *ctx, int yPosition,
   elec_draw_small_line(ctx, yPosition, small);
 }
 
-int Electricity_getHeight() { return layout.heartRateHeight; }
+int Electricity_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.heartRateHeight - (layout.heartRateValueY + ELEC_Y_NUDGE))
+      : layout.heartRateHeight;
+}
 
 void Electricity_draw(GContext *ctx, int yPosition) {
   char nowStr[12], avgStr[12];
@@ -1351,7 +1369,11 @@ void Electricity_draw(GContext *ctx, int yPosition) {
   elec_draw_two_line(ctx, yPosition, nowStr, avgStr, currentSidebarFont);
 }
 
-int NextCheap_getHeight() { return layout.heartRateHeight; }
+int NextCheap_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.heartRateHeight - (layout.heartRateValueY + ELEC_Y_NUDGE))
+      : layout.heartRateHeight;
+}
 
 void NextCheap_draw(GContext *ctx, int yPosition) {
   char smallStr[12];
@@ -1371,7 +1393,11 @@ void NextCheap_draw(GContext *ctx, int yPosition) {
   }
 }
 
-int CheapestHour_getHeight() { return layout.heartRateHeight; }
+int CheapestHour_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.heartRateHeight - (layout.heartRateValueY + ELEC_Y_NUDGE))
+      : layout.heartRateHeight;
+}
 
 void CheapestHour_draw(GContext *ctx, int yPosition) {
   char smallStr[12];
@@ -1405,14 +1431,17 @@ void CryptoSlot_draw(GContext *ctx, int yPosition) {
   // render label + value on two lines with the small sidebar font when the value
   // is wide; otherwise use the basic-widget layout.
   if (strlen(value) > 4) {
-    graphics_draw_text(ctx, label, smSidebarFont,
-                       GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.basicWidgetLabelY,
-                             layout.textRectWidth, 20),
-                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+    int hs = SidebarWidgets_hideIdentifier ? (layout.basicWidgetY + 3) : 0;
+    if (!SidebarWidgets_hideIdentifier) {
+      graphics_draw_text(ctx, label, smSidebarFont,
+                         GRect(layout.textRectX + SidebarWidgets_xOffset,
+                               yPosition + layout.basicWidgetLabelY,
+                               layout.textRectWidth, 20),
+                         GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+    }
     graphics_draw_text(ctx, value, smSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.basicWidgetY + 3,
+                             yPosition + layout.basicWidgetY + 3 - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   } else {
