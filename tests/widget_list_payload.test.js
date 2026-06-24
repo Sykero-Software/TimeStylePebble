@@ -27,3 +27,42 @@ test('keeps crypto wids (legacy 15/16/17 and the 200+ range), drops other out-of
   assert.deepStrictEqual(widgetListToPayload([216, 100, 199, 20]), []);
   assert.deepStrictEqual(widgetListToPayload([7, 200, 999]), [7, 200]);
 });
+
+test('passes a valid rotating group through unchanged', () => {
+  // battery, group{interval=10s(code1), BTC, XMR}, altTZ
+  assert.deepStrictEqual(
+    widgetListToPayload([2, 255, 2, 1, 15, 16, 3]),
+    [2, 255, 2, 1, 15, 16, 3]);
+});
+
+test('drops invalid members and fixes the group count', () => {
+  // members 0 (Empty) and 99 dropped -> count 2
+  assert.deepStrictEqual(
+    widgetListToPayload([255, 3, 0, 15, 99, 16]),
+    [255, 2, 0, 15, 16]);
+});
+
+test('degrades a single-valid-member group to a plain slot', () => {
+  assert.deepStrictEqual(widgetListToPayload([255, 2, 1, 15, 99]), [15]);
+});
+
+test('clamps a bad interval code to 1min (3)', () => {
+  assert.deepStrictEqual(widgetListToPayload([255, 2, 9, 15, 16]), [255, 2, 3, 15, 16]);
+});
+
+test('clamps group count to 6 members', () => {
+  const eight = [255, 8, 1, 200, 201, 202, 203, 204, 205, 206, 207];
+  // only first 6 members kept
+  assert.deepStrictEqual(widgetListToPayload(eight),
+    [255, 6, 1, 200, 201, 202, 203, 204, 205]);
+});
+
+test('packs whole groups only within the 16-byte cap', () => {
+  // two 6-member groups would be 9+9=18 bytes; only the first whole group fits
+  const g = [255, 6, 1, 200, 201, 202, 203, 204, 205];
+  assert.deepStrictEqual(widgetListToPayload(g.concat(g)), g);
+});
+
+test('drops Empty(0) from a plain list (was a no-op widget)', () => {
+  assert.deepStrictEqual(widgetListToPayload([12, 0, 17]), [12, 17]);
+});

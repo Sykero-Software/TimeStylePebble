@@ -1,16 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (c) 2026 Tuomas Airaksinen
 
-// Converts the `widgetList` Clay value (ordered array of widget ids) into the
-// byte-array payload sent under SettingWidgetList: one id per byte, in order,
-// dropping non-numeric / out-of-range entries, clamped to the watch buffer cap.
-const MAX_WIDGET_LIST = 16;   // matches src/c/sidebar_widgets.h
-const MAX_WIDGET_TYPE = 19;   // matches CHEAPEST_ELEC_HOUR
-const CRYPTO_WID_BASE = 200;  // matches CRYPTO_WID_BASE in src/c/crypto.h
-const MAX_CRYPTO = 16;        // matches MAX_CRYPTO in src/c/crypto.h
+// Converts the `widgetList` Clay value (a flat marker-encoded array) into the byte
+// payload sent under SettingWidgetList / SettingRightWidgetList. A slot is either a
+// plain widget id or a rotating group: 255, count, interval_code, members...
+// Drops non-drawable ids/members, clamps count(<=6)/interval(0..5), degrades a
+// <2-member group, packs WHOLE groups only, and stops before exceeding 16 bytes.
+// KEEP IN SYNC with src/c/widget_list.c.
+const MAX_WIDGET_LIST_BYTES = 16;   // matches MAX_WIDGET_LIST in src/c/sidebar_widgets.h
+const MAX_WIDGET_TYPE = 19;         // CHEAPEST_ELEC_HOUR
+const CRYPTO_WID_BASE = 200;
+const MAX_CRYPTO = 16;
+const ROTATING_MARKER = 255;
+const MAX_GROUP_MEMBERS = 6;
 
-function isValidWidgetId(id: number): boolean {
-  if (id >= 0 && id <= MAX_WIDGET_TYPE) { return true; }
+function isDrawableId(id: number): boolean {
+  if (id === 0) { return false; }
+  if (id >= 1 && id <= MAX_WIDGET_TYPE) { return true; }
   if (id >= CRYPTO_WID_BASE && id < CRYPTO_WID_BASE + MAX_CRYPTO) { return true; }
   return false;
 }
@@ -18,9 +24,32 @@ function isValidWidgetId(id: number): boolean {
 export function widgetListToPayload(list: any): number[] {
   const arr: any[] = Array.isArray(list) ? list : [];
   const out: number[] = [];
-  for (let i = 0; i < arr.length && out.length < MAX_WIDGET_LIST; i++) {
-    const id = parseInt(arr[i], 10);
-    if (!isNaN(id) && isValidWidgetId(id)) { out.push(id); }
+  let i = 0;
+  while (i < arr.length && out.length < MAX_WIDGET_LIST_BYTES) {
+    const head = parseInt(arr[i], 10);
+    if (head === ROTATING_MARKER) {
+      const count = parseInt(arr[i + 1], 10);
+      const intervalRaw = parseInt(arr[i + 2], 10);
+      if (isNaN(count) || isNaN(intervalRaw)) { break; }   // malformed tail
+      const memStart = i + 3;
+      const members: number[] = [];
+      for (let m = 0; m < count && m < MAX_GROUP_MEMBERS; m++) {
+        const id = parseInt(arr[memStart + m], 10);
+        if (!isNaN(id) && isDrawableId(id)) { members.push(id); }
+      }
+      i = memStart + count;
+      const interval = (intervalRaw >= 0 && intervalRaw <= 5) ? intervalRaw : 3;
+      if (members.length >= 2) {
+        if (out.length + 3 + members.length > MAX_WIDGET_LIST_BYTES) { break; } // whole group only
+        out.push(ROTATING_MARKER, members.length, interval);
+        for (let m = 0; m < members.length; m++) { out.push(members[m]); }
+      } else if (members.length === 1) {
+        out.push(members[0]);
+      }
+    } else {
+      if (!isNaN(head) && isDrawableId(head)) { out.push(head); }
+      i += 1;
+    }
   }
   return out;
 }
