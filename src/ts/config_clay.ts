@@ -162,8 +162,6 @@ const config = [
         defaultValue: '0', options: [{ label: 'On', value: '0' }, { label: 'Off', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingHealthUseDistance', label: 'Steps widget displays',
         defaultValue: '0', options: [{ label: 'Number of steps', value: '0' }, { label: 'Distance', value: '1' }] },
-      { type: 'radiogroup', messageKey: 'SettingHealthUseRestfulSleep', label: 'Sleep widget uses',
-        defaultValue: '0', options: [{ label: 'Total Sleep', value: '0' }, { label: 'Restful Sleep', value: '1' }] },
     ],
   },
 

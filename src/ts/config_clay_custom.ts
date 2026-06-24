@@ -88,7 +88,6 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
 
     // Health
     toggle(key('SettingHealthUseDistance'), has(ids, [10]));
-    toggle(key('SettingHealthUseRestfulSleep'), has(ids, [9]));
 
     // Battery meter style (relevant when the meter can appear)
     toggle(key('SettingShowBatteryPct'), has(ids, [2]) || autoBattery);
