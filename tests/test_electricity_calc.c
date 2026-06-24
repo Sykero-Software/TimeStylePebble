@@ -107,6 +107,25 @@ int main(void) {
   c = elec_find_cheapest(cp4, ce3, 3, 0, 4);
   assert(!c.found);
 
+  // --- elec_find_next_cheap_or_cheapest (threshold result, else fallback to
+  //     the globally cheapest window so the widget never shows nothing) ---
+  bool fe8[8] = {true, true, true, true, true, true, true, true};
+  // A below-bar run EXISTS: return the earliest such run (idx 0), NOT the
+  // globally cheapest later window (idx 5-8) -> proves no fallback was used.
+  int16_t fp1[9] = {300, 300, 300, 300, 900, 100, 100, 100, 100};
+  bool fe9[9] = {true, true, true, true, true, true, true, true, true};
+  ElecWindow f = elec_find_next_cheap_or_cheapest(fp1, fe9, 9, 0, 500, 4);
+  assert(f.found && f.startIdx == 0 && f.avgCenti == 300);
+  // NOTHING below the bar -> fall back to the cheapest eligible window.
+  int16_t fp2[8] = {900, 900, 900, 900, 800, 800, 800, 800};
+  f = elec_find_next_cheap_or_cheapest(fp2, fe8, 8, 0, 500, 4);
+  assert(f.found && f.startIdx == 4 && f.len == 4 && f.avgCenti == 800);
+  // No fully-eligible window at all -> still not found (genuinely no data).
+  bool fe3[3] = {true, true, true};
+  int16_t fp3[3] = {10, 10, 10};
+  f = elec_find_next_cheap_or_cheapest(fp3, fe3, 3, 0, 500, 4);
+  assert(!f.found);
+
   printf("All electricity_calc tests passed\n");
   return 0;
 }

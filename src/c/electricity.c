@@ -120,9 +120,11 @@ bool Electricity_getNextCheap(int quietStartHour, int quietEndHour, int factorPc
     return false;
   }
   int16_t bar = elec_cheap_bar(mean, factorPct, floorCenti, ceilingCenti);
-  ElecWindow w = elec_find_next_cheap(Electricity_info.prices, eligible,
-                                      Electricity_info.count, currentIdx,
-                                      bar, ELEC_WIN_QUARTERS);
+  // Earliest hour below the cheap threshold; if none qualifies, fall back to
+  // the cheapest upcoming hour so the widget shows that rather than "--".
+  ElecWindow w = elec_find_next_cheap_or_cheapest(Electricity_info.prices, eligible,
+                                                  Electricity_info.count, currentIdx,
+                                                  bar, ELEC_WIN_QUARTERS);
   if (!w.found) { return false; }
   elec_fill_display(&w, currentIdx, out);
   return true;

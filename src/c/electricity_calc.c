@@ -127,3 +127,14 @@ ElecWindow elec_find_cheapest(const int16_t *prices, const bool *eligible,
   }
   return w;
 }
+
+ElecWindow elec_find_next_cheap_or_cheapest(const int16_t *prices, const bool *eligible,
+                                            uint16_t count, int fromIdx,
+                                            int16_t cheapBar, int winQuarters) {
+  ElecWindow w = elec_find_next_cheap(prices, eligible, count, fromIdx,
+                                      cheapBar, winQuarters);
+  if (w.found) { return w; }
+  // No hour below the threshold — fall back to the cheapest eligible window so
+  // the widget shows the next-cheapest hour instead of "--".
+  return elec_find_cheapest(prices, eligible, count, fromIdx, winQuarters);
+}

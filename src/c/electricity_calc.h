@@ -56,3 +56,12 @@ ElecWindow elec_find_next_cheap(const int16_t *prices, const bool *eligible,
 // found=false if no fully-eligible window of winQuarters exists.
 ElecWindow elec_find_cheapest(const int16_t *prices, const bool *eligible,
                               uint16_t count, int fromIdx, int winQuarters);
+
+// "Next cheap" widget result with a graceful fallback: the earliest run below
+// cheapBar (genuinely cheap) if one exists, otherwise the globally cheapest
+// winQuarters-eligible window — so the widget shows the next-cheapest hour
+// rather than nothing when no hour beats the threshold. found=false only when
+// no fully-eligible winQuarters window exists at all (no usable data).
+ElecWindow elec_find_next_cheap_or_cheapest(const int16_t *prices, const bool *eligible,
+                                            uint16_t count, int fromIdx,
+                                            int16_t cheapBar, int winQuarters);
