@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (c) 2026 Tuomas Airaksinen
 
-/* Clay custom component "widgetList": a reorderable list of 0-6 widget slots,
-   replacing the six fixed `select` dropdowns. Clay serializes this whole object
-   via toSource() and re-evals it inside the config webview, so — exactly like
-   config_clay_custom.ts — every function here MUST be self-contained: no
-   require()/import referenced at runtime, no TS downlevel helpers
-   (__spreadArray/_this), no spread/destructuring, no closure over module scope.
-   Native DOM + native array methods only. The component value is an array of
-   widget IDs (ints) in slot order; the row <select>s are the source of truth.
-   See docs/superpowers/specs/2026-06-11-timestyle-widget-list-reorder-design.md */
+/* Clay custom component "widgetList": a reorderable list of widget slots. Each row
+   is either a plain widget <select>, or a "Rotating" group (main <select> == 255)
+   that expands into an interval <select> + a member sub-list. The component value is
+   a flat marker-encoded int array: a plain slot is one id; a rotating slot is
+   255, count, interval_code, member_1.. member_count (see widget_list_payload.ts +
+   src/c/widget_list.c). Clay serializes this object via toSource() and re-evals it in
+   the config webview, so EVERY function here MUST be self-contained: no module-scope
+   helper, no import at runtime, no TS downlevel helper (__spreadArray/_this), no
+   spread/destructuring. Native DOM + native array methods only.
+   See docs/superpowers/specs/2026-06-24-timestyle-rotating-widget-design.md */
 
-// `initialize` runs before `set` (clay-config.js build order), so it stashes the
-// render/read closures on the item instance for the manipulator to call.
 function widgetListInitialize(this: any, _minified: any, clayConfig: any): void {
   const self = this;
   const root: HTMLElement = self.$element[0];
-  const MAX = 16;   // matches MAX_WIDGET_LIST in src/c/sidebar_widgets.h
+  const MAX = 16;                 // max top-level rows (matches MAX_WIDGET_LIST bytes-ish)
+  const ROTATING = 255;
+  const MAX_MEMBERS = 6;
+  const DEFAULT_INTERVAL = 3;     // 1 min
 
-  // Static widget options, embedded here (cannot reference module scope at
-  // runtime — this function is re-eval'd in isolation). id -> label.
-  // Crypto coin entries are NOT listed here; they are read live from the
-  // cryptoList component's DOM and appended dynamically by currentOptions().
-  // KEEP IN SYNC with the widget ids/labels in config_clay.ts and
-  // src/c/sidebar_widgets.c.
+  // Static widget options. KEEP IN SYNC with src/ts/widget_options.ts STATIC_WIDGETS
+  // and src/c/sidebar_widgets.c. Includes Empty(0) + Rotating(255) for the MAIN
+  // select; member selects filter those two out (memberOptionsHtml).
   const STATIC_OPTIONS: { id: number; label: string }[] = [
     { id: 0, label: 'Empty' },
+    { id: 255, label: '🔁 Rotating' },
     { id: 3, label: 'Alternate Time Zone' },
     { id: 5, label: 'Seconds' },
     { id: 11, label: 'Swatch Internet Time' },
@@ -43,9 +43,15 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
     { id: 2, label: 'Battery' },
   ];
 
-  // Build the option list live: static widgets + one per cryptoList row.
-  // Read the crypto rows straight from the cryptoList component's DOM (same
-  // config page), so a coin added there appears here without a save/reopen.
+  const INTERVAL_OPTIONS: { code: number; label: string }[] = [
+    { code: 0, label: '5 s' },
+    { code: 1, label: '10 s' },
+    { code: 2, label: '30 s' },
+    { code: 3, label: '1 min' },
+    { code: 4, label: '2 min' },
+    { code: 5, label: '5 min' },
+  ];
+
   function readCryptoRows(): { wid: number; coin: string; label: string }[] {
     const out: { wid: number; coin: string; label: string }[] = [];
     const rowEls = document.querySelectorAll('.cl-root .cl-row');
@@ -72,88 +78,215 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
       const wid = r.wid;
       if (isNaN(wid) || wid === 0) { continue; }
       const coin = (typeof r.coin === 'string') ? r.coin : '';
-      const label = (typeof r.label === 'string' && r.label !== '')
-        ? r.label : coin.toUpperCase();
+      const label = (typeof r.label === 'string' && r.label !== '') ? r.label : coin.toUpperCase();
       out.push({ id: wid, label: label });
     }
     return out;
   }
 
-  function optionsHtml(selected: number): string {
+  // Options for the MAIN select (includes Empty + Rotating). `selected` preserved
+  // even if its option isn't built yet (crypto rows build later).
+  function mainOptionsHtml(selected: number): string {
     const opts = currentOptions();
     let html = '';
     let found = false;
     for (let i = 0; i < opts.length; i++) {
       const o = opts[i];
       if (o.id === selected) { found = true; }
-      html += '<option value="' + o.id + '"' +
-        (o.id === selected ? ' selected' : '') + '>' + o.label + '</option>';
+      html += '<option value="' + o.id + '"' + (o.id === selected ? ' selected' : '') + '>' + o.label + '</option>';
     }
-    // Preserve a placed wid whose option isn't available right now -- e.g. the
-    // cryptoList component hasn't built its rows yet (it builds after this one),
-    // or the coin was removed. WITHOUT this the <select> silently falls back to
-    // the first option (Empty=0) and saving WIPES the slot. The mousedown refresh
-    // restores the real coin label once the cryptoList DOM exists.
     if (!found && selected !== 0) {
       html += '<option value="' + selected + '" selected>Crypto #' + selected + '</option>';
     }
     return html;
   }
 
-  function rowHtml(selected: number): string {
-    return '<div class="wl-row">' +
-      '<select class="wl-sel">' + optionsHtml(selected) + '</select>' +
+  // Options for a MEMBER select: drawable widgets only (drop Empty(0) + Rotating(255)).
+  function memberOptionsHtml(selected: number): string {
+    const opts = currentOptions();
+    let html = '';
+    let found = false;
+    for (let i = 0; i < opts.length; i++) {
+      const o = opts[i];
+      if (o.id === 0 || o.id === ROTATING) { continue; }
+      if (o.id === selected) { found = true; }
+      html += '<option value="' + o.id + '"' + (o.id === selected ? ' selected' : '') + '>' + o.label + '</option>';
+    }
+    if (!found && selected !== 0 && selected !== ROTATING) {
+      html += '<option value="' + selected + '" selected>Crypto #' + selected + '</option>';
+    }
+    return html;
+  }
+
+  function firstMemberId(): number {
+    const opts = currentOptions();
+    for (let i = 0; i < opts.length; i++) {
+      if (opts[i].id !== 0 && opts[i].id !== ROTATING) { return opts[i].id; }
+    }
+    return 2;   // Battery fallback
+  }
+
+  function intervalOptionsHtml(selected: number): string {
+    let html = '';
+    for (let i = 0; i < INTERVAL_OPTIONS.length; i++) {
+      const o = INTERVAL_OPTIONS[i];
+      html += '<option value="' + o.code + '"' + (o.code === selected ? ' selected' : '') + '>' + o.label + '</option>';
+    }
+    return html;
+  }
+
+  // ---- slot model: {id} (plain) | {rotating:true, interval, members:[]} ----
+
+  function memberHtml(selected: number): string {
+    return '<div class="wl-mem">' +
+      '<select class="wl-msel">' + memberOptionsHtml(selected) + '</select>' +
+      '<button type="button" class="wl-mdel" title="Remove member">&#10005;</button>' +
+      '</div>';
+  }
+
+  function groupHtml(interval: number, members: number[]): string {
+    let mem = '';
+    for (let i = 0; i < members.length; i++) { mem += memberHtml(members[i]); }
+    return '<div class="wl-group">' +
+      '<div class="wl-introw"><span class="wl-intlbl">Every</span>' +
+      '<select class="wl-int">' + intervalOptionsHtml(interval) + '</select></div>' +
+      '<div class="wl-mems">' + mem + '</div>' +
+      '<button type="button" class="wl-madd">+ add member</button>' +
+      '</div>';
+  }
+
+  function rowHtml(slot: any): string {
+    const isRot = !!slot.rotating;
+    const mainSel = isRot ? ROTATING : (parseInt(slot.id, 10) || 0);
+    let html = '<div class="wl-row">' +
+      '<div class="wl-main">' +
+      '<select class="wl-sel">' + mainOptionsHtml(mainSel) + '</select>' +
       '<button type="button" class="wl-up" title="Move up">&#9650;</button>' +
       '<button type="button" class="wl-down" title="Move down">&#9660;</button>' +
       '<button type="button" class="wl-del" title="Remove">&#10005;</button>' +
       '</div>';
+    if (isRot) {
+      const iv = (typeof slot.interval === 'number') ? slot.interval : DEFAULT_INTERVAL;
+      const mems = Array.isArray(slot.members) ? slot.members : [];
+      html += groupHtml(iv, mems);
+    }
+    return html + '</div>';
   }
 
-  function currentIds(): number[] {
-    const ids: number[] = [];
-    const selects = root.querySelectorAll('.wl-row .wl-sel');
-    for (let i = 0; i < selects.length; i++) {
-      const sel = selects[i] as HTMLSelectElement;
-      ids.push(parseInt(sel.value, 10) || 0);
+  // Read the DOM rows into slot objects.
+  function readSlots(): any[] {
+    const slots: any[] = [];
+    const rows = root.querySelectorAll('.wl-row');
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i] as HTMLElement;
+      const main = row.querySelector('.wl-sel') as HTMLSelectElement;
+      const mainVal = main ? (parseInt(main.value, 10) || 0) : 0;
+      if (mainVal === ROTATING) {
+        const intSel = row.querySelector('.wl-int') as HTMLSelectElement;
+        const interval = intSel ? (parseInt(intSel.value, 10) || DEFAULT_INTERVAL) : DEFAULT_INTERVAL;
+        const members: number[] = [];
+        const msels = row.querySelectorAll('.wl-mems .wl-msel');
+        for (let m = 0; m < msels.length; m++) {
+          members.push(parseInt((msels[m] as HTMLSelectElement).value, 10) || 0);
+        }
+        slots.push({ rotating: true, interval: interval, members: members });
+      } else {
+        slots.push({ id: mainVal });
+      }
     }
-    return ids;
+    return slots;
+  }
+
+  // slot objects -> flat marker-encoded value array.
+  function slotsToValue(slots: any[]): number[] {
+    const out: number[] = [];
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      if (s && s.rotating) {
+        const mems: number[] = [];
+        const arr = Array.isArray(s.members) ? s.members : [];
+        for (let m = 0; m < arr.length && mems.length < MAX_MEMBERS; m++) {
+          const id = parseInt(arr[m], 10);
+          if (!isNaN(id) && id !== 0 && id !== ROTATING) { mems.push(id); }
+        }
+        const iv = (s.interval >= 0 && s.interval <= 5) ? s.interval : DEFAULT_INTERVAL;
+        if (mems.length >= 2) {
+          out.push(ROTATING, mems.length, iv);
+          for (let m = 0; m < mems.length; m++) { out.push(mems[m]); }
+        } else if (mems.length === 1) {
+          out.push(mems[0]);
+        }
+      } else if (s) {
+        out.push(parseInt(s.id, 10) || 0);
+      }
+    }
+    return out;
+  }
+
+  // flat marker-encoded value array -> slot objects (for rebuild).
+  function valueToSlots(value: number[]): any[] {
+    const slots: any[] = [];
+    let i = 0;
+    while (i < value.length && slots.length < MAX) {
+      const head = parseInt(value[i] as any, 10);
+      if (head === ROTATING) {
+        const count = parseInt(value[i + 1] as any, 10);
+        const interval = parseInt(value[i + 2] as any, 10);
+        if (isNaN(count) || isNaN(interval)) { break; }
+        const members: number[] = [];
+        for (let m = 0; m < count && m < MAX_MEMBERS; m++) {
+          const id = parseInt(value[i + 3 + m] as any, 10);
+          if (!isNaN(id)) { members.push(id); }
+        }
+        i = i + 3 + count;
+        slots.push({ rotating: true,
+          interval: (interval >= 0 && interval <= 5) ? interval : DEFAULT_INTERVAL,
+          members: members });
+      } else {
+        slots.push({ id: isNaN(head) ? 0 : head });
+        i += 1;
+      }
+    }
+    return slots;
+  }
+
+  function renderSlots(slots: any[]): void {
+    const list = root.querySelector('.wl-list') as HTMLElement;
+    let html = '';
+    for (let i = 0; i < slots.length && i < MAX; i++) { html += rowHtml(slots[i]); }
+    list.innerHTML = html;
+    updateButtons();
   }
 
   function updateButtons(): void {
     const rows = root.querySelectorAll('.wl-row');
     for (let i = 0; i < rows.length; i++) {
       (rows[i].querySelector('.wl-up') as HTMLButtonElement).disabled = (i === 0);
-      (rows[i].querySelector('.wl-down') as HTMLButtonElement).disabled =
-        (i === rows.length - 1);
+      (rows[i].querySelector('.wl-down') as HTMLButtonElement).disabled = (i === rows.length - 1);
+      // member delete disabled when only 2 members remain (a group needs >= 2)
+      const mdels = rows[i].querySelectorAll('.wl-mems .wl-mdel');
+      const disableMdel = (mdels.length <= 2);
+      for (let m = 0; m < mdels.length; m++) { (mdels[m] as HTMLButtonElement).disabled = disableMdel; }
+      const madd = rows[i].querySelector('.wl-madd') as HTMLButtonElement;
+      if (madd) { madd.style.display = (mdels.length >= MAX_MEMBERS) ? 'none' : ''; }
     }
     const add = root.querySelector('.wl-add') as HTMLButtonElement;
     if (add) { add.style.display = (rows.length >= MAX) ? 'none' : ''; }
   }
 
-  function rebuild(ids: number[]): void {
-    const list = root.querySelector('.wl-list') as HTMLElement;
-    let html = '';
-    for (let i = 0; i < ids.length && i < MAX; i++) {
-      html += rowHtml(parseInt(ids[i] as any, 10) || 0);
-    }
-    list.innerHTML = html;
-    updateButtons();
-  }
-
   // expose for the manipulator (set runs after initialize)
-  self._wlCurrentIds = currentIds;
-  self._wlRebuild = rebuild;
+  self._wlGetValue = function(): number[] { return slotsToValue(readSlots()); };
+  self._wlRebuild = function(value: number[]): void { renderSlots(valueToSlots(value)); };
 
   function rowIndexOf(node: Node | null): number {
     const rows = root.querySelectorAll('.wl-row');
-    for (let i = 0; i < rows.length; i++) {
-      if (rows[i] === node) { return i; }
-    }
+    for (let i = 0; i < rows.length; i++) { if (rows[i] === node) { return i; } }
     return -1;
   }
-
-  function swap(arr: number[], a: number, b: number): void {
-    const tmp = arr[a]; arr[a] = arr[b]; arr[b] = tmp;
+  function topRowOf(el: HTMLElement): HTMLElement | null {
+    let n: HTMLElement | null = el;
+    while (n && n !== root) { if (n.classList && n.classList.contains('wl-row')) { return n; } n = n.parentNode as HTMLElement; }
+    return null;
   }
 
   root.addEventListener('click', function(ev: Event) {
@@ -165,64 +298,89 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
     if (!target) { return; }
 
     if (target.classList.contains('wl-add')) {
-      const ids = currentIds();
-      if (ids.length < MAX) {
-        ids.push(0);
-        rebuild(ids);
-        self.trigger('change');
-      }
+      const slots = readSlots();
+      if (slots.length < MAX) { slots.push({ id: 0 }); renderSlots(slots); self.trigger('change'); }
       return;
     }
 
-    const rowEl = target.parentNode as HTMLElement; // the .wl-row
-    const idx = rowIndexOf(rowEl);
+    const row = topRowOf(target);
+    if (!row) { return; }
+    const idx = rowIndexOf(row);
     if (idx === -1) { return; }
-    const ids = currentIds();
+    const slots = readSlots();
 
     if (target.classList.contains('wl-del')) {
-      ids.splice(idx, 1);
-      rebuild(ids);
-      self.trigger('change');
+      slots.splice(idx, 1); renderSlots(slots); self.trigger('change');
     } else if (target.classList.contains('wl-up') && idx > 0) {
-      swap(ids, idx, idx - 1);
-      rebuild(ids);
-      self.trigger('change');
-    } else if (target.classList.contains('wl-down') && idx < ids.length - 1) {
-      swap(ids, idx, idx + 1);
-      rebuild(ids);
-      self.trigger('change');
+      const t = slots[idx]; slots[idx] = slots[idx - 1]; slots[idx - 1] = t;
+      renderSlots(slots); self.trigger('change');
+    } else if (target.classList.contains('wl-down') && idx < slots.length - 1) {
+      const t = slots[idx]; slots[idx] = slots[idx + 1]; slots[idx + 1] = t;
+      renderSlots(slots); self.trigger('change');
+    } else if (target.classList.contains('wl-madd')) {
+      const s = slots[idx];
+      if (s && s.rotating && s.members.length < MAX_MEMBERS) {
+        s.members.push(firstMemberId()); renderSlots(slots); self.trigger('change');
+      }
+    } else if (target.classList.contains('wl-mdel')) {
+      const s = slots[idx];
+      if (s && s.rotating && s.members.length > 2) {
+        // which member?
+        const memEl = target.parentNode as HTMLElement;       // .wl-mem
+        const memsWrap = memEl.parentNode as HTMLElement;      // .wl-mems
+        const mems = memsWrap.querySelectorAll('.wl-mem');
+        let mi = -1;
+        for (let k = 0; k < mems.length; k++) { if (mems[k] === memEl) { mi = k; break; } }
+        if (mi !== -1) { s.members.splice(mi, 1); renderSlots(slots); self.trigger('change'); }
+      }
     }
   });
 
-  // a row <select> changed: re-notify so the visibility fn re-runs
   root.addEventListener('change', function(ev: Event) {
     const t = ev.target as HTMLElement;
-    if (t && t.tagName === 'SELECT') { self.trigger('change'); }
+    if (!t || t.tagName !== 'SELECT') { return; }
+    if (t.classList.contains('wl-sel')) {
+      // main select changed: reconcile rotating <-> plain, seeding a fresh group.
+      const slots = readSlots();
+      const row = topRowOf(t);
+      const idx = row ? rowIndexOf(row) : -1;
+      if (idx !== -1) {
+        const newVal = parseInt((t as HTMLSelectElement).value, 10) || 0;
+        if (newVal === ROTATING) {
+          if (!slots[idx].rotating) {
+            const a = firstMemberId();
+            slots[idx] = { rotating: true, interval: DEFAULT_INTERVAL, members: [a, a] };
+          }
+        } else {
+          slots[idx] = { id: newVal };
+        }
+        renderSlots(slots);
+      }
+    }
+    self.trigger('change');
   });
 
-  // Rebuild a row <select>'s options from the live crypto rows when the user
-  // opens it (focus/mousedown), preserving the current selection.
+  // Refresh crypto-coin options when the user opens a select (main or member).
   root.addEventListener('mousedown', function(ev: Event) {
     const t = ev.target as HTMLElement;
-    if (t && t.tagName === 'SELECT' && t.classList.contains('wl-sel')) {
-      const sel = t as HTMLSelectElement;
-      const cur = parseInt(sel.value, 10) || 0;
-      sel.innerHTML = optionsHtml(cur);
-    }
+    if (!t || t.tagName !== 'SELECT') { return; }
+    const sel = t as HTMLSelectElement;
+    const cur = parseInt(sel.value, 10) || 0;
+    if (sel.classList.contains('wl-sel')) { sel.innerHTML = mainOptionsHtml(cur); }
+    else if (sel.classList.contains('wl-msel')) { sel.innerHTML = memberOptionsHtml(cur); }
   });
 
-  // This component builds BEFORE the cryptoList one, so at our build time the
-  // crypto coin options don't exist yet -- a placed crypto wid renders via the
-  // fallback option ("Crypto #N") and would show that label. Once ALL components
-  // are built (AFTER_BUILD), the cryptoList DOM exists, so rebuild every row
-  // <select> with the real coin labels, preserving each current selection.
+  // After ALL components build (cryptoList DOM now exists), refresh every select's
+  // options with real coin labels, preserving each selection.
   if (clayConfig && clayConfig.on && clayConfig.EVENTS) {
     clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function() {
-      const selects = root.querySelectorAll('.wl-row .wl-sel');
-      for (let i = 0; i < selects.length; i++) {
-        const sel = selects[i] as HTMLSelectElement;
-        const cur = parseInt(sel.value, 10) || 0;
-        sel.innerHTML = optionsHtml(cur);
+      const mains = root.querySelectorAll('.wl-row .wl-sel');
+      for (let i = 0; i < mains.length; i++) {
+        const sel = mains[i] as HTMLSelectElement; sel.innerHTML = mainOptionsHtml(parseInt(sel.value, 10) || 0);
+      }
+      const mems = root.querySelectorAll('.wl-row .wl-msel');
+      for (let i = 0; i < mems.length; i++) {
+        const sel = mems[i] as HTMLSelectElement; sel.innerHTML = memberOptionsHtml(parseInt(sel.value, 10) || 0);
       }
     });
   }
@@ -235,45 +393,41 @@ const widgetListComponent = {
     '<div class="wl-list"></div>' +
     '<button type="button" class="wl-add">+ Add widget</button>' +
     '</div>',
-  // NOTE: Clay's base theme styles `button { min-width: 12rem; margin: 0 auto }`
-  // (elements/_button.scss). Our row buttons MUST override min-width (else each is
-  // forced to 12rem, overflowing the row and squeezing the select to zero width)
-  // and neutralize the auto margins. `.wl-row button` (specificity 0,1,1) beats
-  // Clay's `button` (0,0,1), so these win regardless of stylesheet order.
+  // Clay's base theme styles `button { min-width: 12rem; margin: 0 auto }`. Row /
+  // member buttons MUST override min-width (else forced to 12rem, squeezing selects).
   style:
-    '.wl-row{display:flex;align-items:center;margin:0 0 8px 0}' +
-    // Native <select> defaults to a light OS theme; match Clay's dark controls
-    // (body bg gray-2 #333, buttons gray-7 #767676, white text). color-scheme:dark
-    // nudges the OS-rendered option popup toward dark too where supported.
+    '.wl-row{display:flex;flex-direction:column;margin:0 0 8px 0}' +
+    '.wl-main{display:flex;align-items:center}' +
     '.wl-row .wl-sel{flex:1 1 auto;min-width:0;height:2.8rem;margin:0;' +
       'background-color:#767676;color:#fff;border:none;border-radius:0.3rem;' +
       'padding:0 0.5rem;color-scheme:dark}' +
-    '.wl-row button{flex:0 0 auto;min-width:0;width:2.8rem;height:2.8rem;' +
-      'margin:0 0 0 6px;padding:0}' +
+    '.wl-row .wl-main button{flex:0 0 auto;min-width:0;width:2.8rem;height:2.8rem;margin:0 0 0 6px;padding:0}' +
     '.wl-row button[disabled]{opacity:.35}' +
+    '.wl-group{margin:6px 0 0 12px;padding:6px 8px;border-left:3px solid #767676}' +
+    '.wl-introw{display:flex;align-items:center;margin:0 0 6px 0}' +
+    '.wl-intlbl{margin:0 8px 0 0;color:#fff}' +
+    '.wl-group .wl-int{flex:1 1 auto;min-width:0;height:2.6rem;background-color:#767676;color:#fff;' +
+      'border:none;border-radius:0.3rem;padding:0 0.5rem;color-scheme:dark}' +
+    '.wl-mem{display:flex;align-items:center;margin:0 0 6px 0}' +
+    '.wl-mem .wl-msel{flex:1 1 auto;min-width:0;height:2.6rem;background-color:#767676;color:#fff;' +
+      'border:none;border-radius:0.3rem;padding:0 0.5rem;color-scheme:dark}' +
+    '.wl-mem .wl-mdel{flex:0 0 auto;min-width:0;width:2.6rem;height:2.6rem;margin:0 0 0 6px;padding:0}' +
+    '.wl-madd{min-width:0;margin:2px 0 4px 0}' +
     '.wl-add{margin:8px 0 10px 0}',
   manipulator: {
     get: function(this: any): number[] {
-      return this._wlCurrentIds ? this._wlCurrentIds() : [];
+      return this._wlGetValue ? this._wlGetValue() : [];
     },
     set: function(this: any, value: any) {
-      // Inlined normalization — this function is serialized via toSource and
-      // re-eval'd in the webview, so it must NOT reference any module-scope
-      // helper (a referenced sibling fn would be undefined there). Accepts a
-      // bare array (normal), a JSON string, or a {value:X} wrapper; anything
-      // else -> empty list.
+      // Inlined normalization (toSource: no module-scope helper). Accepts a bare
+      // array, a JSON string, or a {value:X} wrapper; anything else -> [].
       let ids: any[] = [];
       let v: any = value;
-      if (v && typeof v === 'object' && !Array.isArray(v) && v.value !== undefined) {
-        v = v.value;
-      }
+      if (v && typeof v === 'object' && !Array.isArray(v) && v.value !== undefined) { v = v.value; }
       if (Array.isArray(v)) {
         ids = v;
       } else if (typeof v === 'string' && v !== '') {
-        try {
-          const parsed = JSON.parse(v);
-          if (Array.isArray(parsed)) { ids = parsed; }
-        } catch (e) { ids = []; }
+        try { const parsed = JSON.parse(v); if (Array.isArray(parsed)) { ids = parsed; } } catch (e) { ids = []; }
       }
       if (this._wlRebuild) { this._wlRebuild(ids); }
       return this;
