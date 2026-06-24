@@ -267,6 +267,7 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
   // calculate center position of the widget
   int widgetPosition = bgBounds.size.h / 4 - widget.getHeight() / 2;
   SidebarWidgets_currentWidgetType = (uint8_t)widgetType;
+  SidebarWidgets_hideIdentifier = false;   // round shows a single widget; toggle is a no-op
   widget.draw(ctx, widgetPosition);
 }
 
@@ -298,6 +299,7 @@ static int widgetSlotHeight(const WidgetSlot *slot) {
   int maxH = 0;
   for (int m = 0; m < slot->count; m++) {
     SidebarWidgets_currentWidgetType = slot->members[m];
+    SidebarWidgets_hideIdentifier = slot->hide[m];
     int h = getSidebarWidgetByType(slot->members[m]).getHeight();
     if (h > maxH) { maxH = h; }
   }
@@ -352,9 +354,11 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
 
   // Resolve each slot to the widget it shows now + its reserved (max-member) height.
   SidebarWidgetType activeType[MAX_WIDGET_SLOTS];
+  bool activeHide[MAX_WIDGET_SLOTS];
   int slotHeight[MAX_WIDGET_SLOTS];
   for (int i = 0; i < slotCount; i++) {
     activeType[i] = (SidebarWidgetType)WidgetSlot_activeMember(&slots[i], sod);
+    activeHide[i] = WidgetSlot_activeHide(&slots[i], sod);
     slotHeight[i] = widgetSlotHeight(&slots[i]);
   }
 
@@ -374,7 +378,9 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
       if (hostHere) {
         int idx = getReplacableWidget(slots, myVisible);
         activeType[idx] = showAutoBattery ? BATTERY_METER : BLUETOOTH_DISCONNECT;
+        activeHide[idx] = false;
         SidebarWidgets_currentWidgetType = (uint8_t)activeType[idx];
+        SidebarWidgets_hideIdentifier = false;
         slotHeight[idx] = getSidebarWidgetByType(activeType[idx]).getHeight();
       }
     }
@@ -383,6 +389,7 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   if (slotCount == 1) {
     int y = innerTop + (innerHeight - slotHeight[0]) / 2;
     SidebarWidgets_currentWidgetType = (uint8_t)activeType[0];
+    SidebarWidgets_hideIdentifier = activeHide[0];
     getSidebarWidgetByType(activeType[0]).draw(ctx, y);
     return;
   }
@@ -401,6 +408,7 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   int y = innerTop;
   for (int i = 0; i < slotCount; i++) {
     SidebarWidgets_currentWidgetType = (uint8_t)activeType[i];
+    SidebarWidgets_hideIdentifier = activeHide[i];
     getSidebarWidgetByType(activeType[i]).draw(ctx, y);
     y += slotHeight[i] + gap;
   }

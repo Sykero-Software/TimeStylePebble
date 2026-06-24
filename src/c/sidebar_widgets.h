@@ -16,6 +16,13 @@ extern int SidebarWidgets_xOffset;
 extern uint8_t SidebarWidgets_currentWidgetType;
 
 /*
+ * Set to true immediately before a widget's getHeight()/draw() when that widget's
+ * identifier (icon or title label) should be hidden (per-widget config flag).
+ * Same idiom as SidebarWidgets_currentWidgetType.
+ */
+extern bool SidebarWidgets_hideIdentifier;
+
+/*
  * The different types of sidebar widgets:
  * we'll give them numbers so that we can index them in settings
  */

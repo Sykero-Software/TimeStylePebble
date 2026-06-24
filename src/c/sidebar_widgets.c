@@ -12,6 +12,7 @@
 
 int SidebarWidgets_xOffset;
 uint8_t SidebarWidgets_currentWidgetType = 0;
+bool SidebarWidgets_hideIdentifier = false;
 
 // sidebar icons
 GDrawCommandImage *dateImage;
