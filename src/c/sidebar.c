@@ -5,6 +5,7 @@
 #include "weather.h"
 #include "twt_status.h"
 #include "crypto.h"
+#include "widget_list.h"
 #include <ctype.h>
 #include <math.h>
 #include <pebble.h>
@@ -182,22 +183,16 @@ int getReplacableWidget() {
 
 #else
 
-// returns the best candidate widget for replacement by the auto battery
-// or the disconnection icon
-static int getReplacableWidget(const SidebarWidgetType widgetTypes[], int count) {
-  // (rect columns are pre-filtered of EMPTY by copyWidgetList, so in practice the
-  //  weather-preference and last-slot fallback below are what fire)
-  // empty slot is the obvious choice
+// Best slot for the auto-battery / disconnect-icon substitution. A rotating group is
+// opaque (only a PLAIN weather slot is a preferred target); EMPTY slots no longer
+// exist (WidgetList_parse drops them).
+static int getReplacableWidget(const WidgetSlot slots[], int count) {
   for (int i = 0; i < count; i++) {
-    if (widgetTypes[i] == EMPTY) { return i; }
-  }
-  // bluetooth-dependent widgets are the next-best candidates
-  for (int i = 0; i < count; i++) {
-    if (widgetTypes[i] == WEATHER_CURRENT || widgetTypes[i] == WEATHER_FORECAST_TODAY) {
+    if (slots[i].count == 1 &&
+        (slots[i].members[0] == WEATHER_CURRENT || slots[i].members[0] == WEATHER_FORECAST_TODAY)) {
       return i;
     }
   }
-  // otherwise replace the last (lowest-priority) displayed widget
   return (count > 0) ? (count - 1) : 0;
 }
 
@@ -279,83 +274,96 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
 
 // Display columns computed from settings.widgetList by Sidebar_distributeWidgets();
 // the rect update procs draw these instead of reading the settings arrays.
-static SidebarWidgetType primaryColumn[MAX_WIDGET_LIST];
+static WidgetSlot primaryColumn[MAX_WIDGET_SLOTS];
 static int primaryColumnCount = 0;
-static SidebarWidgetType secondaryColumn[MAX_WIDGET_LIST];
+static WidgetSlot secondaryColumn[MAX_WIDGET_SLOTS];
 static int secondaryColumnCount = 0;
 
-// Copy a settings widget list into a column array, skipping EMPTY / out-of-range
-// ids and clamping to the buffer. Returns the number copied.
-static int copyWidgetList(SidebarWidgetType *out, const uint8_t *list, int count) {
-  int n = 0;
-  for (int i = 0; i < count && n < MAX_WIDGET_LIST; i++) {
-    if (list[i] != EMPTY && (list[i] <= MAX_WIDGET_TYPE || Crypto_isWid(list[i]))) {
-      out[n++] = (SidebarWidgetType)list[i];
-    }
-  }
-  return n;
+// Seconds-of-day drives the rotating-slot member selection. A build-time override
+// pins it for deterministic rotation screenshots.
+static int currentSecondsOfDay(void) {
+#ifdef ROTATION_FAKE_SECONDS
+  return ROTATION_FAKE_SECONDS;
+#else
+  time_t t = time(NULL);
+  struct tm *lt = localtime(&t);
+  return lt->tm_hour * 3600 + lt->tm_min * 60 + lt->tm_sec;
+#endif
 }
 
-// Number of widgets (from the top) FULLY visible in a column of inner height
-// `innerHeight`, using the overflow layout (top-anchored, fixed V_PADDING gaps).
-// In the fits case this equals `count`. The auto-battery / disconnect
-// substitution uses this so the icon only ever lands on a widget the user sees.
-static int columnVisibleCount(const SidebarWidgetType types[], int count, int innerHeight) {
+// A rotating slot reserves the MAX height over its members, so the column layout is
+// stable as the active member changes. Sets SidebarWidgets_currentWidgetType as a
+// side effect (crypto getHeight reads it); callers re-set it before each draw.
+static int widgetSlotHeight(const WidgetSlot *slot) {
+  int maxH = 0;
+  for (int m = 0; m < slot->count; m++) {
+    SidebarWidgets_currentWidgetType = slot->members[m];
+    int h = getSidebarWidgetByType(slot->members[m]).getHeight();
+    if (h > maxH) { maxH = h; }
+  }
+  return maxH;
+}
+
+// Number of slots (from the top) FULLY visible in a column of inner height
+// `innerHeight`. Uses each slot's reserved (max-member) height.
+static int columnVisibleCount(const WidgetSlot slots[], int count, int innerHeight) {
   if (count <= 0) { return 0; }
   int total = 0;
-  for (int i = 0; i < count; i++) { total += getSidebarWidgetByType(types[i]).getHeight(); }
+  for (int i = 0; i < count; i++) { total += widgetSlotHeight(&slots[i]); }
   if (total + (count - 1) * V_PADDING_DEFAULT <= innerHeight) { return count; }
   int y = 0, visible = 0;
   for (int i = 0; i < count; i++) {
-    int h = getSidebarWidgetByType(types[i]).getHeight();
+    int h = widgetSlotHeight(&slots[i]);
     if (y + h <= innerHeight) { visible++; y += h + V_PADDING_DEFAULT; } else { break; }
   }
   return visible;
 }
 
 void Sidebar_distributeWidgets(int *primaryCountOut, int *secondaryCountOut) {
-  SidebarWidgets_updateFonts();  // ensure `layout` heights are valid before packing
-  primaryColumnCount = copyWidgetList(primaryColumn, settings.widgetList, settings.widgetCount);
-  secondaryColumnCount = copyWidgetList(secondaryColumn, settings.rightWidgetList, settings.rightWidgetCount);
+  SidebarWidgets_updateFonts();  // ensure layout heights are valid before packing
+  primaryColumnCount = WidgetList_parse(settings.widgetList, settings.widgetCount,
+                                        primaryColumn, MAX_WIDGET_SLOTS);
+  secondaryColumnCount = WidgetList_parse(settings.rightWidgetList, settings.rightWidgetCount,
+                                          secondaryColumn, MAX_WIDGET_SLOTS);
   if (primaryCountOut) { *primaryCountOut = primaryColumnCount; }
   if (secondaryCountOut) { *secondaryCountOut = secondaryColumnCount; }
 }
 
 static void drawWidgetColumn(Layer *l, GContext *ctx,
-                             const SidebarWidgetType widgetTypes[], int widgetCount,
+                             const WidgetSlot slots[], int slotCount,
                              bool allowReplacement, bool isPrimary) {
   GRect bounds = layer_get_unobstructed_bounds(l);
 
-  // zero on every rectangular platform besides emery
-  SidebarWidgets_xOffset = (sidebarWidth - 30) / 2;
+  SidebarWidgets_xOffset = (sidebarWidth - 30) / 2;   // zero on every rect platform besides emery
   SidebarWidgets_updateFonts();
 
-  // Role-based configurable background (left vs right color).
   GColor sidebarBg = isPrimary ? settings.sidebarBgColorLeft : settings.sidebarBgColorRight;
   if (gcolor_equal(sidebarBg, GColorClear)) { sidebarBg = settings.sidebarColor; }
   graphics_context_set_fill_color(ctx, sidebarBg);
   graphics_fill_rect(ctx, layer_get_bounds(l), 0, GCornerNone);
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
-  if (widgetCount == 0) { return; }
+  if (slotCount == 0) { return; }
 
   int v_padding = V_PADDING_DEFAULT;
   int innerTop = v_padding;
   int innerHeight = bounds.size.h - v_padding * 2;
+  int sod = currentSecondsOfDay();
 
-  SidebarWidget displayWidgets[MAX_WIDGET_LIST];
-  for (int i = 0; i < widgetCount; i++) {
-    displayWidgets[i] = getSidebarWidgetByType(widgetTypes[i]);
+  // Resolve each slot to the widget it shows now + its reserved (max-member) height.
+  SidebarWidgetType activeType[MAX_WIDGET_SLOTS];
+  int slotHeight[MAX_WIDGET_SLOTS];
+  for (int i = 0; i < slotCount; i++) {
+    activeType[i] = (SidebarWidgetType)WidgetSlot_activeMember(&slots[i], sod);
+    slotHeight[i] = widgetSlotHeight(&slots[i]);
   }
 
-  // Auto-battery / disconnect-icon replacement -- only onto a FULLY VISIBLE
-  // widget. Column preference: the left column hosts the icon if it has any
-  // visible widget; the right column hosts it only when the left has none.
+  // Auto-battery / disconnect-icon replacement -- only onto a FULLY VISIBLE slot.
   if (allowReplacement) {
     bool showDisconnectIcon = settings.activateDisconnectIcon && !bluetooth_connection_service_peek();
     bool showAutoBattery = isAutoBatteryShown();
     if (showAutoBattery || showDisconnectIcon) {
-      int myVisible = columnVisibleCount(widgetTypes, widgetCount, innerHeight);
+      int myVisible = columnVisibleCount(slots, slotCount, innerHeight);
       bool hostHere;
       if (isPrimary) {
         hostHere = (myVisible > 0);
@@ -364,41 +372,37 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
         hostHere = (leftVisible == 0 && myVisible > 0);
       }
       if (hostHere) {
-        int idx = getReplacableWidget(widgetTypes, myVisible);
-        displayWidgets[idx] = showAutoBattery
-            ? getSidebarWidgetByType(BATTERY_METER)
-            : getSidebarWidgetByType(BLUETOOTH_DISCONNECT);
+        int idx = getReplacableWidget(slots, myVisible);
+        activeType[idx] = showAutoBattery ? BATTERY_METER : BLUETOOTH_DISCONNECT;
+        SidebarWidgets_currentWidgetType = (uint8_t)activeType[idx];
+        slotHeight[idx] = getSidebarWidgetByType(activeType[idx]).getHeight();
       }
     }
   }
 
-  if (widgetCount == 1) {
-    // a lone widget is centered in the column
-    int y = innerTop + (innerHeight - displayWidgets[0].getHeight()) / 2;
-    SidebarWidgets_currentWidgetType = (uint8_t)widgetTypes[0];
-    displayWidgets[0].draw(ctx, y);
+  if (slotCount == 1) {
+    int y = innerTop + (innerHeight - slotHeight[0]) / 2;
+    SidebarWidgets_currentWidgetType = (uint8_t)activeType[0];
+    getSidebarWidgetByType(activeType[0]).draw(ctx, y);
     return;
   }
 
   int totalHeight = 0;
-  for (int i = 0; i < widgetCount; i++) { totalHeight += displayWidgets[i].getHeight(); }
+  for (int i = 0; i < slotCount; i++) { totalHeight += slotHeight[i]; }
 
-  // Gap selection: when the whole list fits with at least minimal gaps, spread the
-  // slack (space-between -> loose). Otherwise use the fixed minimal gap and let the
-  // tail run past the column bottom, where the layer bounds clip it (tight/overflow).
   int gap;
-  if (totalHeight + (widgetCount - 1) * v_padding <= innerHeight) {
+  if (totalHeight + (slotCount - 1) * v_padding <= innerHeight) {
     int slack = innerHeight - totalHeight;
-    gap = slack / (widgetCount - 1);
+    gap = slack / (slotCount - 1);
   } else {
     gap = v_padding;
   }
 
   int y = innerTop;
-  for (int i = 0; i < widgetCount; i++) {
-    SidebarWidgets_currentWidgetType = (uint8_t)widgetTypes[i];
-    displayWidgets[i].draw(ctx, y);
-    y += displayWidgets[i].getHeight() + gap;
+  for (int i = 0; i < slotCount; i++) {
+    SidebarWidgets_currentWidgetType = (uint8_t)activeType[i];
+    getSidebarWidgetByType(activeType[i]).draw(ctx, y);
+    y += slotHeight[i] + gap;
   }
 }
 
