@@ -29,3 +29,23 @@ test('buildOptions tolerates an empty / non-array row list', () => {
   assert.deepStrictEqual(buildOptions([]), STATIC_WIDGETS);
   assert.deepStrictEqual(buildOptions(null), STATIC_WIDGETS);
 });
+
+const { ROTATING_ID, memberOptions } = require('../src/pkjs/widget_options');
+
+test('buildOptions includes the Rotating pseudo-widget', () => {
+  const ids = buildOptions([]).map((o) => o.id);
+  assert.ok(ids.indexOf(255) !== -1);
+});
+
+test('memberOptions excludes Empty and Rotating', () => {
+  const ids = memberOptions([]).map((o) => o.id);
+  assert.ok(ids.indexOf(0) === -1);
+  assert.ok(ids.indexOf(255) === -1);
+  assert.ok(ids.indexOf(2) !== -1);   // Battery still present
+});
+
+test('memberOptions includes crypto coins', () => {
+  const ids = memberOptions([{ wid: 200, coin: 'btc', label: 'BTC' }]).map((o) => o.id);
+  assert.ok(ids.indexOf(200) !== -1);
+  assert.ok(ids.indexOf(255) === -1);
+});
