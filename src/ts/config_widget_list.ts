@@ -19,6 +19,19 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
   const ROTATING = 255;
   const MAX_MEMBERS = 6;
   const DEFAULT_INTERVAL = 3;     // 1 min
+  const HIDE_FLAG = 0x20;       // bit set on an id => identifier hidden (see widget_list.h)
+  // Toggleable = has an icon or a title label to hide. No-op for Empty(0),
+  // Bluetooth(1), Today's Date(4), Seconds(5), and the Rotating head(255).
+  function isToggleableId(base: number): boolean {
+    return base !== 0 && base !== 1 && base !== 4 && base !== 5 && base !== ROTATING;
+  }
+  function hideBtnHtml(encoded: number, cls: string): string {
+    const base = encoded & 0xdf;
+    if (!isToggleableId(base)) { return ''; }
+    const hidden = (encoded & HIDE_FLAG) !== 0;
+    return '<button type="button" class="' + cls + (hidden ? ' wl-hidden' : '') +
+      '" title="Show/hide icon or title">' + (hidden ? '⊘' : '◉') + '</button>';
+  }
 
   // Static widget options. KEEP IN SYNC with src/ts/widget_options.ts STATIC_WIDGETS
   // and src/c/sidebar_widgets.c. Includes Empty(0) + Rotating(255) for the MAIN
@@ -138,9 +151,11 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
 
   // ---- slot model: {id} (plain) | {rotating:true, interval, members:[]} ----
 
-  function memberHtml(selected: number): string {
+  function memberHtml(encoded: number): string {
+    const base = encoded & 0xdf;
     return '<div class="wl-mem">' +
-      '<select class="wl-msel">' + memberOptionsHtml(selected) + '</select>' +
+      '<select class="wl-msel">' + memberOptionsHtml(base) + '</select>' +
+      hideBtnHtml(encoded, 'wl-mhide') +
       '<button type="button" class="wl-mdel" title="Remove member">&#10005;</button>' +
       '</div>';
   }
@@ -159,9 +174,11 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
   function rowHtml(slot: any): string {
     const isRot = !!slot.rotating;
     const mainSel = isRot ? ROTATING : (parseInt(slot.id, 10) || 0);
+    const encoded = (!isRot && slot.hide) ? (mainSel | HIDE_FLAG) : mainSel;
     let html = '<div class="wl-row">' +
       '<div class="wl-main">' +
       '<select class="wl-sel">' + mainOptionsHtml(mainSel) + '</select>' +
+      (isRot ? '' : hideBtnHtml(encoded, 'wl-hide')) +
       '<button type="button" class="wl-up" title="Move up">&#9650;</button>' +
       '<button type="button" class="wl-down" title="Move down">&#9660;</button>' +
       '<button type="button" class="wl-del" title="Remove">&#10005;</button>' +
@@ -190,13 +207,20 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
         let interval = DEFAULT_INTERVAL;
         if (intSel) { const ivCode = parseInt(intSel.value, 10); if (!isNaN(ivCode)) { interval = ivCode; } }
         const members: number[] = [];
-        const msels = row.querySelectorAll('.wl-mems .wl-msel');
-        for (let m = 0; m < msels.length; m++) {
-          members.push(parseInt((msels[m] as HTMLSelectElement).value, 10) || 0);
+        const memEls = row.querySelectorAll('.wl-mems .wl-mem');
+        for (let m = 0; m < memEls.length; m++) {
+          const mEl = memEls[m] as HTMLElement;
+          const msel = mEl.querySelector('.wl-msel') as HTMLSelectElement;
+          const base = msel ? (parseInt(msel.value, 10) || 0) : 0;
+          const mhb = mEl.querySelector('.wl-mhide') as HTMLButtonElement;
+          const mh = !!(mhb && mhb.classList.contains('wl-hidden'));
+          members.push(mh ? (base | HIDE_FLAG) : base);
         }
         slots.push({ rotating: true, interval: interval, members: members });
       } else {
-        slots.push({ id: mainVal });
+        const hb = row.querySelector('.wl-main .wl-hide') as HTMLButtonElement;
+        const hidden = !!(hb && hb.classList.contains('wl-hidden'));
+        slots.push({ id: mainVal, hide: hidden });
       }
     }
     return slots;
@@ -211,8 +235,9 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
         const mems: number[] = [];
         const arr = Array.isArray(s.members) ? s.members : [];
         for (let m = 0; m < arr.length && mems.length < MAX_MEMBERS; m++) {
-          const id = parseInt(arr[m], 10);
-          if (!isNaN(id) && id !== 0 && id !== ROTATING) { mems.push(id); }
+          const raw = parseInt(arr[m], 10);
+          const base = raw & 0xdf;
+          if (!isNaN(raw) && base !== 0 && base !== ROTATING) { mems.push(raw); }
         }
         const iv = (s.interval >= 0 && s.interval <= 5) ? s.interval : DEFAULT_INTERVAL;
         if (mems.length >= 2) {
@@ -222,7 +247,8 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
           out.push(mems[0]);
         }
       } else if (s) {
-        out.push(parseInt(s.id, 10) || 0);
+        const id = parseInt(s.id, 10) || 0;
+        out.push((s.hide && isToggleableId(id & 0xdf)) ? (id | HIDE_FLAG) : id);
       }
     }
     return out;
@@ -248,7 +274,8 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
           interval: (interval >= 0 && interval <= 5) ? interval : DEFAULT_INTERVAL,
           members: members });
       } else {
-        slots.push({ id: isNaN(head) ? 0 : head });
+        const v = isNaN(head) ? 0 : head;
+        slots.push({ id: v & 0xdf, hide: (v & HIDE_FLAG) !== 0 });
         i += 1;
       }
     }
@@ -308,6 +335,14 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
       return;
     }
 
+    if (target.classList.contains('wl-hide') || target.classList.contains('wl-mhide')) {
+      const nowHidden = !target.classList.contains('wl-hidden');
+      if (nowHidden) { target.classList.add('wl-hidden'); } else { target.classList.remove('wl-hidden'); }
+      target.innerHTML = nowHidden ? '⊘' : '◉';
+      self.trigger('change');
+      return;
+    }
+
     const row = topRowOf(target);
     if (!row) { return; }
     const idx = rowIndexOf(row);
@@ -357,7 +392,7 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
             slots[idx] = { rotating: true, interval: DEFAULT_INTERVAL, members: [a, a] };
           }
         } else {
-          slots[idx] = { id: newVal };
+          slots[idx] = { id: newVal, hide: false };
         }
         renderSlots(slots);
       }
@@ -406,7 +441,9 @@ const widgetListComponent = {
     '.wl-row .wl-sel{flex:1 1 auto;min-width:0;height:2.8rem;margin:0;' +
       'background-color:#767676;color:#fff;border:none;border-radius:0.3rem;' +
       'padding:0 0.5rem;color-scheme:dark}' +
-    '.wl-row .wl-main button{flex:0 0 auto;min-width:0;width:2.8rem;height:2.8rem;margin:0 0 0 6px;padding:0}' +
+    '.wl-row .wl-main button,.wl-row .wl-main .wl-hide{flex:0 0 auto;min-width:0;width:2.8rem;height:2.8rem;margin:0 0 0 6px;padding:0}' +
+    '.wl-mem .wl-mhide{flex:0 0 auto;min-width:0;width:2.6rem;height:2.6rem;margin:0 0 0 6px;padding:0}' +
+    '.wl-row .wl-hidden{opacity:.55}' +
     '.wl-row button[disabled]{opacity:.35}' +
     '.wl-group{margin:6px 0 0 12px;padding:6px 8px;border-left:3px solid #767676}' +
     '.wl-introw{display:flex;align-items:center;margin:0 0 6px 0}' +

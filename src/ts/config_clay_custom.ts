@@ -37,7 +37,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     ['WidgetList', 'WidgetListRight'].forEach((k) => {
       const v = clayConfig.getItemByMessageKey(k).get();
       if (v && v.length) {
-        for (let i = 0; i < v.length; i++) { ids.push(parseInt(v[i], 10) || 0); }
+        for (let i = 0; i < v.length; i++) { ids.push((parseInt(v[i], 10) || 0) & 0xdf); }
       }
     });
     return ids;

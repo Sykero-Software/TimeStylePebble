@@ -101,6 +101,12 @@ test('UV index only (13): weather shown but units hidden (UV is unitless)', () =
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, false);
 });
 
+test('hidden-identifier flag (0x20) still gates the widget\'s settings', () => {
+  const c = render([7 | 0x20]);   // hidden weather is still weather
+  assert.strictEqual(c.byId['heading-weather'].shown, true);
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
+});
+
 test('weather + manual location: manual fields shown', () => {
   const c = render([8], { locMode: 'manual' });
   assert.strictEqual(c.byKey['weather_loc'].shown, true);
