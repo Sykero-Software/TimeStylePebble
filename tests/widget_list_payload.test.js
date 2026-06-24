@@ -72,3 +72,15 @@ test('packs whole groups only within the 16-byte cap', () => {
 test('drops Empty(0) from a plain list (was a no-op widget)', () => {
   assert.deepStrictEqual(widgetListToPayload([12, 0, 17]), [12, 17]);
 });
+
+test('preserves the hidden-identifier flag (0x20) on plain ids and group members', () => {
+  // 7|0x20 = 39 (hidden weather), 200|0x20 = 232 (hidden crypto)
+  assert.deepStrictEqual(widgetListToPayload([39, 232]), [39, 232]);
+  // hidden member inside a group: 15|0x20 = 47
+  assert.deepStrictEqual(widgetListToPayload([2, 255, 2, 1, 47, 16]), [2, 255, 2, 1, 47, 16]);
+});
+
+test('drops a hidden flag when the base id is non-drawable', () => {
+  // 21|0x20 = 53; base 21 is not drawable -> dropped
+  assert.deepStrictEqual(widgetListToPayload([53]), []);
+});

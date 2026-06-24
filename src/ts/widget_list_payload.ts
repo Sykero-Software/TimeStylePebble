@@ -13,11 +13,13 @@ const CRYPTO_WID_BASE = 200;
 const MAX_CRYPTO = 16;
 const ROTATING_MARKER = 255;
 const MAX_GROUP_MEMBERS = 6;
+const WIDGET_HIDE_FLAG = 0x20;   // KEEP IN SYNC with src/c/widget_list.h
 
 function isDrawableId(id: number): boolean {
-  if (id === 0) { return false; }
-  if (id >= 1 && id <= MAX_WIDGET_TYPE) { return true; }
-  if (id >= CRYPTO_WID_BASE && id < CRYPTO_WID_BASE + MAX_CRYPTO) { return true; }
+  const base = id & ~WIDGET_HIDE_FLAG;
+  if (base === 0) { return false; }
+  if (base >= 1 && base <= MAX_WIDGET_TYPE) { return true; }
+  if (base >= CRYPTO_WID_BASE && base < CRYPTO_WID_BASE + MAX_CRYPTO) { return true; }
   return false;
 }
 
