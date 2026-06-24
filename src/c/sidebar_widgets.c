@@ -885,20 +885,29 @@ void BTDisconnect_draw(GContext *ctx, int yPosition) {
 
 static void draw_basic_widget(GContext *ctx, int yPosition, const char *label,
                               const char *value, int valueYOffset) {
-  graphics_draw_text(ctx, label, smSidebarFont,
-                     GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.basicWidgetLabelY,
-                           layout.textRectWidth, 20),
-                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  int hs = SidebarWidgets_hideIdentifier ? layout.basicWidgetY : 0;
+  if (!SidebarWidgets_hideIdentifier) {
+    graphics_draw_text(ctx, label, smSidebarFont,
+                       GRect(layout.textRectX + SidebarWidgets_xOffset,
+                             yPosition + layout.basicWidgetLabelY,
+                             layout.textRectWidth, 20),
+                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  }
   graphics_draw_text(ctx, value, currentSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + valueYOffset, layout.textRectWidth, 20),
+                           yPosition + valueYOffset - hs, layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
+
+static int basic_widget_height(void) {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.basicWidgetHeight - layout.basicWidgetY)
+      : layout.basicWidgetHeight;
 }
 
 /***** Week Number Widget *****/
 
-int WeekNumber_getHeight() { return layout.basicWidgetHeight; }
+int WeekNumber_getHeight() { return basic_widget_height(); }
 
 void WeekNumber_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
@@ -990,7 +999,7 @@ void WeatherForecast_draw(GContext *ctx, int yPosition) {
 
 /***** Alternate Time Zone Widget *****/
 
-int AltTime_getHeight() { return layout.basicWidgetHeight; }
+int AltTime_getHeight() { return basic_widget_height(); }
 
 void AltTime_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
@@ -1000,7 +1009,7 @@ void AltTime_draw(GContext *ctx, int yPosition) {
 
 /********** UV Index Widget **********/
 
-int UVIndex_getHeight() { return layout.basicWidgetHeight; }
+int UVIndex_getHeight() { return basic_widget_height(); }
 
 void UVIndex_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
@@ -1212,7 +1221,7 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
 
 /***** Beats (Swatch Internet Time) widget *****/
 
-int Beats_getHeight() { return layout.basicWidgetHeight; }
+int Beats_getHeight() { return basic_widget_height(); }
 
 void Beats_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
@@ -1353,7 +1362,7 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
 
 /***** Generic crypto / currency widget *****/
 
-int CryptoSlot_getHeight() { return layout.basicWidgetHeight; }
+int CryptoSlot_getHeight() { return basic_widget_height(); }
 
 void CryptoSlot_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
