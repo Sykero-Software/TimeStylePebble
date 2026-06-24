@@ -711,10 +711,16 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
     } else {
       snprintf(batteryString, sizeof(batteryString), "%d", battery_percent);
     }
+    // When the identifier (icon) is hidden, base the value on yPosition (the cell
+    // top), NOT batteryPositionY: the -5 in batteryPositionY corrects for the empty
+    // space atop the battery ICON, which is irrelevant with no icon, and would push
+    // the value 5px high in the short value-only cell. This matches the clean
+    // icon+value widgets (steps/sleep), whose hidden value lands at yPosition.
+    int valueBaseY = SidebarWidgets_hideIdentifier ? yPosition : batteryPositionY;
     int hs = SidebarWidgets_hideIdentifier ? layout.batteryTextY : 0;
     graphics_draw_text(ctx, batteryString, batteryFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             layout.batteryTextY + batteryPositionY - hs,
+                             layout.batteryTextY + valueBaseY - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
