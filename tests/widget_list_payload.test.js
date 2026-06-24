@@ -24,8 +24,14 @@ test('non-array input yields an empty payload', () => {
 
 test('keeps crypto wids (legacy 15/16/17 and the 200+ range), drops other out-of-range', () => {
   assert.deepStrictEqual(widgetListToPayload([15, 16, 17, 200, 215]), [15, 16, 17, 200, 215]);
-  assert.deepStrictEqual(widgetListToPayload([216, 100, 199, 20]), []);
+  assert.deepStrictEqual(widgetListToPayload([216, 100, 199, 21]), []);
   assert.deepStrictEqual(widgetListToPayload([7, 200, 999]), [7, 200]);
+});
+
+test('keeps the Deep Sleep widget (id 20, current MAX_WIDGET_TYPE)', () => {
+  // Guards the MAX_WIDGET_TYPE mirror against src/c/widget_list.h WL_MAX_WIDGET_TYPE:
+  // id 20 must survive the payload builder (a stale max=19 would drop it).
+  assert.deepStrictEqual(widgetListToPayload([9, 20, 10]), [9, 20, 10]);
 });
 
 test('passes a valid rotating group through unchanged', () => {

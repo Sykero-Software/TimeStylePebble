@@ -8,7 +8,7 @@
 // <2-member group, packs WHOLE groups only, and stops before exceeding 16 bytes.
 // KEEP IN SYNC with src/c/widget_list.c.
 const MAX_WIDGET_LIST_BYTES = 16;   // matches MAX_WIDGET_LIST in src/c/sidebar_widgets.h
-const MAX_WIDGET_TYPE = 19;         // CHEAPEST_ELEC_HOUR
+const MAX_WIDGET_TYPE = 20;         // DEEP_SLEEP_TIMER
 const CRYPTO_WID_BASE = 200;
 const MAX_CRYPTO = 16;
 const ROTATING_MARKER = 255;

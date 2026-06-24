@@ -15,7 +15,7 @@
 
 // Numeric mirrors — keep in sync with src/c/sidebar_widgets.h (MAX_WIDGET_TYPE),
 // src/c/crypto.h (CRYPTO_WID_BASE / MAX_CRYPTO), src/ts/widget_list_payload.ts.
-#define WL_MAX_WIDGET_TYPE   19    // CHEAPEST_ELEC_HOUR
+#define WL_MAX_WIDGET_TYPE   20    // DEEP_SLEEP_TIMER
 #define WL_CRYPTO_WID_BASE   200
 #define WL_MAX_CRYPTO        16
 
