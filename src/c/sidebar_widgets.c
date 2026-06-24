@@ -160,6 +160,10 @@ SidebarWidget stepCounterWidget;
 int StepCounter_getHeight();
 void StepCounter_draw(GContext *ctx, int yPosition);
 
+SidebarWidget distanceWidget;
+int Distance_getHeight();
+void Distance_draw(GContext *ctx, int yPosition);
+
 SidebarWidget sleepTimerWidget;
 int SleepTimer_getHeight();
 void SleepTimer_draw(GContext *ctx, int yPosition);
@@ -285,6 +289,9 @@ void SidebarWidgets_init() {
 #ifdef PBL_HEALTH
   stepCounterWidget.getHeight = StepCounter_getHeight;
   stepCounterWidget.draw = StepCounter_draw;
+
+  distanceWidget.getHeight = Distance_getHeight;
+  distanceWidget.draw = Distance_draw;
 
   sleepTimerWidget.getHeight = SleepTimer_getHeight;
   sleepTimerWidget.draw = SleepTimer_draw;
@@ -619,6 +626,8 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
 #ifdef PBL_HEALTH
   case STEP_COUNTER:
     return stepCounterWidget;
+  case DISTANCE:
+    return distanceWidget;
   case SLEEP_TIMER:
     return sleepTimerWidget;
   case DEEP_SLEEP_TIMER:
@@ -1053,7 +1062,7 @@ void UVIndex_draw(GContext *ctx, int yPosition) {
 
 #ifdef PBL_HEALTH
 
-/***** Step Counter Widget *****/
+/***** Step Counter / Distance Widgets *****/
 
 int StepCounter_getHeight() {
   return SidebarWidgets_hideIdentifier
@@ -1061,7 +1070,10 @@ int StepCounter_getHeight() {
       : layout.stepCounterHeight;
 }
 
-void StepCounter_draw(GContext *ctx, int yPosition) {
+// Shared renderer for the Steps / Distance widgets: recolored steps icon on top +
+// one centered value line. They differ only in whether the value is today's step
+// count or today's walked distance.
+static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
   int hs = SidebarWidgets_hideIdentifier ? layout.stepsTextY : 0;
   if (!SidebarWidgets_hideIdentifier) {
     if (stepsImage) {
@@ -1075,7 +1087,7 @@ void StepCounter_draw(GContext *ctx, int yPosition) {
   char steps_text[8];
   bool use_small_font = false;
 
-  if (settings.healthUseDistance) {
+  if (use_distance) {
     int distance = 0;
 
     if (is_health_metric_accessible(HealthMetricWalkedDistanceMeters)) {
@@ -1144,6 +1156,22 @@ void StepCounter_draw(GContext *ctx, int yPosition) {
       GRect(layout.textRectX + SidebarWidgets_xOffset,
             yPosition + layout.stepsTextY - hs, layout.textRectWidth, 20),
       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
+
+void StepCounter_draw(GContext *ctx, int yPosition) {
+  draw_steps_metric(ctx, yPosition, false);
+}
+
+/***** Distance Widget *****/
+
+int Distance_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.stepCounterHeight - layout.stepsTextY)
+      : layout.stepCounterHeight;
+}
+
+void Distance_draw(GContext *ctx, int yPosition) {
+  draw_steps_metric(ctx, yPosition, true);
 }
 
 /***** Sleep Time Widget *****/
