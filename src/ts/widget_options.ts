@@ -26,6 +26,7 @@ export const STATIC_WIDGETS: WidgetOption[] = [
   { id: 18, label: 'Seuraava halpa sahko' },
   { id: 19, label: 'Halvin sahkotunti' },
   { id: 9, label: 'Sleep' },
+  { id: 20, label: 'Deep Sleep' },
   { id: 10, label: 'Steps' },
   { id: 12, label: 'Heart Rate' },
   { id: 2, label: 'Battery' },

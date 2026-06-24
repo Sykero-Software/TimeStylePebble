@@ -12,6 +12,12 @@ test('STATIC_WIDGETS contains no crypto coin entries (those are dynamic)', () =>
   assert.ok(ids.indexOf(2) !== -1, 'Battery present');
 });
 
+test('STATIC_WIDGETS includes the Deep Sleep widget (id 20)', () => {
+  const opt = STATIC_WIDGETS.find((o) => o.id === 20);
+  assert.ok(opt, 'Deep Sleep option present');
+  assert.strictEqual(opt.label, 'Deep Sleep');
+});
+
 test('buildOptions appends one option per crypto row, labelled by label||coin', () => {
   const opts = buildOptions([
     { wid: 15, coin: 'bitcoin', label: 'BTC' },
