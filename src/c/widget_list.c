@@ -2,7 +2,11 @@
 // Copyright (c) 2026 Tuomas Airaksinen
 #include "widget_list.h"
 
+uint8_t WidgetList_baseId(uint8_t b)   { return b & (uint8_t)~WIDGET_HIDE_FLAG; }
+bool    WidgetList_isHidden(uint8_t b) { return (b & WIDGET_HIDE_FLAG) != 0; }
+
 bool WidgetList_isDrawableId(uint8_t id) {
+  id = WidgetList_baseId(id);
   if (id == 0) { return false; }                       // EMPTY draws nothing
   if (id <= WL_MAX_WIDGET_TYPE) { return true; }
   if (id >= WL_CRYPTO_WID_BASE && id < WL_CRYPTO_WID_BASE + WL_MAX_CRYPTO) { return true; }

@@ -13,12 +13,26 @@ int main(void) {
   // --- isDrawableId ---
   assert(!WidgetList_isDrawableId(0));      // EMPTY not drawable
   assert(WidgetList_isDrawableId(2));       // battery
-  assert(WidgetList_isDrawableId(19));      // last normal type
-  assert(!WidgetList_isDrawableId(20));     // gap
+  assert(WidgetList_isDrawableId(19));      // normal type
+  assert(WidgetList_isDrawableId(20));      // DEEP_SLEEP_TIMER (current MAX_WIDGET_TYPE)
   assert(WidgetList_isDrawableId(200));     // crypto base
   assert(WidgetList_isDrawableId(215));     // crypto last
   assert(!WidgetList_isDrawableId(216));
   assert(!WidgetList_isDrawableId(255));    // marker is not an id
+
+  // --- hide flag helpers (0x20) ---
+  assert(WidgetList_baseId(7) == 7);
+  assert(WidgetList_baseId(7 | 0x20) == 7);
+  assert(WidgetList_baseId(200 | 0x20) == 200);   // crypto base preserved
+  assert(WidgetList_baseId(215 | 0x20) == 215);
+  assert(!WidgetList_isHidden(7));
+  assert(WidgetList_isHidden(7 | 0x20));
+  assert(WidgetList_isHidden(200 | 0x20));
+  // a hidden id is drawable iff its base is
+  assert(WidgetList_isDrawableId(7 | 0x20));       // hidden weather -> drawable
+  assert(WidgetList_isDrawableId(20 | 0x20));      // hidden deep sleep
+  assert(WidgetList_isDrawableId(200 | 0x20));     // hidden crypto
+  assert(!WidgetList_isDrawableId(21 | 0x20));     // base 21 not drawable
 
   // --- intervalSeconds ---
   assert(WidgetList_intervalSeconds(0) == 5);
