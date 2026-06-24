@@ -11,6 +11,7 @@
 #include "electricity.h"
 #include "crypto.h"
 #include "sidebar_widgets.h"
+#include "widget_list.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -242,6 +243,11 @@ static bool isPhoneDataWidget(SidebarWidgetType w) {
       || Crypto_isWid((uint8_t)w);
 }
 
+static void phone_data_scan_cb(uint8_t w, void *ctx) {
+  bool *needs = (bool *)ctx;
+  if (isPhoneDataWidget((SidebarWidgetType)w)) { *needs = true; }
+}
+
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // One watch-driven request per configured interval serves ALL phone-fetched
   // data (weather, electricity, crypto). This is the documented Pebble pattern:
@@ -251,12 +257,8 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   bool needsPhoneData = !dynamicSettings.disableWeather;
   // Scan the actual rendered lists (not the legacy 3-slot widgets[] mirror), so a
   // phone-data widget in ANY slot of either column triggers the poll.
-  for (int i = 0; i < settings.widgetCount; i++) {
-    if (isPhoneDataWidget(settings.widgetList[i])) { needsPhoneData = true; }
-  }
-  for (int i = 0; i < settings.rightWidgetCount; i++) {
-    if (isPhoneDataWidget(settings.rightWidgetList[i])) { needsPhoneData = true; }
-  }
+  WidgetList_forEachId(settings.widgetList, settings.widgetCount, phone_data_scan_cb, &needsPhoneData);
+  WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, phone_data_scan_cb, &needsPhoneData);
   if (needsPhoneData && tick_time->tm_sec == 0) {
     int intervalSec = (int)settings.pollIntervalMin * 60;
     if (intervalSec < 300) { intervalSec = 300; }   // floor 5 min

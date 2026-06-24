@@ -1,4 +1,5 @@
 #include <pebble.h>
+#include <string.h>
 #include "weather.h"
 #include "settings.h"
 #include "twt_status.h"
@@ -7,6 +8,7 @@
 #include "electricity.h"
 #include "crypto.h"
 #include "languages.h"
+#include "widget_list.h"
 
 void (*message_processed_callback)(void);
 
@@ -363,17 +365,15 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   // buffer and reject out-of-range ids.
   if (widgetList_tuple != NULL) {
     int len = widgetList_tuple->length;
-    if (len > MAX_WIDGET_LIST) len = MAX_WIDGET_LIST;
-    const uint8_t *bytes = widgetList_tuple->value->data;
-    int n = 0;
-    for (int i = 0; i < len; i++) {
-      if (bytes[i] <= MAX_WIDGET_TYPE || Crypto_isWid(bytes[i])) settings.widgetList[n++] = bytes[i];
-    }
-    settings.widgetCount = n;
-    // Mirror the list head into the legacy slots so the (unchanged) round path,
-    // which reads settings.widgets[0]/[2], keeps tracking the configured widgets.
+    if (len > MAX_WIDGET_LIST) { len = MAX_WIDGET_LIST; }
+    memcpy(settings.widgetList, widgetList_tuple->value->data, len);
+    settings.widgetCount = WidgetList_sanitize(settings.widgetList, len, MAX_WIDGET_LIST);
+    // Mirror the first member of each of the first 3 slots into the legacy widgets[0..2]
+    // so the (unchanged) round path keeps tracking the configured widgets.
+    WidgetSlot mslots[MAX_WIDGET_SLOTS];
+    int ns = WidgetList_parse(settings.widgetList, settings.widgetCount, mslots, MAX_WIDGET_SLOTS);
     for (int i = 0; i < 3; i++) {
-      settings.widgets[i] = (i < n) ? settings.widgetList[i] : EMPTY;
+      settings.widgets[i] = (i < ns) ? (SidebarWidgetType)mslots[i].members[0] : EMPTY;
     }
   }
 
@@ -383,12 +383,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if (rightWidgetList_tuple != NULL) {
     int len = rightWidgetList_tuple->length;
     if (len > MAX_WIDGET_LIST) { len = MAX_WIDGET_LIST; }
-    const uint8_t *bytes = rightWidgetList_tuple->value->data;
-    int n = 0;
-    for (int i = 0; i < len; i++) {
-      if (bytes[i] <= MAX_WIDGET_TYPE || Crypto_isWid(bytes[i])) { settings.rightWidgetList[n++] = bytes[i]; }
-    }
-    settings.rightWidgetCount = n;
+    memcpy(settings.rightWidgetList, rightWidgetList_tuple->value->data, len);
+    settings.rightWidgetCount = WidgetList_sanitize(settings.rightWidgetList, len, MAX_WIDGET_LIST);
   }
 
   if (statusStripFullWidth_tuple != NULL) {

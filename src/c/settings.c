@@ -1,6 +1,7 @@
 #include "settings.h"
 #include "languages.h"
 #include "crypto.h"
+#include "widget_list.h"
 #include <pebble.h>
 
 Settings settings;
@@ -170,15 +171,13 @@ void Settings_loadFromStorage() {
     if (settings.widgets2[i] > MAX_WIDGET_TYPE) { settings.widgets2[i] = EMPTY; clamped = true; }
   }
   if (settings.widgetCount > MAX_WIDGET_LIST) { settings.widgetCount = MAX_WIDGET_LIST; clamped = true; }
-  for (int i = 0; i < settings.widgetCount; i++) {
-    if (settings.widgetList[i] > MAX_WIDGET_TYPE && !Crypto_isWid(settings.widgetList[i]))
-      { settings.widgetList[i] = EMPTY; clamped = true; }
-  }
+  { int before = settings.widgetCount;
+    settings.widgetCount = WidgetList_sanitize(settings.widgetList, settings.widgetCount, MAX_WIDGET_LIST);
+    if (settings.widgetCount != before) { clamped = true; } }
   if (settings.rightWidgetCount > MAX_WIDGET_LIST) { settings.rightWidgetCount = MAX_WIDGET_LIST; clamped = true; }
-  for (int i = 0; i < settings.rightWidgetCount; i++) {
-    if (settings.rightWidgetList[i] > MAX_WIDGET_TYPE && !Crypto_isWid(settings.rightWidgetList[i]))
-      { settings.rightWidgetList[i] = EMPTY; clamped = true; }
-  }
+  { int before = settings.rightWidgetCount;
+    settings.rightWidgetCount = WidgetList_sanitize(settings.rightWidgetList, settings.rightWidgetCount, MAX_WIDGET_LIST);
+    if (settings.rightWidgetCount != before) { clamped = true; } }
   if (settings.decimalSeparator != '.' && settings.decimalSeparator != ',') {
     settings.decimalSeparator = '.'; clamped = true;
   }
@@ -215,6 +214,17 @@ void Settings_saveToStorage() {
   persist_write_int(SETTINGS_VERSION_PERSIST_KEY, CURRENT_SETTINGS_VERSION);
 }
 
+static void dyn_scan_cb(uint8_t w, void *ctx) {
+  (void)ctx;
+  if (w == WEATHER_CURRENT || w == WEATHER_FORECAST_TODAY || w == WEATHER_UV_INDEX) {
+    dynamicSettings.disableWeather = false;
+  }
+  if (w == SECONDS) { dynamicSettings.updateScreenEverySecond = true; }
+  if (w == BATTERY_METER) { dynamicSettings.enableAutoBatteryWidget = false; }
+  if (w == BEATS) { dynamicSettings.enableBeats = true; }
+  if (w == ALT_TIME_ZONE) { dynamicSettings.enableAltTimeZone = true; }
+}
+
 void Settings_updateDynamicSettings() {
   dynamicSettings.disableWeather = false;
   dynamicSettings.updateScreenEverySecond = false;
@@ -225,26 +235,8 @@ void Settings_updateDynamicSettings() {
   // Scan the full priority list: a widget anywhere in it (even one currently not
   // visible because it didn't fit) should keep its data source / tick enabled,
   // since it can become visible when the status strip toggles.
-  for (int i = 0; i < settings.widgetCount; i++) {
-    SidebarWidgetType w = settings.widgetList[i];
-    if (w == WEATHER_CURRENT || w == WEATHER_FORECAST_TODAY || w == WEATHER_UV_INDEX) {
-      dynamicSettings.disableWeather = false;
-    }
-    if (w == SECONDS) { dynamicSettings.updateScreenEverySecond = true; }
-    if (w == BATTERY_METER) { dynamicSettings.enableAutoBatteryWidget = false; }
-    if (w == BEATS) { dynamicSettings.enableBeats = true; }
-    if (w == ALT_TIME_ZONE) { dynamicSettings.enableAltTimeZone = true; }
-  }
-  for (int i = 0; i < settings.rightWidgetCount; i++) {
-    SidebarWidgetType w = settings.rightWidgetList[i];
-    if (w == WEATHER_CURRENT || w == WEATHER_FORECAST_TODAY || w == WEATHER_UV_INDEX) {
-      dynamicSettings.disableWeather = false;
-    }
-    if (w == SECONDS) { dynamicSettings.updateScreenEverySecond = true; }
-    if (w == BATTERY_METER) { dynamicSettings.enableAutoBatteryWidget = false; }
-    if (w == BEATS) { dynamicSettings.enableBeats = true; }
-    if (w == ALT_TIME_ZONE) { dynamicSettings.enableAltTimeZone = true; }
-  }
+  WidgetList_forEachId(settings.widgetList, settings.widgetCount, dyn_scan_cb, NULL);
+  WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, dyn_scan_cb, NULL);
 
   // if the (primary) sidebar background is black, use inverted icon colors.
   // sidebarBgColorLeft is the primary-background key; GColorClear = inherit
