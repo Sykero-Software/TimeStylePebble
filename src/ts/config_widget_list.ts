@@ -53,6 +53,7 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
     { id: 9, label: 'Sleep' },
     { id: 20, label: 'Deep Sleep' },
     { id: 10, label: 'Steps' },
+    { id: 21, label: 'Distance' },
     { id: 12, label: 'Heart Rate' },
     { id: 2, label: 'Battery' },
   ];

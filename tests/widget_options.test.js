@@ -18,6 +18,12 @@ test('STATIC_WIDGETS includes the Deep Sleep widget (id 20)', () => {
   assert.strictEqual(opt.label, 'Deep Sleep');
 });
 
+test('STATIC_WIDGETS includes the Distance widget (id 21)', () => {
+  const opt = STATIC_WIDGETS.find((o) => o.id === 21);
+  assert.ok(opt, 'Distance option present');
+  assert.strictEqual(opt.label, 'Distance');
+});
+
 test('buildOptions appends one option per crypto row, labelled by label||coin', () => {
   const opts = buildOptions([
     { wid: 15, coin: 'bitcoin', label: 'BTC' },

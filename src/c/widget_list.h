@@ -15,7 +15,7 @@
 
 // Numeric mirrors — keep in sync with src/c/sidebar_widgets.h (MAX_WIDGET_TYPE),
 // src/c/crypto.h (CRYPTO_WID_BASE / MAX_CRYPTO), src/ts/widget_list_payload.ts.
-#define WL_MAX_WIDGET_TYPE   20    // DEEP_SLEEP_TIMER
+#define WL_MAX_WIDGET_TYPE   21    // DISTANCE
 #define WL_CRYPTO_WID_BASE   200
 #define WL_MAX_CRYPTO        16
 
@@ -25,7 +25,7 @@
 
 #define WIDGET_HIDE_FLAG 0x20    // bit set on an id byte => identifier (icon/title) hidden
 
-// Split the hide flag off an id byte. Valid ids (1..20, 200..215) never set 0x20,
+// Split the hide flag off an id byte. Valid ids (1..21, 200..215) never set 0x20,
 // so this is lossless. KEEP IN SYNC with src/ts/widget_list_payload.ts.
 uint8_t WidgetList_baseId(uint8_t b);
 bool    WidgetList_isHidden(uint8_t b);

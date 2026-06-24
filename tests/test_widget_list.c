@@ -14,7 +14,9 @@ int main(void) {
   assert(!WidgetList_isDrawableId(0));      // EMPTY not drawable
   assert(WidgetList_isDrawableId(2));       // battery
   assert(WidgetList_isDrawableId(19));      // normal type
-  assert(WidgetList_isDrawableId(20));      // DEEP_SLEEP_TIMER (current MAX_WIDGET_TYPE)
+  assert(WidgetList_isDrawableId(20));      // DEEP_SLEEP_TIMER
+  assert(WidgetList_isDrawableId(21));      // DISTANCE (current MAX_WIDGET_TYPE)
+  assert(!WidgetList_isDrawableId(22));     // first normal id past the max
   assert(WidgetList_isDrawableId(200));     // crypto base
   assert(WidgetList_isDrawableId(215));     // crypto last
   assert(!WidgetList_isDrawableId(216));
@@ -32,7 +34,8 @@ int main(void) {
   assert(WidgetList_isDrawableId(7 | 0x20));       // hidden weather -> drawable
   assert(WidgetList_isDrawableId(20 | 0x20));      // hidden deep sleep
   assert(WidgetList_isDrawableId(200 | 0x20));     // hidden crypto
-  assert(!WidgetList_isDrawableId(21 | 0x20));     // base 21 not drawable
+  assert(WidgetList_isDrawableId(21 | 0x20));      // hidden distance
+  assert(!WidgetList_isDrawableId(22 | 0x20));     // base 22 not drawable
 
   // --- intervalSeconds ---
   assert(WidgetList_intervalSeconds(0) == 5);
