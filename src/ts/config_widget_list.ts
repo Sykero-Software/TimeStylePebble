@@ -183,7 +183,11 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
       const mainVal = main ? (parseInt(main.value, 10) || 0) : 0;
       if (mainVal === ROTATING) {
         const intSel = row.querySelector('.wl-int') as HTMLSelectElement;
-        const interval = intSel ? (parseInt(intSel.value, 10) || DEFAULT_INTERVAL) : DEFAULT_INTERVAL;
+        // NOTE: code 0 (5 s) is a VALID interval but falsy in JS, so `parseInt() ||
+        // DEFAULT` would silently coerce a 5 s selection to 1 min. Use an explicit
+        // NaN check, not `||`.
+        let interval = DEFAULT_INTERVAL;
+        if (intSel) { const ivCode = parseInt(intSel.value, 10); if (!isNaN(ivCode)) { interval = ivCode; } }
         const members: number[] = [];
         const msels = row.querySelectorAll('.wl-mems .wl-msel');
         for (let m = 0; m < msels.length; m++) {
