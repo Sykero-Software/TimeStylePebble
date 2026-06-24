@@ -645,8 +645,10 @@ int BatteryMeter_getHeight() {
   // Fixed per the showBatteryPct setting (not the live charging state): a widget
   // must reserve a constant height so neighbours don't reflow when charging
   // starts/stops. The draw code still hides the % while charging.
-  return settings.showBatteryPct ? layout.batteryWithPctHeight
-                                 : layout.batteryGraphicOnlyHeight;
+  if (!settings.showBatteryPct) { return layout.batteryGraphicOnlyHeight; }  // icon only: no-op
+  return SidebarWidgets_hideIdentifier
+      ? (layout.batteryWithPctHeight - layout.batteryTextY)
+      : layout.batteryWithPctHeight;
 }
 
 void BatteryMeter_draw(GContext *ctx, int yPosition) {
@@ -661,39 +663,41 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
   int batteryPositionY =
       yPosition - 5; // correct for vertical empty space on battery icon
 
-  if (batteryImage) {
-    gdraw_command_image_recolor(batteryImage, dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
-    gdraw_command_image_draw(
-        ctx, batteryImage,
-        GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
-  }
-
-  if (chargeState.is_charging) {
-    if (batteryChargeImage) {
-      // the charge "bolt" icon uses inverted colors
-      gdraw_command_image_recolor(batteryChargeImage,
-                                  dynamicSettings.iconStrokeColor,
-                                  dynamicSettings.iconFillColor);
+  if (!SidebarWidgets_hideIdentifier) {
+    if (batteryImage) {
+      gdraw_command_image_recolor(batteryImage, dynamicSettings.iconFillColor,
+                                  dynamicSettings.iconStrokeColor);
       gdraw_command_image_draw(
-          ctx, batteryChargeImage,
+          ctx, batteryImage,
           GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
     }
-  } else {
 
-    int width = roundf(18 * battery_percent / 100.0f);
+    if (chargeState.is_charging) {
+      if (batteryChargeImage) {
+        // the charge "bolt" icon uses inverted colors
+        gdraw_command_image_recolor(batteryChargeImage,
+                                    dynamicSettings.iconStrokeColor,
+                                    dynamicSettings.iconFillColor);
+        gdraw_command_image_draw(
+            ctx, batteryChargeImage,
+            GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
+      }
+    } else {
 
-    graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
+      int width = roundf(18 * battery_percent / 100.0f);
+
+      graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
 
 #ifdef PBL_COLOR
-    if (battery_percent <= 20) {
-      graphics_context_set_fill_color(ctx, GColorRed);
-    }
+      if (battery_percent <= 20) {
+        graphics_context_set_fill_color(ctx, GColorRed);
+      }
 #endif
 
-    graphics_fill_rect(
-        ctx, GRect(6 + SidebarWidgets_xOffset, 8 + batteryPositionY, width, 8),
-        0, GCornerNone);
+      graphics_fill_rect(
+          ctx, GRect(6 + SidebarWidgets_xOffset, 8 + batteryPositionY, width, 8),
+          0, GCornerNone);
+    }
   }
 
   // never show battery % while charging, because of this issue:
@@ -707,9 +711,10 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
     } else {
       snprintf(batteryString, sizeof(batteryString), "%d", battery_percent);
     }
+    int hs = SidebarWidgets_hideIdentifier ? layout.batteryTextY : 0;
     graphics_draw_text(ctx, batteryString, batteryFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             layout.batteryTextY + batteryPositionY,
+                             layout.batteryTextY + batteryPositionY - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
@@ -791,6 +796,9 @@ void DateWidget_draw(GContext *ctx, int yPosition) {
 /********** current weather widget **********/
 
 int CurrentWeather_getHeight() {
+  // When the identifier is hidden the icon is skipped and every text line shifts
+  // up by weatherTempY (SHIFT), so the reserved height shrinks by the same amount.
+  int hs = SidebarWidgets_hideIdentifier ? layout.weatherTempY : 0;
   // reserve room for the location-name line(s) only when there is a name (so the
   // Open-Meteo / no-name case is laid out exactly as before). Names longer than
   // 4 chars wrap to a second stacked line.
@@ -798,20 +806,24 @@ int CurrentWeather_getHeight() {
     // wrap to a second line only when it would hold >= 2 chars (a lone 1-char
     // tail looks worse than just truncating to the first line)
     int extra = strlen(Weather_weatherInfo.stationName) >= 6 ? 27 : 16;
-    return layout.weatherStationY + extra;
+    return layout.weatherStationY + extra - hs;
   }
-  return layout.weatherHeight;
+  return layout.weatherHeight - hs;
 }
 
 void CurrentWeather_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
-  if (Weather_currentWeatherIcon) {
-    gdraw_command_image_recolor(Weather_currentWeatherIcon,
-                                dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
-    gdraw_command_image_draw(ctx, Weather_currentWeatherIcon,
-                             GPoint(3 + SidebarWidgets_xOffset, yPosition));
+  int hs = SidebarWidgets_hideIdentifier ? layout.weatherTempY : 0;
+
+  if (!SidebarWidgets_hideIdentifier) {
+    if (Weather_currentWeatherIcon) {
+      gdraw_command_image_recolor(Weather_currentWeatherIcon,
+                                  dynamicSettings.iconFillColor,
+                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_draw(ctx, Weather_currentWeatherIcon,
+                               GPoint(3 + SidebarWidgets_xOffset, yPosition));
+    }
   }
 
   // draw weather data only if it has been set
@@ -833,7 +845,7 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
     }
     graphics_draw_text(ctx, tempString, currentSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.weatherTempY,
+                             yPosition + layout.weatherTempY - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
@@ -848,14 +860,14 @@ void CurrentWeather_draw(GContext *ctx, int yPosition) {
       size_t n1 = nlen < 4 ? nlen : 4;
       memcpy(line1, Weather_weatherInfo.stationName, n1);
       graphics_draw_text(ctx, line1, nameFont,
-                         GRect(nameX, yPosition + layout.weatherStationY,
+                         GRect(nameX, yPosition + layout.weatherStationY - hs,
                                layout.textRectWidth, 16),
                          GTextOverflowModeFill, GTextAlignmentLeft, NULL);
       if (nlen >= 6) {   // only show line 2 if it holds >= 2 chars
         size_t n2 = (nlen - 4) < 4 ? (nlen - 4) : 4;
         memcpy(line2, Weather_weatherInfo.stationName + 4, n2);
         graphics_draw_text(ctx, line2, nameFont,
-                           GRect(nameX, yPosition + layout.weatherStationY + 13,
+                           GRect(nameX, yPosition + layout.weatherStationY + 13 - hs,
                                  layout.textRectWidth, 16),
                            GTextOverflowModeFill, GTextAlignmentLeft, NULL);
       }
@@ -1031,14 +1043,21 @@ void UVIndex_draw(GContext *ctx, int yPosition) {
 
 /***** Step Counter Widget *****/
 
-int StepCounter_getHeight() { return layout.stepCounterHeight; }
+int StepCounter_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.stepCounterHeight - layout.stepsTextY)
+      : layout.stepCounterHeight;
+}
 
 void StepCounter_draw(GContext *ctx, int yPosition) {
-  if (stepsImage) {
-    gdraw_command_image_recolor(stepsImage, dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
-    gdraw_command_image_draw(ctx, stepsImage,
-                             GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
+  int hs = SidebarWidgets_hideIdentifier ? layout.stepsTextY : 0;
+  if (!SidebarWidgets_hideIdentifier) {
+    if (stepsImage) {
+      gdraw_command_image_recolor(stepsImage, dynamicSettings.iconFillColor,
+                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_draw(ctx, stepsImage,
+                               GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
+    }
   }
 
   char steps_text[8];
@@ -1111,13 +1130,16 @@ void StepCounter_draw(GContext *ctx, int yPosition) {
   graphics_draw_text(
       ctx, steps_text, (use_small_font) ? smSidebarFont : mdSidebarFont,
       GRect(layout.textRectX + SidebarWidgets_xOffset,
-            yPosition + layout.stepsTextY, layout.textRectWidth, 20),
+            yPosition + layout.stepsTextY - hs, layout.textRectWidth, 20),
       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
 /***** Sleep Time Widget *****/
 
-int SleepTimer_getHeight() { return layout.sleepTimerHeight; }
+int SleepTimer_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.sleepTimerHeight - layout.sleepTextY) : layout.sleepTimerHeight;
+}
 
 // Format sleep seconds as "H<sep>T" (hours dot tenths) using the configured decimal
 // separator, e.g. 7h23m -> "7.3" (tenths truncated, matching the steps widget).
@@ -1133,11 +1155,14 @@ static void format_sleep_decimal(int seconds, char *buf, size_t n) {
 // centered decimal line. They differ only in icon and health metric.
 static void draw_sleep_metric(GContext *ctx, int yPosition,
                               GDrawCommandImage *img, HealthMetric metric) {
-  if (img) {
-    gdraw_command_image_recolor(img, dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
-    gdraw_command_image_draw(ctx, img,
-                             GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
+  int hs = SidebarWidgets_hideIdentifier ? layout.sleepTextY : 0;
+  if (!SidebarWidgets_hideIdentifier) {
+    if (img) {
+      gdraw_command_image_recolor(img, dynamicSettings.iconFillColor,
+                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_draw(ctx, img,
+                               GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
+    }
   }
 
   int sleep_seconds = 0;
@@ -1151,7 +1176,7 @@ static void draw_sleep_metric(GContext *ctx, int yPosition,
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
   graphics_draw_text(ctx, sleep_text, mdSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.sleepTextY, layout.textRectWidth, 20),
+                           yPosition + layout.sleepTextY - hs, layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
@@ -1161,7 +1186,10 @@ void SleepTimer_draw(GContext *ctx, int yPosition) {
 
 /***** Deep (Restful) Sleep Widget *****/
 
-int DeepSleep_getHeight() { return layout.sleepTimerHeight; }
+int DeepSleep_getHeight() {
+  return SidebarWidgets_hideIdentifier
+      ? (layout.sleepTimerHeight - layout.sleepTextY) : layout.sleepTimerHeight;
+}
 
 void DeepSleep_draw(GContext *ctx, int yPosition) {
   draw_sleep_metric(ctx, yPosition, deepSleepImage, HealthMetricSleepRestfulSeconds);
