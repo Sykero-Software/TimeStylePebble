@@ -1122,7 +1122,7 @@ static void draw_sleep_metric(GContext *ctx, int yPosition,
     sleep_seconds = (int)health_service_sum_today(metric);
   }
 
-  char sleep_text[8];
+  char sleep_text[12];
   format_sleep_decimal(sleep_seconds, sleep_text, sizeof(sleep_text));
 
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
