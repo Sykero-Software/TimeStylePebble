@@ -23,6 +23,8 @@ static bool isPhoneConnected;
 // current time service subscription
 static bool updatingEverySecond;
 
+static AppTimer *rotationTimer = NULL;   // repaints the sidebar at sub-minute rotation boundaries
+
 static time_t lastDataRequest = 0;   // epoch of the last watch->phone data request
 static bool twtTargetAlerted = false;   // already vibrated for the current daily-target crossing
 static bool twtTargetInit = false;      // have we seeded twtTargetAlerted since launch?
@@ -35,6 +37,7 @@ void redrawScreen();
 void tick_handler(struct tm *tick_time, TimeUnits units_changed);
 void bluetoothStateChanged(bool newConnectionState);
 static void apply_twt_layout();
+static void schedule_rotation_timer(void);
 
 
 void update_clock() {
@@ -173,6 +176,33 @@ static void unobstructed_did_change(void *context) {
   apply_twt_layout();
 }
 
+static void rotation_timer_cb(void *data) {
+  (void)data;
+  rotationTimer = NULL;
+  Sidebar_redraw();              // re-resolves active members from the clock (stable heights)
+  schedule_rotation_timer();     // arm the next boundary
+}
+
+// (Re)arm the rotation timer for the next sub-minute boundary, or cancel it when no
+// sub-minute rotating group exists. >=1min rotations need no timer (the minute tick
+// already repaints the sidebar). Skipped while already second-ticking (the tick
+// handler repaints every second).
+static void schedule_rotation_timer(void) {
+  if (rotationTimer) { app_timer_cancel(rotationTimer); rotationTimer = NULL; }
+  if (updatingEverySecond) { return; }
+  int p = WidgetList_minSubMinuteIntervalSec(settings.widgetList, settings.widgetCount);
+  int pr = WidgetList_minSubMinuteIntervalSec(settings.rightWidgetList, settings.rightWidgetCount);
+  if (pr > 0 && (p == 0 || pr < p)) { p = pr; }
+  if (p <= 0) { return; }
+  time_t now = time(NULL);
+  struct tm *lt = localtime(&now);
+  int sod = lt->tm_hour * 3600 + lt->tm_min * 60 + lt->tm_sec;
+  int secToNext = p - (sod % p);
+  uint32_t delayMs = (uint32_t)secToNext * 1000;
+  if (delayMs == 0) { delayMs = (uint32_t)p * 1000; }
+  rotationTimer = app_timer_register(delayMs, rotation_timer_cb, NULL);
+}
+
 /* forces everything on screen to be redrawn -- perfect for keeping track of settings! */
 void redrawScreen() {
 
@@ -202,6 +232,8 @@ void redrawScreen() {
   ClockArea_redraw();
 
   apply_twt_layout();
+
+  schedule_rotation_timer();   // re-evaluate after any settings change / tick-mode change
 }
 
 static void main_window_load(Window *window) {
@@ -461,6 +493,7 @@ static void deinit() {
   Settings_deinit();
 
   tick_timer_service_unsubscribe();
+  if (rotationTimer) { app_timer_cancel(rotationTimer); rotationTimer = NULL; }
   bluetooth_connection_service_unsubscribe();
   battery_state_service_unsubscribe();
   if (TwtStatus_isSupported()) {
