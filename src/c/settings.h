@@ -56,7 +56,7 @@ typedef struct {
   int altclockOffset;
 
   // health widget Settings
-  bool healthUseDistance;
+  bool healthUseDistance;  // retained for persisted-blob layout; no longer used
   bool healthUseRestfulSleep;  // retained for persisted-blob layout; no longer used
   char decimalSeparator;
 
@@ -174,7 +174,7 @@ typedef struct {
   uint8_t disableAutobattery:1;
 
   // health widget Settings
-  uint8_t healthUseDistance:1;
+  uint8_t healthUseDistance:1;  // retained for persisted-blob layout; no longer used
   uint8_t healthUseRestfulSleep:1;
   char decimalSeparator;
 

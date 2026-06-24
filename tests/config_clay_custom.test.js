@@ -9,7 +9,7 @@ const GATED_KEYS = ['SettingUseMetric', 'weather_loc_mode', 'weather_datasource'
   'weather_loc', 'weather_loc_lat', 'weather_loc_lng',
   'SettingElecQuietStart', 'SettingElecQuietEnd', 'SettingElecCheapFactorPct',
   'elec_cheap_floor', 'elec_cheap_ceiling', 'SettingAltClockName',
-  'SettingAltClockOffset', 'SettingHealthUseDistance',
+  'SettingAltClockOffset',
   'SettingShowBatteryPct', 'SettingDisableAutobattery'];
 
 function makeItem(value) {
@@ -79,7 +79,6 @@ test('no widgets: weather/electricity/alt/health hidden; battery style shown (au
   assert.strictEqual(c.byKey['SettingElecQuietStart'].shown, false);
   assert.strictEqual(c.byKey['SettingElecCheapFactorPct'].shown, false);
   assert.strictEqual(c.byKey['SettingAltClockName'].shown, false);
-  assert.strictEqual(c.byKey['SettingHealthUseDistance'].shown, false);
   assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, true);
 });
 
@@ -144,13 +143,6 @@ test('alt time zone widget (3): alt clock name + offset shown', () => {
   const c = render([3]);
   assert.strictEqual(c.byKey['SettingAltClockName'].shown, true);
   assert.strictEqual(c.byKey['SettingAltClockOffset'].shown, true);
-});
-
-test('steps (10) shows distance toggle; sleep widget gates no setting now', () => {
-  const cs = render([10]);
-  assert.strictEqual(cs.byKey['SettingHealthUseDistance'].shown, true);
-  const cl = render([9]);
-  assert.strictEqual(cl.byKey['SettingHealthUseDistance'].shown, false);
 });
 
 test('battery style: shown with battery widget even if auto-battery off', () => {

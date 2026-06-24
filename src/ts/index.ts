@@ -149,7 +149,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
     'SettingTwtTargetVibe', 'SettingTwtBudgetVibe', 'SettingHourlyVibe',
     'SettingStatusStripFullWidth', 'SettingUseLargeFonts', 'SettingUseMetric',
     'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
-    'SettingDecimalSep', 'SettingHealthUseDistance',
+    'SettingDecimalSep',
     'SettingPollIntervalMin', 'SettingElecQuietStart', 'SettingElecQuietEnd',
     'SettingElecCheapFactorPct'].forEach((k) => {
     if (s[k] === undefined || s[k] === null || s[k] === '') { return; }

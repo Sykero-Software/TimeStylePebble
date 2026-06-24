@@ -160,8 +160,6 @@ const config = [
         defaultValue: '1', options: [{ label: 'Icon & percent', value: '1' }, { label: 'Icon only', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingDisableAutobattery', label: 'Auto-show battery meter at 10%',
         defaultValue: '0', options: [{ label: 'On', value: '0' }, { label: 'Off', value: '1' }] },
-      { type: 'radiogroup', messageKey: 'SettingHealthUseDistance', label: 'Steps widget displays',
-        defaultValue: '0', options: [{ label: 'Number of steps', value: '0' }, { label: 'Distance', value: '1' }] },
     ],
   },
 

@@ -86,9 +86,6 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     toggle(key('SettingAltClockName'), has(ids, [3]));
     toggle(key('SettingAltClockOffset'), has(ids, [3]));
 
-    // Health
-    toggle(key('SettingHealthUseDistance'), has(ids, [10]));
-
     // Battery meter style (relevant when the meter can appear)
     toggle(key('SettingShowBatteryPct'), has(ids, [2]) || autoBattery);
   }
