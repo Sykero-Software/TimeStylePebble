@@ -9,6 +9,8 @@
 Sykerö TimeStyle is a stylish, modern watchface for the Pebble and Pebble Time
 watches.
 
+**[Install from the Pebble appstore →](https://apps.repebble.com/syker-timestyle_66eceeb78146451aac714547)**
+
 <p>
 <img src="screenshots/main.png" width="180" alt="Configured watchface: crypto, electricity price, weather, UV, sleep and steps widgets">
 <img src="screenshots/track-work-time.png" width="180" alt="Live Track Work Time status on the watchface">
@@ -55,3 +57,6 @@ this fork going forward are licensed under GPL-3.0-only.
 ## Support
 
 Questions, feedback or bug reports: <pebble.trackworktime@sykero.fi>
+
+Browse all Sykerö Software apps on the Pebble appstore:
+<https://apps.repebble.com/apps/dev/syker-software_9f6c9c6e9ce88af6a0db953e>
