@@ -9,7 +9,15 @@
 Sykerö TimeStyle is a stylish, modern watchface for the Pebble and Pebble Time
 watches.
 
-<img src="screenshot.png" width="200" alt="Sykerö TimeStyle on a Pebble Time 2">
+<p>
+<img src="screenshots/main.png" width="180" alt="Configured watchface: crypto, electricity price, weather, UV, sleep and steps widgets">
+<img src="screenshots/track-work-time.png" width="180" alt="Live Track Work Time status on the watchface">
+<img src="screenshots/midi-recorder.png" width="180" alt="Live MIDI Recorder status on the watchface">
+</p>
+
+*Left:* two configurable widget columns (here: BTC, ETH, EUR/USD, electricity
+price · weather, UV index, sleep, steps), customizable colours. *Middle:* live
+**Sykerö Track Work Time** status. *Right:* live **MIDI Recorder** status.
 
 Inspired by the visual language of the Timeline found on the Pebble Time, Sykerö TimeStyle is designed as the “present” to complement the Timeline’s “past” and “future”.
 
