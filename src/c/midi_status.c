@@ -18,6 +18,15 @@ void MidiStatus_load() {
   } else {
     midi_status = (MidiStatus){0};
     midi_status.deviceName[0] = '\0';
+#ifdef SCREENSHOT_FIXTURES
+#if SCREENSHOT_SCENE == 3
+    // Demo recording state for the MIDI-active appstore scene (no phone needed).
+    midi_status.isRecording = true;
+    strncpy(midi_status.deviceName, "Roland FP-30", MIDI_DEVICE_NAME_LEN);
+    midi_status.deviceName[MIDI_DEVICE_NAME_LEN] = '\0';
+    midi_status.recStartEpoch = 0;
+#endif
+#endif
   }
 }
 

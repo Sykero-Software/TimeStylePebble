@@ -1132,6 +1132,9 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
     if (is_health_metric_accessible(HealthMetricStepCount)) {
       steps = (int)health_service_sum_today(HealthMetricStepCount);
     }
+#ifdef SCREENSHOT_FIXTURES
+    steps = 1454;   // demo: renders "1.4k"
+#endif
 
     // format step string
     if (steps < 1000) {
@@ -1209,6 +1212,9 @@ static void draw_sleep_metric(GContext *ctx, int yPosition,
   if (is_health_metric_accessible(metric)) {
     sleep_seconds = (int)health_service_sum_today(metric);
   }
+#ifdef SCREENSHOT_FIXTURES
+  sleep_seconds = 23400;   // demo: 6.5 h
+#endif
 
   char sleep_text[12];
   format_sleep_decimal(sleep_seconds, sleep_text, sizeof(sleep_text));

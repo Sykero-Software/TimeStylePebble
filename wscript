@@ -40,6 +40,7 @@ def build(ctx):
         defines = ['USE_FAKE_TIME'] if os.environ.get('FAKE_TIME') else []
         if os.environ.get('SCREENSHOT_FIXTURES'):
             defines.append('SCREENSHOT_FIXTURES')  # seed demo data for appstore screenshots
+            defines.append('SCREENSHOT_SCENE=' + os.environ.get('SCREENSHOT_SCENE', '1'))  # 1=config 2=TWT-active 3=MIDI-active
         ctx.pbl_build(source=ctx.path.ant_glob('src/c/**/*.c'), target=app_elf, bin_type='app', defines=defines)
 
         if build_worker:

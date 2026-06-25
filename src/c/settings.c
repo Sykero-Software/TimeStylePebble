@@ -198,6 +198,25 @@ void Settings_loadFromStorage() {
     persist_write_int(SETTINGS_VERSION_PERSIST_KEY, CURRENT_SETTINGS_VERSION);
   }
 
+#ifdef SCREENSHOT_FIXTURES
+  // Appstore screenshot scene config (no phone). Applied after sanitize so it wins;
+  // not persisted, so it never pollutes real settings.
+  settings.timeBgColor = GColorWhite;              // watchface background
+  settings.timeColor = GColorBlack;                // clock text (dark on white)
+  settings.sidebarTextColor = GColorBlack;
+  settings.sidebarBgColorLeft = GColorMintGreen;   // LEFT (primary) column bg
+  settings.sidebarBgColorRight = GColorBabyBlueEyes;  // RIGHT (secondary) column bg — pale blue
+  settings.dateBgColor = GColorIcterine;           // light-yellow date header
+  settings.twtStatusBgColor = GColorCeleste;       // status strip (scenes 2/3) — pale turquoise
+  settings.clockFontId = FONT_SETTING_LECO;
+  settings.showBigDate = true;
+  settings.secondaryAlwaysOn = true;               // keep the right column up without a status strip
+  settings.useMetric = true;                       // weather in °C (18/11)
+  settings.midiSecondPrecision = false;
+  { uint8_t L[] = {15, 201, 17, 14}; memcpy(settings.widgetList, L, sizeof L); settings.widgetCount = sizeof L; }
+  { uint8_t R[] = {8, 13, 9, 10};    memcpy(settings.rightWidgetList, R, sizeof R); settings.rightWidgetCount = sizeof R; }
+#endif
+
   Settings_updateDynamicSettings();
 }
 

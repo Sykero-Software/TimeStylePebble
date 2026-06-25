@@ -30,6 +30,20 @@ void Electricity_init() {
                         (ELEC_MAX_QUARTERS - ELEC_CHUNK0_COUNT) * sizeof(int16_t));
     }
   }
+#ifdef SCREENSHOT_FIXTURES
+  // Demo electricity for appstore screenshots: 4.5 snt today-average, 6.3 snt now.
+  {
+    time_t now = time(NULL);
+    Electricity_info.startEpoch = (uint32_t)(now - (now % 900)) - 8 * 3600;
+    Electricity_info.count = 96;                                  // 24 h of 15-min quarters
+    for (int i = 0; i < 96; i++) { Electricity_info.prices[i] = 450; }
+    int cur;
+    if (elec_current_index(Electricity_info.startEpoch, Electricity_info.count,
+                           (int64_t)now, &cur)) {
+      Electricity_info.prices[cur] = 630;                         // 6.3 snt right now
+    }
+  }
+#endif
 }
 
 void Electricity_saveData() {

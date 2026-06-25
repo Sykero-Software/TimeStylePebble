@@ -65,4 +65,14 @@ void Crypto_init() {
     int n = persist_read_string(CRYPTO_PERSIST_KEY_DATA, buf, sizeof(buf));
     if (n > 0) { Crypto_parse(buf); }
   }
+#ifdef SCREENSHOT_FIXTURES
+  // Demo coins for appstore screenshots (no phone): BTC, ETH, EUR/USD.
+  Crypto_count = 3;
+  Crypto_slots[0] = (CryptoSlot){ .wid = 15,  .valid = true };
+  strcpy(Crypto_slots[0].label, "BTC"); strcpy(Crypto_slots[0].value, "62");
+  Crypto_slots[1] = (CryptoSlot){ .wid = 201, .valid = true };
+  strcpy(Crypto_slots[1].label, "ETH"); strcpy(Crypto_slots[1].value, "17");
+  Crypto_slots[2] = (CryptoSlot){ .wid = 17,  .valid = true };
+  strcpy(Crypto_slots[2].label, "EUR"); strcpy(Crypto_slots[2].value, "136");
+#endif
 }

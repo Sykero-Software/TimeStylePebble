@@ -101,6 +101,15 @@ void Weather_init() {
   } else {
     Weather_forecastWeatherIcon = NULL;
   }
+
+#ifdef SCREENSHOT_FIXTURES
+  // Demo weather for appstore screenshots: forecast 18/11 °C, UV 3.
+  Weather_weatherInfo.todaysHighTemp = 18;
+  Weather_weatherInfo.todaysLowTemp = 11;
+  Weather_weatherInfo.currentUVIndex = 3;
+  Weather_weatherInfo.currentTemp = 16;
+  Weather_setForecastCondition(PARTLY_CLOUDY);
+#endif
 }
 
 void Weather_saveData() {
