@@ -151,7 +151,8 @@ Pebble.addEventListener('webviewclosed', (e) => {
     'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
     'SettingDecimalSep',
     'SettingPollIntervalMin', 'SettingElecQuietStart', 'SettingElecQuietEnd',
-    'SettingElecCheapFactorPct'].forEach((k) => {
+    'SettingElecCheapFactorPct',
+    'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition'].forEach((k) => {
     if (s[k] === undefined || s[k] === null || s[k] === '') { return; }
     dict[k] = STRING_KEYS[k] ? s[k] : parseInt(s[k], 10);
   });

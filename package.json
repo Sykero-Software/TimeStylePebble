@@ -119,7 +119,10 @@
       "SettingStatusStripFullWidth",
       "SettingRightWidgetList",
       "CryptoData",
-      "SettingMidiSecondPrecision"
+      "SettingMidiSecondPrecision",
+      "SettingAutoBatteryThreshold",
+      "SettingFallbackColumn",
+      "SettingFallbackPosition"
     ],
     "resources": {
       "media": [

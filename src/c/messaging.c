@@ -188,6 +188,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   Tuple *activateDisconnectIcon_tuple = dict_find(iterator, MESSAGE_KEY_SettingDisconnectIcon);
 
+  Tuple *autoBatteryThreshold_tuple = dict_find(iterator, MESSAGE_KEY_SettingAutoBatteryThreshold);
+  Tuple *fallbackColumn_tuple = dict_find(iterator, MESSAGE_KEY_SettingFallbackColumn);
+  Tuple *fallbackPosition_tuple = dict_find(iterator, MESSAGE_KEY_SettingFallbackPosition);
+
 
   if(timeColor_tuple != NULL) {
     settings.timeColor = GColorFromHEX(timeColor_tuple->value->int32);
@@ -408,6 +412,19 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   if(activateDisconnectIcon_tuple != NULL) {
     settings.activateDisconnectIcon = (bool)activateDisconnectIcon_tuple->value->int8;
+  }
+
+  if(autoBatteryThreshold_tuple != NULL) {
+    int v = autoBatteryThreshold_tuple->value->int32;
+    if (v >= 1 && v <= 100) { settings.autoBatteryThreshold = (uint8_t)v; }
+  }
+  if(fallbackColumn_tuple != NULL) {
+    int v = fallbackColumn_tuple->value->int32;
+    if (v >= 0 && v <= 2) { settings.fallbackColumn = (uint8_t)v; }
+  }
+  if(fallbackPosition_tuple != NULL) {
+    int v = fallbackPosition_tuple->value->int32;
+    if (v >= 1 && v <= MAX_WIDGET_SLOTS + 1) { settings.fallbackPosition = (uint8_t)v; }
   }
 
   // save the new settings to persistent storage
