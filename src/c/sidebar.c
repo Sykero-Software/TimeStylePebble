@@ -149,7 +149,7 @@ bool isAutoBatteryShown() {
     BatteryChargeState chargeState = battery_state_service_peek();
 
     if (dynamicSettings.enableAutoBatteryWidget) {
-      if (chargeState.charge_percent <= 10 || chargeState.is_charging) {
+      if (chargeState.charge_percent <= settings.autoBatteryThreshold || chargeState.is_charging) {
         return true;
       }
     }
