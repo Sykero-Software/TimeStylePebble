@@ -89,6 +89,9 @@ void Settings_loadFromStorage() {
   settings.sidebarBgColorLeft = GColorClear;  // inherit sidebarColor; appended field
   settings.sidebarBgColorRight = GColorClear; // inherit sidebarColor; appended field
 #endif
+  settings.autoBatteryThreshold = 10;   // legacy hardcoded threshold; appended field, no version bump
+  settings.fallbackColumn = 0;          // Automatic placement (legacy behaviour); appended field
+  settings.fallbackPosition = 1;        // appended field
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
@@ -189,6 +192,13 @@ void Settings_loadFromStorage() {
   if (settings.elecQuietEnd > 23) { settings.elecQuietEnd = 7; clamped = true; }
   if (settings.elecCheapFactorPct < 1 || settings.elecCheapFactorPct > 100) {
     settings.elecCheapFactorPct = 70; clamped = true;
+  }
+  if (settings.autoBatteryThreshold < 1 || settings.autoBatteryThreshold > 100) {
+    settings.autoBatteryThreshold = 10; clamped = true;
+  }
+  if (settings.fallbackColumn > 2) { settings.fallbackColumn = 0; clamped = true; }
+  if (settings.fallbackPosition < 1 || settings.fallbackPosition > MAX_WIDGET_SLOTS + 1) {
+    settings.fallbackPosition = 1; clamped = true;
   }
 
   if (migrated) { APP_LOG(APP_LOG_LEVEL_INFO, "settings: one-time widget-list migration applied"); }

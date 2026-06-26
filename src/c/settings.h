@@ -130,6 +130,20 @@ typedef struct {
   // true = seconds timer (m:ss / h:mm:ss, SECOND_UNIT tick).
   // Appended field, zero-default on load of an older blob (= off).
   bool midiSecondPrecision;
+
+  // Auto-battery appearance threshold (percent). The battery widget auto-appears
+  // when charge_percent <= this value (or while charging). Appended field,
+  // zero... no: defaulted to 10 in Settings_loadFromStorage. No settings-version bump.
+  uint8_t autoBatteryThreshold;
+
+  // Fallback (auto-battery / BT-disconnect) placement, shared by both fallbacks:
+  //   fallbackColumn: 0 = Automatic (legacy host-column + getReplacableWidget),
+  //                   1 = Left/primary list, 2 = Right/secondary list.
+  //   fallbackPosition: 1-based slot in the chosen column. <= count replaces that
+  //                   slot; == count+1 appends the fallback at the bottom.
+  // Appended fields, defaulted (0 / 1) in Settings_loadFromStorage. No version bump.
+  uint8_t fallbackColumn;
+  uint8_t fallbackPosition;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
