@@ -345,48 +345,72 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   graphics_fill_rect(ctx, layer_get_bounds(l), 0, GCornerNone);
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
-  if (slotCount == 0) { return; }
-
   int v_padding = V_PADDING_DEFAULT;
   int innerTop = v_padding;
   int innerHeight = bounds.size.h - v_padding * 2;
   int sod = currentSecondsOfDay();
 
-  // Resolve each slot to the widget it shows now + its reserved (max-member) height.
+  // Resolve each configured slot to the widget it shows now + its reserved height.
   SidebarWidgetType activeType[MAX_WIDGET_SLOTS];
   bool activeHide[MAX_WIDGET_SLOTS];
   int slotHeight[MAX_WIDGET_SLOTS];
-  for (int i = 0; i < slotCount; i++) {
+  int n = (slotCount > MAX_WIDGET_SLOTS) ? MAX_WIDGET_SLOTS : slotCount;
+  for (int i = 0; i < n; i++) {
     activeType[i] = (SidebarWidgetType)WidgetSlot_activeMember(&slots[i], sod);
     activeHide[i] = WidgetSlot_activeHide(&slots[i], sod);
     slotHeight[i] = widgetSlotHeight(&slots[i]);
   }
 
-  // Auto-battery / disconnect-icon replacement -- only onto a FULLY VISIBLE slot.
+  // Auto-battery / disconnect-icon fallback (battery has priority over BT).
   if (allowReplacement) {
     bool showDisconnectIcon = settings.activateDisconnectIcon && !bluetooth_connection_service_peek();
     bool showAutoBattery = isAutoBatteryShown();
     if (showAutoBattery || showDisconnectIcon) {
-      int myVisible = columnVisibleCount(slots, slotCount, innerHeight);
-      bool hostHere;
-      if (isPrimary) {
-        hostHere = (myVisible > 0);
+      SidebarWidgetType fb = showAutoBattery ? BATTERY_METER : BLUETOOTH_DISCONNECT;
+      int fbHeight = getSidebarWidgetByType(fb).getHeight();   // side-effects reset before draw below
+
+      if (settings.fallbackColumn == 0) {
+        // AUTOMATIC: legacy host-column + getReplacableWidget, replacement only.
+        int myVisible = columnVisibleCount(slots, n, innerHeight);
+        bool hostHere;
+        if (isPrimary) {
+          hostHere = (myVisible > 0);
+        } else {
+          int leftVisible = columnVisibleCount(primaryColumn, primaryColumnCount, innerHeight);
+          hostHere = (leftVisible == 0 && myVisible > 0);
+        }
+        if (hostHere) {
+          int idx = getReplacableWidget(slots, myVisible);
+          activeType[idx] = fb;
+          activeHide[idx] = false;
+          slotHeight[idx] = fbHeight;
+        }
       } else {
-        int leftVisible = columnVisibleCount(primaryColumn, primaryColumnCount, innerHeight);
-        hostHere = (leftVisible == 0 && myVisible > 0);
-      }
-      if (hostHere) {
-        int idx = getReplacableWidget(slots, myVisible);
-        activeType[idx] = showAutoBattery ? BATTERY_METER : BLUETOOTH_DISCONNECT;
-        activeHide[idx] = false;
-        SidebarWidgets_currentWidgetType = (uint8_t)activeType[idx];
-        SidebarWidgets_hideIdentifier = false;
-        slotHeight[idx] = getSidebarWidgetByType(activeType[idx]).getHeight();
+        // MANUAL: fallback pinned to the chosen column at the configured position.
+        bool chosenColumn = (settings.fallbackColumn == 1 && isPrimary) ||
+                            (settings.fallbackColumn == 2 && !isPrimary);
+        if (chosenColumn) {
+          int myVisible = columnVisibleCount(slots, n, innerHeight);
+          int totalH = 0;
+          for (int i = 0; i < n; i++) { totalH += slotHeight[i]; }
+          bool appendFits = (myVisible == n) && (n < MAX_WIDGET_SLOTS) &&
+                            (totalH + fbHeight + n * v_padding <= innerHeight);
+          int idx; bool append;
+          WidgetList_fallbackPlace(n, myVisible, appendFits, settings.fallbackPosition, &idx, &append);
+          if (append) {
+            activeType[n] = fb; activeHide[n] = false; slotHeight[n] = fbHeight;
+            n++;
+          } else {
+            activeType[idx] = fb; activeHide[idx] = false; slotHeight[idx] = fbHeight;
+          }
+        }
       }
     }
   }
 
-  if (slotCount == 1) {
+  if (n == 0) { return; }
+
+  if (n == 1) {
     int y = innerTop + (innerHeight - slotHeight[0]) / 2;
     SidebarWidgets_currentWidgetType = (uint8_t)activeType[0];
     SidebarWidgets_hideIdentifier = activeHide[0];
@@ -395,18 +419,18 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   }
 
   int totalHeight = 0;
-  for (int i = 0; i < slotCount; i++) { totalHeight += slotHeight[i]; }
+  for (int i = 0; i < n; i++) { totalHeight += slotHeight[i]; }
 
   int gap;
-  if (totalHeight + (slotCount - 1) * v_padding <= innerHeight) {
+  if (totalHeight + (n - 1) * v_padding <= innerHeight) {
     int slack = innerHeight - totalHeight;
-    gap = slack / (slotCount - 1);
+    gap = slack / (n - 1);
   } else {
     gap = v_padding;
   }
 
   int y = innerTop;
-  for (int i = 0; i < slotCount; i++) {
+  for (int i = 0; i < n; i++) {
     SidebarWidgets_currentWidgetType = (uint8_t)activeType[i];
     SidebarWidgets_hideIdentifier = activeHide[i];
     getSidebarWidgetByType(activeType[i]).draw(ctx, y);
