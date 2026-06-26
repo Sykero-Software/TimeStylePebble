@@ -29,11 +29,9 @@
     },
     "targetPlatforms": [
       "basalt",
-      "chalk",
       "diorite",
       "emery",
-      "flint",
-      "gabbro"
+      "flint"
     ],
     "capabilities": [
       "location",
