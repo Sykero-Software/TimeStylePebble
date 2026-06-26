@@ -158,8 +158,24 @@ const config = [
         defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',
         defaultValue: '1', options: [{ label: 'Icon & percent', value: '1' }, { label: 'Icon only', value: '0' }] },
-      { type: 'radiogroup', messageKey: 'SettingDisableAutobattery', label: 'Auto-show battery meter at 10%',
+      { type: 'radiogroup', messageKey: 'SettingDisableAutobattery', label: 'Auto-show battery meter',
         defaultValue: '0', options: [{ label: 'On', value: '0' }, { label: 'Off', value: '1' }] },
+      { type: 'select', messageKey: 'SettingAutoBatteryThreshold', label: 'Auto-show below battery %',
+        defaultValue: '10', options: [
+          { label: '5 %', value: '5' }, { label: '10 %', value: '10' }, { label: '15 %', value: '15' },
+          { label: '20 %', value: '20' }, { label: '25 %', value: '25' }, { label: '30 %', value: '30' },
+          { label: '40 %', value: '40' }, { label: '50 %', value: '50' },
+        ] },
+      { type: 'radiogroup', messageKey: 'SettingFallbackColumn',
+        label: 'Battery / disconnect icon column', defaultValue: '0', options: [
+          { label: 'Automatic', value: '0' }, { label: 'Left bar', value: '1' }, { label: 'Right bar', value: '2' },
+        ] },
+      { type: 'input', messageKey: 'SettingFallbackPosition', label: 'Position in that bar',
+        attributes: { type: 'number', min: 1, max: 17, step: 1, placeholder: '1' }, defaultValue: '1' },
+      { type: 'text', id: 'fallback-help', defaultValue:
+        'Position N replaces the Nth widget in the chosen bar. A position one past ' +
+        'the last widget adds the battery / disconnect icon as an extra at the bottom ' +
+        'instead of replacing one.' },
     ],
   },
 
