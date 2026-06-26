@@ -10,7 +10,8 @@ const GATED_KEYS = ['SettingUseMetric', 'weather_loc_mode', 'weather_datasource'
   'SettingElecQuietStart', 'SettingElecQuietEnd', 'SettingElecCheapFactorPct',
   'elec_cheap_floor', 'elec_cheap_ceiling', 'SettingAltClockName',
   'SettingAltClockOffset',
-  'SettingShowBatteryPct', 'SettingDisableAutobattery'];
+  'SettingShowBatteryPct', 'SettingDisableAutobattery',
+  'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition'];
 
 function makeItem(value) {
   return {
@@ -35,6 +36,7 @@ function makeClay(widgetVals, opts) {
   GATED_KEYS.forEach((k) => { byKey[k] = makeItem(''); });
   byKey['weather_loc_mode'].value = opts.locMode || 'auto';
   byKey['SettingDisableAutobattery'].value = String(opts.autoBatteryDisabled ? 1 : 0);
+  byKey['SettingFallbackColumn'].value = String(opts.fallbackColumn !== undefined ? opts.fallbackColumn : 0);
   byId['heading-weather'] = makeItem('');
   byId['heading-electricity'] = makeItem('');
   return {
@@ -194,4 +196,36 @@ test('live change: adding a weather widget to the right list reveals weather', (
   c.byKey['WidgetListRight'].value = [7];
   c.byKey['WidgetListRight'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byId['heading-weather'].shown, true);
+});
+
+test('battery threshold: shown when auto-battery on, hidden when off', () => {
+  const on = render([]);
+  assert.strictEqual(on.byKey['SettingAutoBatteryThreshold'].shown, true);
+  const off = render([], { autoBatteryDisabled: true });
+  assert.strictEqual(off.byKey['SettingAutoBatteryThreshold'].shown, false);
+});
+
+test('fallback position: hidden in Automatic column, shown for Left/Right', () => {
+  const auto = render([], { fallbackColumn: 0 });
+  assert.strictEqual(auto.byKey['SettingFallbackPosition'].shown, false);
+  const left = render([], { fallbackColumn: 1 });
+  assert.strictEqual(left.byKey['SettingFallbackPosition'].shown, true);
+  const right = render([], { fallbackColumn: 2 });
+  assert.strictEqual(right.byKey['SettingFallbackPosition'].shown, true);
+});
+
+test('live change: choosing a fallback column reveals the position input', () => {
+  const c = render([], { fallbackColumn: 0 });
+  assert.strictEqual(c.byKey['SettingFallbackPosition'].shown, false);
+  c.byKey['SettingFallbackColumn'].value = '1';
+  c.byKey['SettingFallbackColumn'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingFallbackPosition'].shown, true);
+});
+
+test('live change: disabling auto-battery hides the threshold chooser', () => {
+  const c = render([]);
+  assert.strictEqual(c.byKey['SettingAutoBatteryThreshold'].shown, true);
+  c.byKey['SettingDisableAutobattery'].value = '1';
+  c.byKey['SettingDisableAutobattery'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingAutoBatteryThreshold'].shown, false);
 });

@@ -59,6 +59,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     const cheapHour = has(ids, [18, 19]);
     const nextCheap = has(ids, [18]);
     const autoBattery = parseInt(key('SettingDisableAutobattery').get(), 10) === 0;
+    const fallbackManual = parseInt(key('SettingFallbackColumn').get(), 10) !== 0;
 
     // Weather
     toggle(byId('heading-weather'), weather);
@@ -88,13 +89,18 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
 
     // Battery meter style (relevant when the meter can appear)
     toggle(key('SettingShowBatteryPct'), has(ids, [2]) || autoBattery);
+
+    // Auto-battery threshold: only relevant when auto-battery is on.
+    toggle(key('SettingAutoBatteryThreshold'), autoBattery);
+    // Fallback position: only when a specific (non-Automatic) column is chosen.
+    toggle(key('SettingFallbackPosition'), fallbackManual);
   }
 
   // AFTER_BUILD fires once items are built and have initial values (Clay 1.0.4
   // has no AFTER_RENDER); items are show/hide-able and getters valid by then.
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, () => {
     update();
-    ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery']
+    ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery', 'SettingFallbackColumn']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', update); });
   });
 }
