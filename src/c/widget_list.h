@@ -67,3 +67,16 @@ uint8_t WidgetSlot_activeMember(const WidgetSlot *slot, int secondsOfDay);
 
 // The hide flag of the member a slot shows at the given seconds-of-day.
 bool WidgetSlot_activeHide(const WidgetSlot *slot, int secondsOfDay);
+
+// Resolve where the auto-battery / disconnect-icon fallback goes in a column.
+//   count        configured slots in the chosen column
+//   visibleCount how many fully fit (0..count)
+//   appendFits   true iff all `count` slots fit AND one more (the fallback) also
+//                fits AND there is array room for it (caller computes)
+//   position     raw 1-based setting; clamped to [1, count+1] internally
+// On return: *outAppend==true  -> add a NEW slot at *outIndex (== count);
+//            *outAppend==false -> overwrite existing slot *outIndex.
+// Safety net: a non-fitting append, or a replace target below the fold, lands on
+// the last VISIBLE slot so the warning is always drawn.
+void WidgetList_fallbackPlace(int count, int visibleCount, bool appendFits,
+                              int position, int *outIndex, bool *outAppend);

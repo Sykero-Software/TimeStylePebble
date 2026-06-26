@@ -173,3 +173,22 @@ bool WidgetSlot_activeHide(const WidgetSlot *slot, int secondsOfDay) {
   if (idx < 0) { idx += slot->count; }
   return slot->hide[idx];
 }
+
+void WidgetList_fallbackPlace(int count, int visibleCount, bool appendFits,
+                              int position, int *outIndex, bool *outAppend) {
+  if (position < 1) { position = 1; }
+  if (position > count + 1) { position = count + 1; }
+
+  if (count <= 0) {                 // empty column: fallback becomes the sole slot
+    *outIndex = 0; *outAppend = true; return;
+  }
+  if (position == count + 1) {      // append intent
+    if (appendFits) { *outIndex = count; *outAppend = true; return; }
+    *outIndex = (visibleCount > 0) ? (visibleCount - 1) : 0;   // no room -> last visible
+    *outAppend = false; return;
+  }
+  int t = position - 1;             // replace intent
+  if (t < visibleCount) { *outIndex = t; *outAppend = false; return; }
+  *outIndex = (visibleCount > 0) ? (visibleCount - 1) : 0;     // below fold -> last visible
+  *outAppend = false;
+}
