@@ -150,6 +150,17 @@ const config = [
       { type: 'heading', defaultValue: 'Sidebar widgets' },
       { type: 'toggle', messageKey: 'SettingStatusStripFullWidth',
         label: 'Status strip full width (shorten widget columns)', defaultValue: false },
+      { type: 'text', id: 'widgets-help', defaultValue:
+        'Each row is one widget. Pick the widget from the dropdown, reorder with ' +
+        '▲ / ▼, remove with ✕, and add more with “+ Add widget”.<br><br>' +
+        'The <b>◉ / ⊘</b> button after the dropdown shows or hides that ' +
+        'widget’s <b>identifier</b> — the icon (battery, weather, steps, heart ' +
+        'rate, …) or the short title label (UV, week number, electricity, a coin ' +
+        'code, …). <b>◉</b> = shown (default); <b>⊘</b> = hidden, leaving ' +
+        'only the value and making the widget shorter so you can fit more into a ' +
+        'column.<br>' +
+        '(Widgets with no separate identifier — Empty, Today’s Date, Seconds, ' +
+        'Bluetooth disconnect — have no such button.)' },
       { type: 'heading', defaultValue: 'Left sidebar widgets' },
       { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
       { type: 'heading', defaultValue: 'Right sidebar widgets' },
@@ -211,6 +222,28 @@ const config = [
         attributes: { type: 'number', min: 0, max: 23, placeholder: '23' }, defaultValue: '23' },
       { type: 'input', messageKey: 'SettingElecQuietEnd', label: 'Quiet hours end (0-23)',
         attributes: { type: 'number', min: 0, max: 23, placeholder: '7' }, defaultValue: '7' },
+      { type: 'text', id: 'elec-cheap-help', defaultValue:
+        'The “Seuraava halpa sahko” (next cheap) and “Halvin sahkotunti” ' +
+        '(cheapest hour) widgets find upcoming low-price hours. An hour counts as ' +
+        '<b>cheap</b> when its price is below a threshold worked out from the ' +
+        'three settings below:<br>' +
+        'threshold = <b>average</b> upcoming price × <b>Cheap factor</b>, then ' +
+        'kept within <b>Cheap floor … Cheap ceiling</b>.<br><br>' +
+        '<b>Cheap factor</b> — the threshold as a percentage of the average ' +
+        'upcoming price (quiet hours excluded). 70 % means “below 70 % of the ' +
+        'average”. Lower = stricter (fewer hours qualify), higher = more ' +
+        'lenient.<br>' +
+        '<b>Cheap floor</b> (snt/kWh) — the lowest the threshold can ever go. ' +
+        'When prices are low across the board this stops the threshold ' +
+        'collapsing, so a genuinely cheap hour is still found instead of ' +
+        'none.<br>' +
+        '<b>Cheap ceiling</b> (snt/kWh) — the highest the threshold can ever go. ' +
+        'During an expensive period nothing above the ceiling is called cheap, so ' +
+        'the widget honestly shows “--” rather than a merely “less bad” ' +
+        'hour.<br><br>' +
+        'Examples with factor 70 %, floor 2, ceiling 8: average 2 → threshold ' +
+        '2.0 · average 10 → 7.0 · average 30 → 8.0 (so usually nothing ' +
+        'qualifies).' },
       { type: 'input', messageKey: 'SettingElecCheapFactorPct', label: 'Cheap factor (% of average)',
         attributes: { type: 'number', min: 1, max: 100, placeholder: '70' }, defaultValue: '70' },
       { type: 'input', messageKey: 'elec_cheap_floor', label: 'Cheap floor (snt/kWh)',
