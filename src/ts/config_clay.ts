@@ -223,8 +223,8 @@ const config = [
       { type: 'input', messageKey: 'SettingElecQuietEnd', label: 'Quiet hours end (0-23)',
         attributes: { type: 'number', min: 0, max: 23, placeholder: '7' }, defaultValue: '7' },
       { type: 'text', id: 'elec-cheap-help', defaultValue:
-        'The “Seuraava halpa sahko” (next cheap) and “Halvin sahkotunti” ' +
-        '(cheapest hour) widgets find upcoming low-price hours. An hour counts as ' +
+        'The “Next cheap electricity” and “Cheapest electricity hour” widgets ' +
+        'find upcoming low-price hours. An hour counts as ' +
         '<b>cheap</b> when its price is below a threshold worked out from the ' +
         'three settings below:<br>' +
         'threshold = <b>average</b> upcoming price × <b>Cheap factor</b>, then ' +
@@ -329,7 +329,7 @@ const config = [
       { type: 'heading', defaultValue: 'Data Refresh' },
       { type: 'text', defaultValue:
         'How often the watch asks the phone for fresh online data: weather, ' +
-        'electricity (porssisahko) and crypto / currency prices. Lower = more ' +
+        'electricity (spot prices) and crypto / currency prices. Lower = more ' +
         'up-to-date but more battery/Bluetooth use. (Electricity self-limits to ' +
         '~2 fetches/day; crypto is sent only when a displayed price changes.)' },
       { type: 'input', messageKey: 'SettingPollIntervalMin', label: 'Data refresh interval (min)',
