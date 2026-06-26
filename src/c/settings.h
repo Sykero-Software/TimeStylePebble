@@ -133,7 +133,7 @@ typedef struct {
 
   // Auto-battery appearance threshold (percent). The battery widget auto-appears
   // when charge_percent <= this value (or while charging). Appended field,
-  // zero... no: defaulted to 10 in Settings_loadFromStorage. No settings-version bump.
+  // defaulted to 10 in Settings_loadFromStorage. No settings-version bump.
   uint8_t autoBatteryThreshold;
 
   // Fallback (auto-battery / BT-disconnect) placement, shared by both fallbacks:
