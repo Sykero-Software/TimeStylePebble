@@ -181,6 +181,15 @@ int getReplacableWidget() {
   return 0;
 }
 
+// Which round slot (0=left, 2=right) the fallback occupies. Manual settings pin a
+// side; Automatic (0) keeps the legacy weather/empty heuristic. Position is N/A on
+// round (one slot per side).
+static int roundFallbackSlot() {
+  if (settings.fallbackColumn == 1) { return 0; }
+  if (settings.fallbackColumn == 2) { return 2; }
+  return getReplacableWidget();
+}
+
 #else
 
 // Best slot for the auto-battery / disconnect-icon substitution. A rotating group is
@@ -210,7 +219,7 @@ void updateRoundSidebarRight(Layer *l, GContext *ctx) {
 
   SidebarWidgetType displayWidget = settings.widgets[2];
 
-  if ((showAutoBattery || showDisconnectIcon) && getReplacableWidget() == 2) {
+  if ((showAutoBattery || showDisconnectIcon) && roundFallbackSlot() == 2) {
     if (showAutoBattery) {
       displayWidget = BATTERY_METER;
     } else if (showDisconnectIcon) {
@@ -231,7 +240,7 @@ void updateRoundSidebarLeft(Layer *l, GContext *ctx) {
   bool showAutoBattery = isAutoBatteryShown();
   SidebarWidgetType displayWidget = settings.widgets[0];
 
-  if ((showAutoBattery || showDisconnectIcon) && getReplacableWidget() == 0) {
+  if ((showAutoBattery || showDisconnectIcon) && roundFallbackSlot() == 0) {
     if (showAutoBattery) {
       displayWidget = BATTERY_METER;
     } else if (showDisconnectIcon) {
