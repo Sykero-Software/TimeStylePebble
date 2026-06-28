@@ -120,7 +120,8 @@
       "SettingMidiSecondPrecision",
       "SettingAutoBatteryThreshold",
       "SettingFallbackColumn",
-      "SettingFallbackPosition"
+      "SettingFallbackPosition",
+      "SettingClockStyle"
     ],
     "resources": {
       "media": [

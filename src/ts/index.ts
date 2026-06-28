@@ -152,7 +152,8 @@ Pebble.addEventListener('webviewclosed', (e) => {
     'SettingDecimalSep',
     'SettingPollIntervalMin', 'SettingElecQuietStart', 'SettingElecQuietEnd',
     'SettingElecCheapFactorPct',
-    'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition'].forEach((k) => {
+    'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
+    'SettingClockStyle'].forEach((k) => {
     if (s[k] === undefined || s[k] === null || s[k] === '') { return; }
     dict[k] = STRING_KEYS[k] ? s[k] : parseInt(s[k], 10);
   });

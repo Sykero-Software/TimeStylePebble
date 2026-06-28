@@ -95,6 +95,8 @@ const config = [
     type: 'section',
     items: [
       { type: 'heading', defaultValue: 'Clock' },
+      { type: 'radiogroup', messageKey: 'SettingClockStyle', label: 'Clock style',
+        defaultValue: '0', options: [{ label: 'Digital', value: '0' }, { label: 'Analog', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingShowLeadingZero', label: 'Leading zero',
         defaultValue: '0', options: [{ label: 'No', value: '0' }, { label: 'Yes', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingClockFontId', label: 'Clock font',

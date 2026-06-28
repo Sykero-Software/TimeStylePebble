@@ -92,6 +92,7 @@ void Settings_loadFromStorage() {
   settings.autoBatteryThreshold = 10;   // legacy hardcoded threshold; appended field, no version bump
   settings.fallbackColumn = 0;          // Automatic placement (legacy behaviour); appended field
   settings.fallbackPosition = 1;        // appended field
+  settings.clockStyle = CLOCK_STYLE_DIGITAL;   // digital by default; appended field, no version bump
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
@@ -200,6 +201,7 @@ void Settings_loadFromStorage() {
   if (settings.fallbackPosition < 1 || settings.fallbackPosition > MAX_WIDGET_SLOTS + 1) {
     settings.fallbackPosition = 1; clamped = true;
   }
+  if (settings.clockStyle > CLOCK_STYLE_ANALOG) { settings.clockStyle = CLOCK_STYLE_DIGITAL; clamped = true; }
 
   if (migrated) { APP_LOG(APP_LOG_LEVEL_INFO, "settings: one-time widget-list migration applied"); }
   if (clamped)  { APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, clamped to safe values"); }

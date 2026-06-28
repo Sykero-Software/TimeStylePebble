@@ -15,6 +15,9 @@
 #define FONT_SETTING_BOLD_H  3
 #define FONT_SETTING_BOLD_M  4
 
+#define CLOCK_STYLE_DIGITAL 0
+#define CLOCK_STYLE_ANALOG  1
+
 typedef enum {
   NO_VIBE = 0,
   VIBE_EVERY_HOUR = 1,
@@ -144,6 +147,11 @@ typedef struct {
   // Appended fields, defaulted (0 / 1) in Settings_loadFromStorage. No version bump.
   uint8_t fallbackColumn;
   uint8_t fallbackPosition;
+
+  // Clock display style: 0 = digital HH:MM (default), 1 = analog face.
+  // Appended field, zero-default on load of an older blob (= digital). No
+  // settings-version bump.
+  uint8_t clockStyle;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
