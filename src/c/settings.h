@@ -152,6 +152,11 @@ typedef struct {
   // Appended field, zero-default on load of an older blob (= digital). No
   // settings-version bump.
   uint8_t clockStyle;
+
+  // Analog clock: show the 12 hour tick marks (true = show, default). Appended
+  // field; the default is set explicitly in Settings_loadFromStorage before the
+  // persisted blob is read, so upgrading users keep the ticks. No version bump.
+  bool analogShowTicks;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

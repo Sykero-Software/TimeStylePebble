@@ -67,7 +67,7 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   #ifndef PBL_ROUND
   if (settings.clockStyle == CLOCK_STYLE_ANALOG) {
     ClockAnalog_draw(ctx, bounds, s_clock_hours, s_clock_minutes,
-                     settings.timeColor, settings.timeBgColor);
+                     settings.timeColor, settings.timeBgColor, settings.analogShowTicks);
     return;
   }
   #endif

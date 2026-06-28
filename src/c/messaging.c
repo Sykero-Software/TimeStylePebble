@@ -192,6 +192,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *fallbackColumn_tuple = dict_find(iterator, MESSAGE_KEY_SettingFallbackColumn);
   Tuple *fallbackPosition_tuple = dict_find(iterator, MESSAGE_KEY_SettingFallbackPosition);
   Tuple *clockStyle_tuple = dict_find(iterator, MESSAGE_KEY_SettingClockStyle);
+  Tuple *analogTicks_tuple = dict_find(iterator, MESSAGE_KEY_SettingAnalogTicks);
 
   if(timeColor_tuple != NULL) {
     settings.timeColor = GColorFromHEX(timeColor_tuple->value->int32);
@@ -429,6 +430,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(clockStyle_tuple != NULL) {
     int v = clockStyle_tuple->value->int32;
     if (v >= CLOCK_STYLE_DIGITAL && v <= CLOCK_STYLE_ANALOG) { settings.clockStyle = (uint8_t)v; }
+  }
+  if(analogTicks_tuple != NULL) {
+    settings.analogShowTicks = (bool)analogTicks_tuple->value->int32;
   }
 
   // save the new settings to persistent storage

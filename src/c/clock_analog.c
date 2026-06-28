@@ -176,7 +176,7 @@ static int dim(int half, int pct, int floor1) {
 }
 
 void ClockAnalog_draw(GContext *ctx, GRect bounds, int hours, int minutes,
-                      GColor fg, GColor bg) {
+                      GColor fg, GColor bg, bool show_ticks) {
   int w = bounds.size.w;
   int h = bounds.size.h;
   GPoint center = GPoint(bounds.origin.x + w / 2, bounds.origin.y + h / 2);
@@ -233,7 +233,9 @@ void ClockAnalog_draw(GContext *ctx, GRect bounds, int hours, int minutes,
   graphics_context_set_fill_color(ctx, bg);
   graphics_fill_circle(ctx, center, pivot_r);
 
-  // ticks last, so they sit on top of the hands
-  draw_all_ticks(ctx, center, tick_r, tick_len, tick_halo_w, tick_w, bg, fg);
+  // ticks last, so they sit on top of the hands (optional)
+  if (show_ticks) {
+    draw_all_ticks(ctx, center, tick_r, tick_len, tick_halo_w, tick_w, bg, fg);
+  }
 }
 #endif  // !PBL_PLATFORM_APLITE

@@ -121,7 +121,8 @@
       "SettingAutoBatteryThreshold",
       "SettingFallbackColumn",
       "SettingFallbackPosition",
-      "SettingClockStyle"
+      "SettingClockStyle",
+      "SettingAnalogTicks"
     ],
     "resources": {
       "media": [

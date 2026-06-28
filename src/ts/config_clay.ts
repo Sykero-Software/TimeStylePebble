@@ -97,6 +97,8 @@ const config = [
       { type: 'heading', defaultValue: 'Clock' },
       { type: 'radiogroup', messageKey: 'SettingClockStyle', label: 'Clock style',
         defaultValue: '0', options: [{ label: 'Digital', value: '0' }, { label: 'Analog', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingAnalogTicks', label: 'Analog hour marks',
+        defaultValue: '1', options: [{ label: 'Hide', value: '0' }, { label: 'Show', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingShowLeadingZero', label: 'Leading zero',
         defaultValue: '0', options: [{ label: 'No', value: '0' }, { label: 'Yes', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingClockFontId', label: 'Clock font',

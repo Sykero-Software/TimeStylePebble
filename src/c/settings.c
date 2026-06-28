@@ -93,6 +93,7 @@ void Settings_loadFromStorage() {
   settings.fallbackColumn = 0;          // Automatic placement (legacy behaviour); appended field
   settings.fallbackPosition = 1;        // appended field
   settings.clockStyle = CLOCK_STYLE_DIGITAL;   // digital by default; appended field, no version bump
+  settings.analogShowTicks = true;   // analog hour ticks on by default; appended field, no version bump
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
