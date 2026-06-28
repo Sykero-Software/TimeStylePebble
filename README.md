@@ -37,10 +37,27 @@ control tracking from the wrist (pick a task, start/stop), pair it with the
 companion watchapp
 [Sykerö Track Work Time](https://github.com/Sykero-Software/PebbleTrackWorkTime).
 
+## Analog clock face
+
+TimeStyle can show an **analog clock** in place of the digital time, taking the
+same central area (config → *Clock → Clock style → Analog*); the 12 hour marks
+are toggleable via *Analog hour marks*.
+
+The analog face (bold geometric hands, hour ticks and centre pivot) is **ported
+from the [Nyquist watchface](https://github.com/truhanen/pebble-nyquist-watchface)
+by truhanen**, used under the GPL-3.0 license. Many thanks to truhanen for the
+original design.
+
 ## License
 
 This fork is a combined work distributed under the **GNU General Public License
 v3.0 only** (GPL-3.0-only); see [`LICENSE`](LICENSE).
+
+The optional analog clock face is ported from the
+[Nyquist watchface](https://github.com/truhanen/pebble-nyquist-watchface) by
+truhanen, which is licensed under **GPL-3.0**; the source credit is kept in the
+header of [`src/c/clock_analog.c`](src/c/clock_analog.c). GPL-3.0-into-GPL-3.0
+reuse is license-compatible.
 
 The upstream TimeStyle code by Dan Tilden and the original TimeStyle contributors
 remains available under the **MIT License** from
