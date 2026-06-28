@@ -4,6 +4,7 @@
 #include "clock_area.h"
 #include "settings.h"
 #include "sidebar.h"
+#include "clock_analog.h"
 
 #include <pebble-fctx/fctx.h>
 #include <pebble-fctx/fpath.h>
@@ -17,6 +18,9 @@ char time_minutes[3];
 Layer* clock_area_layer;
 FFont* hours_font;
 FFont* minutes_font;
+
+static int s_clock_hours;
+static int s_clock_minutes;
 
 // just allocate all the fonts at startup because i don't feel like
 // dealing with allocating and deallocating things
@@ -58,6 +62,14 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
 
   #ifdef PBL_ROUND
     bounds = GRect(0, ROUND_VERTICAL_PADDING, screen_rect.size.w, screen_rect.size.h - ROUND_VERTICAL_PADDING * 2);
+  #endif
+
+  #ifndef PBL_ROUND
+  if (settings.clockStyle == CLOCK_STYLE_ANALOG) {
+    ClockAnalog_draw(ctx, bounds, s_clock_hours, s_clock_minutes,
+                     settings.timeColor, settings.timeBgColor);
+    return;
+  }
   #endif
 
   // initialize FCTX, the fancy 3rd party drawing library that all the cool kids use
@@ -184,6 +196,10 @@ void ClockArea_update_time(struct tm* time_info) {
 
   // minutes
   strftime(time_minutes, sizeof(time_minutes), "%M", time_info);
+
+  // raw values for the analog renderer (analog uses hours % 12, ignores 12/24h)
+  s_clock_hours = time_info->tm_hour;
+  s_clock_minutes = time_info->tm_min;
 }
 
 #endif
