@@ -72,6 +72,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     const nextCheap = has(ids, [18]);
     const autoBattery = parseInt(key('SettingDisableAutobattery').get(), 10) === 0;
     const fallbackManual = parseInt(key('SettingFallbackColumn').get(), 10) !== 0;
+    const analog = parseInt(key('SettingClockStyle').get(), 10) === 1;
 
     // Weather
     toggle(byId('heading-weather'), weather);
@@ -106,6 +107,11 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     toggle(key('SettingAutoBatteryThreshold'), autoBattery);
     // Fallback position: only when a specific (non-Automatic) column is chosen.
     toggle(key('SettingFallbackPosition'), fallbackManual);
+
+    // Analog clock: these rows are only relevant when the analog face is selected.
+    toggle(key('SettingAnalogTicks'), analog);
+    toggle(key('SettingAnalogDigitalClock'), analog);
+    toggle(byId('analog-credit'), analog);
   }
 
   // AFTER_BUILD fires once items are built and have initial values (Clay 1.0.4
@@ -113,7 +119,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, () => {
     injectFloatingSaveStyle();
     update();
-    ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery', 'SettingFallbackColumn']
+    ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery', 'SettingFallbackColumn', 'SettingClockStyle']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', update); });
   });
 }
