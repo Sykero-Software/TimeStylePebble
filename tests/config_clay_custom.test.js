@@ -257,7 +257,13 @@ test('floating save: AFTER_BUILD injects a fixed-position style once (idempotent
     assert.strictEqual(styles[0].tagName, 'style');
     assert.match(styles[0].textContent, /\.component-submit/);
     assert.match(styles[0].textContent, /position\s*:\s*fixed/);
-    assert.match(styles[0].textContent, /body\s*\{[^}]*padding-bottom/);
+    // Clearance for the last setting MUST be reserved on the scrolling form
+    // (#main-form), NOT body: Clay sets html,body{height:100%}, so body
+    // padding-bottom is swallowed inside the fixed-height body box and never
+    // clears the fixed Save bar (the original 8.x bug — last setting unreachable).
+    assert.match(styles[0].textContent, /#main-form\s*\{[^}]*padding-bottom/);
+    assert.doesNotMatch(styles[0].textContent, /(^|[^-])\bbody\s*\{[^}]*padding-bottom/,
+      'must NOT reserve clearance on body (height:100% swallows it)');
     // Firing AFTER_BUILD again must not add a duplicate <style>.
     c._handlers.AFTER_BUILD();
     assert.strictEqual(global.document.head.children.length, 1, 'no duplicate <style>');

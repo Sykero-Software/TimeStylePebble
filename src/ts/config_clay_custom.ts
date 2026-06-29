@@ -59,7 +59,17 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
       '.component-submit{position:fixed;bottom:0;left:0;right:0;margin:0;' +
       'z-index:100;background:#262626;padding:8px 0;' +
       'box-shadow:0 -2px 6px rgba(0,0,0,0.4);}' +
-      'body{padding-bottom:64px;}';
+      // Reserve clearance for the last setting on the SCROLLING FORM, not body.
+      // Clay's base CSS sets html,body{height:100%} (border-box). With a
+      // fixed-height body whose content overflows, a body padding-bottom sits
+      // INSIDE the body box (at the first screen's bottom), never after the
+      // overflowing content — so it reserves no trailing space and the fixed
+      // Save bar overlaps the last setting (the reported bug). #main-form is the
+      // in-flow content that grows with the page and sets the scroll extent, so
+      // its padding-bottom does create real clearance. 96px clears the bar
+      // (~72px: button line-box 1.4rem + 0.6rem padding + 0.7rem margin + the
+      // 8px container padding top/bottom) with a comfortable margin.
+      '#main-form{padding-bottom:96px;}';
     document.head.appendChild(style);
   }
 
