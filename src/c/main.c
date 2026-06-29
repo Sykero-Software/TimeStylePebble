@@ -12,6 +12,7 @@
 #include "crypto.h"
 #include "sidebar_widgets.h"
 #include "widget_list.h"
+#include "battery_days.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -399,6 +400,7 @@ void bluetoothStateChanged(bool newConnectionState) {
 
 // force the sidebar to redraw any time the battery state changes
 void batteryStateChanged(BatteryChargeState charge_state) {
+  BatteryDays_onBattery(charge_state);
   Sidebar_redraw();
   if (TwtStatus_isSupported()) { apply_twt_layout(); }
 }
@@ -430,6 +432,7 @@ static void init() {
 
   TwtStatus_load();
   MidiStatus_load();
+  BatteryDays_init();
 
   // init weather system
   Weather_init();
@@ -491,6 +494,7 @@ static void deinit() {
   Weather_deinit();
   Electricity_deinit();
   Settings_deinit();
+  BatteryDays_save();
 
   tick_timer_service_unsubscribe();
   if (rotationTimer) { app_timer_cancel(rotationTimer); rotationTimer = NULL; }
