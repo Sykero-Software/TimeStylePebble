@@ -16,7 +16,7 @@
 // circle is shorter than MIN_BAND (also what makes it vanish under a status strip /
 // notification — apply_twt_layout shortens the clock frame, collapsing the band).
 #define ANALOG_DIGITAL_MIN_BAND 10
-#define ANALOG_DIGITAL_MAX_EM   28
+#define ANALOG_DIGITAL_MAX_EM   40
 
 char time_hours[3];
 char time_minutes[3];
@@ -81,7 +81,7 @@ static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_t
     fctx_enable_aa(settings.clockFontId != FONT_SETTING_LECO);
   #endif
 
-  int em = band_h - 2;
+  int em = band_h * 13 / 10;   // glyph cap-height ~0.72*em, so digits fill the band
   if (em > ANALOG_DIGITAL_MAX_EM) { em = ANALOG_DIGITAL_MAX_EM; }
 
   int h_adjust = layer_get_frame(l).origin.x;
@@ -119,8 +119,13 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
     // status strip / notification, which shrinks `bounds`).
     if (settings.analogDigitalClock) {
       int half = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
-      int band_top = bounds.size.h / 2 + half;     // circle bottom, layer-local y
-      int band_h = bounds.size.h - band_top;        // == h/2 - half
+      // Lowest drawn dial element is the minute hand at :30 (~90% of half below
+      // centre incl. halo; clock_analog.c minute_len = 89%). Start the digital
+      // band just below the hand, not at the geometric circle edge — the dial
+      // leaves real empty pixels between the hand tip and the area bottom.
+      int hand_reach = half * 90 / 100;
+      int band_top = bounds.size.h / 2 + hand_reach + 2;   // +2px gap below the hand
+      int band_h = bounds.size.h - band_top;
       if (band_h >= ANALOG_DIGITAL_MIN_BAND) {
         draw_digital_below(ctx, l, bounds, band_top, band_h);
       }
