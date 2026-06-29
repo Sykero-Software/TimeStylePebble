@@ -24,6 +24,12 @@ test('STATIC_WIDGETS includes the Distance widget (id 21)', () => {
   assert.strictEqual(opt.label, 'Distance');
 });
 
+test('STATIC_WIDGETS includes the Battery Days widget (id 22)', () => {
+  const opt = STATIC_WIDGETS.find((o) => o.id === 22);
+  assert.ok(opt, 'Battery Days option present');
+  assert.strictEqual(opt.label, 'Battery (days left)');
+});
+
 test('buildOptions appends one option per crypto row, labelled by label||coin', () => {
   const opts = buildOptions([
     { wid: 15, coin: 'bitcoin', label: 'BTC' },

@@ -31,6 +31,7 @@ export const STATIC_WIDGETS: WidgetOption[] = [
   { id: 21, label: 'Distance' },
   { id: 12, label: 'Heart Rate' },
   { id: 2, label: 'Battery' },
+  { id: 22, label: 'Battery (days left)' },
 ];
 
 export const ROTATING_ID = 255;

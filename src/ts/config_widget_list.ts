@@ -56,6 +56,7 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
     { id: 21, label: 'Distance' },
     { id: 12, label: 'Heart Rate' },
     { id: 2, label: 'Battery' },
+    { id: 22, label: 'Battery (days left)' },
   ];
 
   const INTERVAL_OPTIONS: { code: number; label: string }[] = [

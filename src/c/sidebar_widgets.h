@@ -48,12 +48,13 @@ typedef enum {
   NEXT_CHEAP_ELEC           = 18,
   CHEAPEST_ELEC_HOUR        = 19,
   DEEP_SLEEP_TIMER          = 20,
-  DISTANCE                  = 21
+  DISTANCE                  = 21,
+  BATTERY_DAYS              = 22
 } SidebarWidgetType;
 
 // Highest valid widget id; bump when appending a widget type. Used for the
 // settings clamp and the config-message bounds checks.
-#define MAX_WIDGET_TYPE DISTANCE
+#define MAX_WIDGET_TYPE BATTERY_DAYS
 
 // Maximum length of the configurable widget priority list (storage + protocol
 // buffer). The watch shows as many as fit by height; this only bounds the buffer.

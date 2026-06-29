@@ -24,15 +24,15 @@ test('non-array input yields an empty payload', () => {
 
 test('keeps crypto wids (legacy 15/16/17 and the 200+ range), drops other out-of-range', () => {
   assert.deepStrictEqual(widgetListToPayload([15, 16, 17, 200, 215]), [15, 16, 17, 200, 215]);
-  assert.deepStrictEqual(widgetListToPayload([216, 100, 199, 22]), []);
+  assert.deepStrictEqual(widgetListToPayload([216, 100, 199, 23]), []);
   assert.deepStrictEqual(widgetListToPayload([7, 200, 999]), [7, 200]);
 });
 
-test('keeps the new Distance widget (id 21, current MAX_WIDGET_TYPE); drops id 22', () => {
+test('keeps the new Battery Days widget (id 22, current MAX_WIDGET_TYPE); drops id 23', () => {
   // Guards the MAX_WIDGET_TYPE mirror against src/c/widget_list.h WL_MAX_WIDGET_TYPE:
-  // id 21 must survive the payload builder (a stale max=20 would drop it); 22 is out of range.
-  assert.deepStrictEqual(widgetListToPayload([9, 20, 10, 21]), [9, 20, 10, 21]);
-  assert.deepStrictEqual(widgetListToPayload([21, 22]), [21]);
+  // id 22 must survive the payload builder (a stale max=21 would drop it); 23 is out of range.
+  assert.deepStrictEqual(widgetListToPayload([9, 20, 10, 21, 22]), [9, 20, 10, 21, 22]);
+  assert.deepStrictEqual(widgetListToPayload([22, 23]), [22]);
 });
 
 test('passes a valid rotating group through unchanged', () => {
@@ -82,6 +82,6 @@ test('preserves the hidden-identifier flag (0x20) on plain ids and group members
 });
 
 test('drops a hidden flag when the base id is non-drawable', () => {
-  // 22|0x20 = 54; base 22 is not drawable (past MAX_WIDGET_TYPE) -> dropped
-  assert.deepStrictEqual(widgetListToPayload([54]), []);
+  // 23|0x20 = 55; base 23 is not drawable (past MAX_WIDGET_TYPE) -> dropped
+  assert.deepStrictEqual(widgetListToPayload([55]), []);
 });
