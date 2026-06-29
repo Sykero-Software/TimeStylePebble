@@ -12,6 +12,12 @@
 
 #define ROUND_VERTICAL_PADDING 15
 
+// Digital time line below the analog circle. Hidden when the slack band under the
+// circle is shorter than MIN_BAND (also what makes it vanish under a status strip /
+// notification — apply_twt_layout shortens the clock frame, collapsing the band).
+#define ANALOG_DIGITAL_MIN_BAND 10
+#define ANALOG_DIGITAL_MAX_EM   40
+
 char time_hours[3];
 char time_minutes[3];
 
@@ -56,6 +62,43 @@ void update_fonts() {
   }
 }
 
+// Draw a single-line HH:MM in the band [band_top, band_top+band_h) of the clock
+// layer's local coordinate space, centred. FCTX rasterises in absolute screen
+// coordinates and ignores the layer frame origin, so add it back manually.
+static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_top, int band_h) {
+  // Build "H:MM" / "HH:MM"; trim the leading space %l/%k emit without leading zero.
+  const char* h = time_hours;
+  while (*h == ' ') { h++; }
+  char buf[8];
+  snprintf(buf, sizeof(buf), "%s:%s", h, time_minutes);
+
+  FContext fctx;
+  fctx_init_context(&fctx, ctx);
+  fctx_set_color_bias(&fctx, 0);
+  fctx_set_fill_color(&fctx, settings.timeColor);
+
+  #ifdef PBL_COLOR
+    fctx_enable_aa(settings.clockFontId != FONT_SETTING_LECO);
+  #endif
+
+  int em = band_h * 13 / 10;   // glyph cap-height ~0.72*em, so digits fill the band
+  if (em > ANALOG_DIGITAL_MAX_EM) { em = ANALOG_DIGITAL_MAX_EM; }
+
+  int h_adjust = layer_get_frame(l).origin.x;
+  int v_adjust = layer_get_frame(l).origin.y;
+
+  FPoint pos;
+  fctx_begin_fill(&fctx);
+  fctx_set_text_em_height(&fctx, hours_font, em);
+  pos.x = INT_TO_FIXED(bounds.size.w / 2 + h_adjust);
+  pos.y = INT_TO_FIXED(band_top + band_h / 2 + v_adjust);
+  fctx_set_offset(&fctx, pos);
+  fctx_draw_string(&fctx, buf, hours_font, GTextAlignmentCenter, FTextAnchorMiddle);
+  fctx_end_fill(&fctx);
+
+  fctx_deinit_context(&fctx);
+}
+
 void update_clock_area_layer(Layer *l, GContext* ctx) {
   // check layer bounds
   GRect bounds = layer_get_unobstructed_bounds(l);
@@ -66,8 +109,33 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
 
   #ifndef PBL_ROUND
   if (settings.clockStyle == CLOCK_STYLE_ANALOG) {
-    ClockAnalog_draw(ctx, bounds, s_clock_hours, s_clock_minutes,
+    // Optional single-line digital time below the dial. When on (and there is
+    // vertical slack), TOP-ALIGN the dial so all the slack collects below it for
+    // a large digital line; otherwise draw the dial centred (the default look).
+    int w = bounds.size.w, h = bounds.size.h;
+    int dial_side = (w < h) ? w : h;            // dial stays a min(w,h) square, same size
+    int half = dial_side / 2;
+    // Approx minute-hand downward reach (clock_analog minute_len=89% of half; its
+    // apex+halo push the :30 tip a few px lower). 90% slightly undershoots that tip,
+    // but the line is anchored FTextAnchorMiddle at band centre — not band top — so
+    // the digits clear the hand. Don't tighten this without preserving that clearance.
+    int hand_reach = half * 90 / 100;
+    int band_top = bounds.origin.y + half + hand_reach + 2;  // dial top-aligned -> centre at `half`
+    int band_h = (bounds.origin.y + h) - band_top;
+    bool show_digital = settings.analogDigitalClock && band_h >= ANALOG_DIGITAL_MIN_BAND;
+
+    GRect dial_bounds = show_digital
+        ? GRect(bounds.origin.x, bounds.origin.y, w, dial_side)   // top-aligned square
+        : bounds;                                                 // centred (default)
+    ClockAnalog_draw(ctx, dial_bounds, s_clock_hours, s_clock_minutes,
                      settings.timeColor, settings.timeBgColor, settings.analogTickStyle);
+
+    // The band below a top-aligned dial shows the window background, which is
+    // settings.timeBgColor (set in main.c) — same as the dial's fill — so the
+    // band needs no extra fill; the digital text draws straight onto it.
+    if (show_digital) {
+      draw_digital_below(ctx, l, bounds, band_top, band_h);
+    }
     return;
   }
   #endif

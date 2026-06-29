@@ -103,6 +103,8 @@ const config = [
           { label: 'Normal', value: '1' },
           { label: 'Bold', value: '2' },
         ] },
+      { type: 'toggle', messageKey: 'SettingAnalogDigitalClock',
+        label: 'Digital time below clock', defaultValue: false },
       { type: 'text', id: 'analog-credit', defaultValue:
         'The <b>Analog</b> clock face is ported from the <b>Nyquist</b> watchface ' +
         'by truhanen, used under the GPL-3.0 license.<br>' +

@@ -164,6 +164,11 @@ typedef struct {
   // hide/normal. The default is set explicitly in Settings_loadFromStorage
   // before the persisted blob is read, so upgrading users keep their ticks.
   uint8_t analogTickStyle;
+
+  // Show a single-line HH:MM digital time in the unused band below the analog
+  // clock circle. Appended field, zero-default (off) on load of an older blob;
+  // no settings-version bump. Only consulted when clockStyle == CLOCK_STYLE_ANALOG.
+  uint8_t analogDigitalClock;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

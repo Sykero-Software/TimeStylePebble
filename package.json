@@ -1,7 +1,7 @@
 {
   "name": "timestyle-pebble",
   "author": "Sykerö Software",
-  "version": "8.3.0",
+  "version": "8.4.0",
   "keywords": [
     "pebble-watchface"
   ],
@@ -122,7 +122,8 @@
       "SettingFallbackColumn",
       "SettingFallbackPosition",
       "SettingClockStyle",
-      "SettingAnalogTicks"
+      "SettingAnalogTicks",
+      "SettingAnalogDigitalClock"
     ],
     "resources": {
       "media": [

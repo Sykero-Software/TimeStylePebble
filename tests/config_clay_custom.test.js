@@ -11,7 +11,8 @@ const GATED_KEYS = ['SettingUseMetric', 'weather_loc_mode', 'weather_datasource'
   'elec_cheap_floor', 'elec_cheap_ceiling', 'SettingAltClockName',
   'SettingAltClockOffset',
   'SettingShowBatteryPct', 'SettingDisableAutobattery',
-  'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition'];
+  'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
+  'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingAnalogTicks'];
 
 function makeItem(value) {
   return {
@@ -51,8 +52,10 @@ function makeClay(widgetVals, opts) {
   byKey['weather_loc_mode'].value = opts.locMode || 'auto';
   byKey['SettingDisableAutobattery'].value = String(opts.autoBatteryDisabled ? 1 : 0);
   byKey['SettingFallbackColumn'].value = String(opts.fallbackColumn !== undefined ? opts.fallbackColumn : 0);
+  byKey['SettingClockStyle'].value = String(opts.clockStyle !== undefined ? opts.clockStyle : 0);
   byId['heading-weather'] = makeItem('');
   byId['heading-electricity'] = makeItem('');
+  byId['analog-credit'] = makeItem('');
   return {
     // Mirror Clay 1.0.4's real event set (lib/clay-config.js). There is NO
     // AFTER_RENDER — using a missing constant passes `undefined` to on(), which
@@ -261,4 +264,27 @@ test('floating save: AFTER_BUILD injects a fixed-position style once (idempotent
   } finally {
     global.document = prev;
   }
+});
+
+test('digital clock style: analog rows hidden', () => {
+  const c = render([], { clockStyle: 0 });
+  assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, false);
+  assert.strictEqual(c.byKey['SettingAnalogTicks'].shown, false);
+  assert.strictEqual(c.byId['analog-credit'].shown, false);
+});
+
+test('analog clock style: analog rows shown', () => {
+  const c = render([], { clockStyle: 1 });
+  assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, true);
+  assert.strictEqual(c.byKey['SettingAnalogTicks'].shown, true);
+  assert.strictEqual(c.byId['analog-credit'].shown, true);
+});
+
+test('live change: switching to analog reveals the analog rows', () => {
+  const c = render([], { clockStyle: 0 });
+  assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, false);
+  c.byKey['SettingClockStyle'].value = '1';
+  c.byKey['SettingClockStyle'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, true);
+  assert.strictEqual(c.byKey['SettingAnalogTicks'].shown, true);
 });

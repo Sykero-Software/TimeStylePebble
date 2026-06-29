@@ -14,6 +14,7 @@ import widgetListComponent from './config_widget_list';
 import { widgetListToPayload } from './widget_list_payload';
 import { slotsToList, splitListByPosition } from './widget_slots';
 import { isWatchPollRequest } from './poll_request';
+import { toAppMessageValue } from './app_message_value';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
@@ -153,9 +154,9 @@ Pebble.addEventListener('webviewclosed', (e) => {
     'SettingPollIntervalMin', 'SettingElecQuietStart', 'SettingElecQuietEnd',
     'SettingElecCheapFactorPct',
     'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
-    'SettingClockStyle', 'SettingAnalogTicks'].forEach((k) => {
+    'SettingClockStyle', 'SettingAnalogTicks', 'SettingAnalogDigitalClock'].forEach((k) => {
     if (s[k] === undefined || s[k] === null || s[k] === '') { return; }
-    dict[k] = STRING_KEYS[k] ? s[k] : parseInt(s[k], 10);
+    dict[k] = toAppMessageValue(s[k], !!STRING_KEYS[k]);
   });
   if (dict.SettingPollIntervalMin === undefined || isNaN(dict.SettingPollIntervalMin)) {
     dict.SettingPollIntervalMin = 30;
