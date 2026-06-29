@@ -50,6 +50,18 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   function toggle(item: ClayItem | undefined, on: boolean): void {
     if (item) { if (on) { item.show(); } else { item.hide(); } }
   }
+  function injectFloatingSaveStyle(): void {
+    if (typeof document === 'undefined') { return; }
+    if (document.getElementById('ts-floating-save')) { return; }
+    const style = document.createElement('style');
+    style.id = 'ts-floating-save';
+    style.textContent =
+      '.component-submit{position:fixed;bottom:0;left:0;right:0;margin:0;' +
+      'z-index:100;background:#262626;padding:8px 0;' +
+      'box-shadow:0 -2px 6px rgba(0,0,0,0.4);}' +
+      'body{padding-bottom:64px;}';
+    document.head.appendChild(style);
+  }
 
   function update(): void {
     const ids = widgetIds();
@@ -99,6 +111,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   // AFTER_BUILD fires once items are built and have initial values (Clay 1.0.4
   // has no AFTER_RENDER); items are show/hide-able and getters valid by then.
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, () => {
+    injectFloatingSaveStyle();
     update();
     ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery', 'SettingFallbackColumn']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', update); });

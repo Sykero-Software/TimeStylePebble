@@ -25,6 +25,20 @@ function makeItem(value) {
   };
 }
 
+function makeDocument() {
+  const head = { children: [], appendChild(el) { this.children.push(el); } };
+  return {
+    head: head,
+    getElementById(id) {
+      for (let i = 0; i < head.children.length; i++) {
+        if (head.children[i].id === id) { return head.children[i]; }
+      }
+      return null;
+    },
+    createElement(tag) { return { tagName: tag, id: '', textContent: '' }; }
+  };
+}
+
 // widgetVals: left-list widget IDs. opts: {locMode, autoBatteryDisabled, rightVals}
 function makeClay(widgetVals, opts) {
   opts = opts || {};
@@ -228,4 +242,23 @@ test('live change: disabling auto-battery hides the threshold chooser', () => {
   c.byKey['SettingDisableAutobattery'].value = '1';
   c.byKey['SettingDisableAutobattery'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byKey['SettingAutoBatteryThreshold'].shown, false);
+});
+
+test('floating save: AFTER_BUILD injects a fixed-position style once (idempotent)', () => {
+  const prev = global.document;
+  global.document = makeDocument();
+  try {
+    const c = render([]);   // render() fires AFTER_BUILD once
+    const styles = global.document.head.children;
+    assert.strictEqual(styles.length, 1, 'exactly one <style> injected');
+    assert.strictEqual(styles[0].tagName, 'style');
+    assert.match(styles[0].textContent, /\.component-submit/);
+    assert.match(styles[0].textContent, /position\s*:\s*fixed/);
+    assert.match(styles[0].textContent, /body\s*\{[^}]*padding-bottom/);
+    // Firing AFTER_BUILD again must not add a duplicate <style>.
+    c._handlers.AFTER_BUILD();
+    assert.strictEqual(global.document.head.children.length, 1, 'no duplicate <style>');
+  } finally {
+    global.document = prev;
+  }
 });
