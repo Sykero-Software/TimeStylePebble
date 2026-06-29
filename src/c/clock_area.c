@@ -109,26 +109,28 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
 
   #ifndef PBL_ROUND
   if (settings.clockStyle == CLOCK_STYLE_ANALOG) {
-    ClockAnalog_draw(ctx, bounds, s_clock_hours, s_clock_minutes,
+    // Optional single-line digital time below the dial. When on (and there is
+    // vertical slack), TOP-ALIGN the dial so all the slack collects below it for
+    // a large digital line; otherwise draw the dial centred (the default look).
+    int w = bounds.size.w, h = bounds.size.h;
+    int dial_side = (w < h) ? w : h;            // dial stays a min(w,h) square, same size
+    int half = dial_side / 2;
+    int hand_reach = half * 90 / 100;           // minute-hand reach (clock_analog minute_len=89% + halo)
+    int band_top = bounds.origin.y + half + hand_reach + 2;  // dial top-aligned -> centre at `half`
+    int band_h = (bounds.origin.y + h) - band_top;
+    bool show_digital = settings.analogDigitalClock && band_h >= ANALOG_DIGITAL_MIN_BAND;
+
+    GRect dial_bounds = show_digital
+        ? GRect(bounds.origin.x, bounds.origin.y, w, dial_side)   // top-aligned square
+        : bounds;                                                 // centred (default)
+    ClockAnalog_draw(ctx, dial_bounds, s_clock_hours, s_clock_minutes,
                      settings.timeColor, settings.timeBgColor, settings.analogTickStyle);
 
-    // Optional single-line digital time in the unused band below the circle.
-    // Circle diameter is min(w,h); below the circle there are (h/2 - half) px of
-    // slack (0 when the area is square or wider than tall). Drawn only when that
-    // band is tall enough to be legible; otherwise omitted (auto-hides under a
-    // status strip / notification, which shrinks `bounds`).
-    if (settings.analogDigitalClock) {
-      int half = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
-      // Lowest drawn dial element is the minute hand at :30 (~90% of half below
-      // centre incl. halo; clock_analog.c minute_len = 89%). Start the digital
-      // band just below the hand, not at the geometric circle edge — the dial
-      // leaves real empty pixels between the hand tip and the area bottom.
-      int hand_reach = half * 90 / 100;
-      int band_top = bounds.size.h / 2 + hand_reach + 2;   // +2px gap below the hand
-      int band_h = bounds.size.h - band_top;
-      if (band_h >= ANALOG_DIGITAL_MIN_BAND) {
-        draw_digital_below(ctx, l, bounds, band_top, band_h);
-      }
+    // The band below a top-aligned dial shows the window background, which is
+    // settings.timeBgColor (set in main.c) — same as the dial's fill — so the
+    // band needs no extra fill; the digital text draws straight onto it.
+    if (show_digital) {
+      draw_digital_below(ctx, l, bounds, band_top, band_h);
     }
     return;
   }
