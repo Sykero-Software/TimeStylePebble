@@ -15,7 +15,7 @@
 // Digital time line below the analog circle. Hidden when the slack band under the
 // circle is shorter than MIN_BAND (also what makes it vanish under a status strip /
 // notification — apply_twt_layout shortens the clock frame, collapsing the band).
-#define ANALOG_DIGITAL_MIN_BAND 16
+#define ANALOG_DIGITAL_MIN_BAND 10
 #define ANALOG_DIGITAL_MAX_EM   28
 
 char time_hours[3];
