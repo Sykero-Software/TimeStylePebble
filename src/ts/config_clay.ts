@@ -98,7 +98,7 @@ const config = [
       { type: 'radiogroup', messageKey: 'SettingClockStyle', label: 'Clock style',
         defaultValue: '0', options: [{ label: 'Digital', value: '0' }, { label: 'Analog', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingAnalogTicks', label: 'Analog hour marks',
-        defaultValue: '1', options: [
+        defaultValue: '2', options: [
           { label: 'Hide', value: '0' },
           { label: 'Normal', value: '1' },
           { label: 'Bold', value: '2' },

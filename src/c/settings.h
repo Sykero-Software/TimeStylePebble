@@ -158,7 +158,7 @@ typedef struct {
   // settings-version bump.
   uint8_t clockStyle;
 
-  // Analog clock hour-tick style: 0=hide, 1=normal (default), 2=bold (thicker +
+  // Analog clock hour-tick style: 0=hide, 1=normal, 2=bold (default; thicker +
   // slightly longer). Was a bool (analogShowTicks); now uint8_t at the SAME
   // 1-byte slot, so the persisted blob is unchanged and an old 0/1 maps to
   // hide/normal. The default is set explicitly in Settings_loadFromStorage
