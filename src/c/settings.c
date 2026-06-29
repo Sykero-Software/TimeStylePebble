@@ -94,6 +94,7 @@ void Settings_loadFromStorage() {
   settings.fallbackPosition = 1;        // appended field
   settings.clockStyle = CLOCK_STYLE_DIGITAL;   // digital by default; appended field, no version bump
   settings.analogTickStyle = ANALOG_TICKS_BOLD;   // analog hour ticks bold by default; appended field, no version bump
+  settings.analogDigitalClock = false;            // digital line under analog off by default; appended field, no version bump
 
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
@@ -204,6 +205,7 @@ void Settings_loadFromStorage() {
   }
   if (settings.clockStyle > CLOCK_STYLE_ANALOG) { settings.clockStyle = CLOCK_STYLE_DIGITAL; clamped = true; }
   if (settings.analogTickStyle > ANALOG_TICKS_BOLD) { settings.analogTickStyle = ANALOG_TICKS_BOLD; clamped = true; }
+  if (settings.analogDigitalClock > 1) { settings.analogDigitalClock = 0; clamped = true; }
 
   if (migrated) { APP_LOG(APP_LOG_LEVEL_INFO, "settings: one-time widget-list migration applied"); }
   if (clamped)  { APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, clamped to safe values"); }

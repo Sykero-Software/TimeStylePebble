@@ -122,7 +122,8 @@
       "SettingFallbackColumn",
       "SettingFallbackPosition",
       "SettingClockStyle",
-      "SettingAnalogTicks"
+      "SettingAnalogTicks",
+      "SettingAnalogDigitalClock"
     ],
     "resources": {
       "media": [
