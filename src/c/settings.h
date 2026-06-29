@@ -18,6 +18,11 @@
 #define CLOCK_STYLE_DIGITAL 0
 #define CLOCK_STYLE_ANALOG  1
 
+// Analog hour-tick style (SettingAnalogTicks): 0=hide, 1=normal, 2=bold.
+#define ANALOG_TICKS_HIDE   0
+#define ANALOG_TICKS_NORMAL 1
+#define ANALOG_TICKS_BOLD   2
+
 typedef enum {
   NO_VIBE = 0,
   VIBE_EVERY_HOUR = 1,
@@ -153,10 +158,12 @@ typedef struct {
   // settings-version bump.
   uint8_t clockStyle;
 
-  // Analog clock: show the 12 hour tick marks (true = show, default). Appended
-  // field; the default is set explicitly in Settings_loadFromStorage before the
-  // persisted blob is read, so upgrading users keep the ticks. No version bump.
-  bool analogShowTicks;
+  // Analog clock hour-tick style: 0=hide, 1=normal (default), 2=bold (thicker +
+  // slightly longer). Was a bool (analogShowTicks); now uint8_t at the SAME
+  // 1-byte slot, so the persisted blob is unchanged and an old 0/1 maps to
+  // hide/normal. The default is set explicitly in Settings_loadFromStorage
+  // before the persisted blob is read, so upgrading users keep their ticks.
+  uint8_t analogTickStyle;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

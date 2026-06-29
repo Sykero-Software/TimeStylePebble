@@ -176,7 +176,7 @@ static int dim(int half, int pct, int floor1) {
 }
 
 void ClockAnalog_draw(GContext *ctx, GRect bounds, int hours, int minutes,
-                      GColor fg, GColor bg, bool show_ticks) {
+                      GColor fg, GColor bg, int tick_style) {
   int w = bounds.size.w;
   int h = bounds.size.h;
   GPoint center = GPoint(bounds.origin.x + w / 2, bounds.origin.y + h / 2);
@@ -193,9 +193,12 @@ void ClockAnalog_draw(GContext *ctx, GRect bounds, int hours, int minutes,
   int hour_outer_w   = dim(half, 33, 0);
   int hour_fill_w    = dim(half, 22, 0);
   int hand_tail      = dim(half, 18, 0);
-  int tick_w         = dim(half, 2,  1);
-  int tick_halo_w    = dim(half, 6,  1);
-  int tick_len       = dim(half, 6,  1);
+  // tick_style: 0=hide, 1=normal, 2=bold (mirrors ANALOG_TICKS_* in settings.h).
+  // Bold widens the body + halo and lengthens the tick so it reads clearly.
+  bool bold_ticks    = (tick_style == 2);
+  int tick_w         = dim(half, bold_ticks ? 4 : 2, 1);
+  int tick_halo_w    = dim(half, bold_ticks ? 8 : 6, 1);
+  int tick_len       = dim(half, bold_ticks ? 9 : 6, 1);
   int pivot_r        = dim(half, 3,  1);
 
   int32_t min_angle  = minutes * TRIG_MAX_ANGLE / 60;
@@ -233,8 +236,8 @@ void ClockAnalog_draw(GContext *ctx, GRect bounds, int hours, int minutes,
   graphics_context_set_fill_color(ctx, bg);
   graphics_fill_circle(ctx, center, pivot_r);
 
-  // ticks last, so they sit on top of the hands (optional)
-  if (show_ticks) {
+  // ticks last, so they sit on top of the hands (skipped when tick_style == hide)
+  if (tick_style != 0) {
     draw_all_ticks(ctx, center, tick_r, tick_len, tick_halo_w, tick_w, bg, fg);
   }
 }

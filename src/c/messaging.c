@@ -432,7 +432,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     if (v >= CLOCK_STYLE_DIGITAL && v <= CLOCK_STYLE_ANALOG) { settings.clockStyle = (uint8_t)v; }
   }
   if(analogTicks_tuple != NULL) {
-    settings.analogShowTicks = (bool)analogTicks_tuple->value->int32;
+    int v = analogTicks_tuple->value->int32;
+    if (v >= ANALOG_TICKS_HIDE && v <= ANALOG_TICKS_BOLD) { settings.analogTickStyle = (uint8_t)v; }
   }
 
   // save the new settings to persistent storage
