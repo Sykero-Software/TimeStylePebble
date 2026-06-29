@@ -115,7 +115,11 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
     int w = bounds.size.w, h = bounds.size.h;
     int dial_side = (w < h) ? w : h;            // dial stays a min(w,h) square, same size
     int half = dial_side / 2;
-    int hand_reach = half * 90 / 100;           // minute-hand reach (clock_analog minute_len=89% + halo)
+    // Approx minute-hand downward reach (clock_analog minute_len=89% of half; its
+    // apex+halo push the :30 tip a few px lower). 90% slightly undershoots that tip,
+    // but the line is anchored FTextAnchorMiddle at band centre — not band top — so
+    // the digits clear the hand. Don't tighten this without preserving that clearance.
+    int hand_reach = half * 90 / 100;
     int band_top = bounds.origin.y + half + hand_reach + 2;  // dial top-aligned -> centre at `half`
     int band_h = (bounds.origin.y + h) - band_top;
     bool show_digital = settings.analogDigitalClock && band_h >= ANALOG_DIGITAL_MIN_BAND;
