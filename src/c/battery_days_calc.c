@@ -32,10 +32,13 @@ int BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now) {
   }
   const BatteryDaysSample *newest = &buf->samples[buf->count - 1];
 
-  // window start = oldest sample within WINDOW_SEC of now
+  // window start = oldest sample within WINDOW_SEC of now. Guard samples[i].t <= now
+  // first: a sample timestamped after `now` (clock moved backwards, e.g. a manual
+  // time/TZ change) would underflow the unsigned subtraction and be wrongly excluded.
   int start = buf->count - 1;
   for (int i = 0; i < buf->count; i++) {
-    if (now - buf->samples[i].t <= (uint32_t)BATTERY_DAYS_WINDOW_SEC) {
+    if (buf->samples[i].t <= now &&
+        now - buf->samples[i].t <= (uint32_t)BATTERY_DAYS_WINDOW_SEC) {
       start = i;
       break;
     }
