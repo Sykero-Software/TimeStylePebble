@@ -9,6 +9,7 @@
 #include <string.h>
 #include "electricity.h"
 #include "crypto.h"
+#include "battery_days.h"
 
 int SidebarWidgets_xOffset;
 uint8_t SidebarWidgets_currentWidgetType = 0;
@@ -93,6 +94,10 @@ char currentBeats[5];
 SidebarWidget batteryMeterWidget;
 int BatteryMeter_getHeight();
 void BatteryMeter_draw(GContext *ctx, int yPosition);
+
+SidebarWidget batteryDaysWidget;
+int BatteryDays_getHeight();
+void BatteryDays_draw(GContext *ctx, int yPosition);
 
 SidebarWidget emptyWidget;
 int EmptyWidget_getHeight();
@@ -258,6 +263,9 @@ void SidebarWidgets_init() {
   // set up widgets' function pointers correctly
   batteryMeterWidget.getHeight = BatteryMeter_getHeight;
   batteryMeterWidget.draw = BatteryMeter_draw;
+
+  batteryDaysWidget.getHeight = BatteryDays_getHeight;
+  batteryDaysWidget.draw = BatteryDays_draw;
 
   emptyWidget.getHeight = EmptyWidget_getHeight;
   emptyWidget.draw = EmptyWidget_draw;
@@ -595,6 +603,9 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
   case BATTERY_METER:
     return batteryMeterWidget;
     break;
+  case BATTERY_DAYS:
+    return batteryDaysWidget;
+    break;
   case BLUETOOTH_DISCONNECT:
     return btDisconnectWidget;
     break;
@@ -728,6 +739,76 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
     int valueBaseY = SidebarWidgets_hideIdentifier ? yPosition : batteryPositionY;
     int hs = SidebarWidgets_hideIdentifier ? layout.batteryTextY : 0;
     graphics_draw_text(ctx, batteryString, batteryFont,
+                       GRect(layout.textRectX + SidebarWidgets_xOffset,
+                             layout.batteryTextY + valueBaseY - hs,
+                             layout.textRectWidth, 20),
+                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  }
+}
+
+/********** functions for the battery days estimate widget **********/
+
+int BatteryDays_getHeight() {
+  // Always shows a value (the days number), so reserve the with-value height.
+  return SidebarWidgets_hideIdentifier
+      ? (layout.batteryWithPctHeight - layout.batteryTextY)
+      : layout.batteryWithPctHeight;
+}
+
+void BatteryDays_draw(GContext *ctx, int yPosition) {
+  BatteryChargeState chargeState = battery_state_service_peek();
+  uint8_t battery_percent =
+      (chargeState.charge_percent > 0) ? chargeState.charge_percent : 5;
+
+  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+
+  char daysString[8];
+  int batteryPositionY = yPosition - 5; // correct for vertical empty space on battery icon
+
+  if (!SidebarWidgets_hideIdentifier) {
+    if (batteryImage) {
+      gdraw_command_image_recolor(batteryImage, dynamicSettings.iconFillColor,
+                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_draw(
+          ctx, batteryImage,
+          GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
+    }
+
+    if (chargeState.is_charging) {
+      if (batteryChargeImage) {
+        gdraw_command_image_recolor(batteryChargeImage,
+                                    dynamicSettings.iconStrokeColor,
+                                    dynamicSettings.iconFillColor);
+        gdraw_command_image_draw(
+            ctx, batteryChargeImage,
+            GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
+      }
+    } else {
+      int width = roundf(18 * battery_percent / 100.0f);
+      graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
+#ifdef PBL_COLOR
+      if (battery_percent <= 20) {
+        graphics_context_set_fill_color(ctx, GColorRed);
+      }
+#endif
+      graphics_fill_rect(
+          ctx, GRect(6 + SidebarWidgets_xOffset, 8 + batteryPositionY, width, 8),
+          0, GCornerNone);
+    }
+  }
+
+  // The discharge estimate is meaningless while charging -> show only the bolt/icon.
+  if (!chargeState.is_charging) {
+    int tenths = BatteryDays_currentEstimateTenths();
+    if (tenths == BATTERY_DAYS_NONE) {
+      snprintf(daysString, sizeof(daysString), "--");      // warm-up / not enough data
+    } else {
+      snprintf(daysString, sizeof(daysString), "%d%c%d",
+               tenths / 10, settings.decimalSeparator, tenths % 10);
+    }
+    int valueBaseY = SidebarWidgets_hideIdentifier ? yPosition : batteryPositionY;
+    int hs = SidebarWidgets_hideIdentifier ? layout.batteryTextY : 0;
+    graphics_draw_text(ctx, daysString, batteryFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
                              layout.batteryTextY + valueBaseY - hs,
                              layout.textRectWidth, 20),
