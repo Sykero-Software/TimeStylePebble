@@ -12,6 +12,12 @@
 
 #define ROUND_VERTICAL_PADDING 15
 
+// Digital time line below the analog circle. Hidden when the slack band under the
+// circle is shorter than MIN_BAND (also what makes it vanish under a status strip /
+// notification — apply_twt_layout shortens the clock frame, collapsing the band).
+#define ANALOG_DIGITAL_MIN_BAND 16
+#define ANALOG_DIGITAL_MAX_EM   28
+
 char time_hours[3];
 char time_minutes[3];
 
@@ -56,6 +62,43 @@ void update_fonts() {
   }
 }
 
+// Draw a single-line HH:MM in the band [band_top, band_top+band_h) of the clock
+// layer's local coordinate space, centred. FCTX rasterises in absolute screen
+// coordinates and ignores the layer frame origin, so add it back manually.
+static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_top, int band_h) {
+  // Build "H:MM" / "HH:MM"; trim the leading space %l/%k emit without leading zero.
+  const char* h = time_hours;
+  while (*h == ' ') { h++; }
+  char buf[8];
+  snprintf(buf, sizeof(buf), "%s:%s", h, time_minutes);
+
+  FContext fctx;
+  fctx_init_context(&fctx, ctx);
+  fctx_set_color_bias(&fctx, 0);
+  fctx_set_fill_color(&fctx, settings.timeColor);
+
+  #ifdef PBL_COLOR
+    fctx_enable_aa(settings.clockFontId != FONT_SETTING_LECO);
+  #endif
+
+  int em = band_h - 2;
+  if (em > ANALOG_DIGITAL_MAX_EM) { em = ANALOG_DIGITAL_MAX_EM; }
+
+  int h_adjust = layer_get_frame(l).origin.x;
+  int v_adjust = layer_get_frame(l).origin.y;
+
+  FPoint pos;
+  fctx_begin_fill(&fctx);
+  fctx_set_text_em_height(&fctx, hours_font, em);
+  pos.x = INT_TO_FIXED(bounds.size.w / 2 + h_adjust);
+  pos.y = INT_TO_FIXED(band_top + band_h / 2 + v_adjust);
+  fctx_set_offset(&fctx, pos);
+  fctx_draw_string(&fctx, buf, hours_font, GTextAlignmentCenter, FTextAnchorMiddle);
+  fctx_end_fill(&fctx);
+
+  fctx_deinit_context(&fctx);
+}
+
 void update_clock_area_layer(Layer *l, GContext* ctx) {
   // check layer bounds
   GRect bounds = layer_get_unobstructed_bounds(l);
@@ -68,6 +111,20 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   if (settings.clockStyle == CLOCK_STYLE_ANALOG) {
     ClockAnalog_draw(ctx, bounds, s_clock_hours, s_clock_minutes,
                      settings.timeColor, settings.timeBgColor, settings.analogTickStyle);
+
+    // Optional single-line digital time in the unused band below the circle.
+    // Circle diameter is min(w,h); below the circle there are (h/2 - half) px of
+    // slack (0 when the area is square or wider than tall). Drawn only when that
+    // band is tall enough to be legible; otherwise omitted (auto-hides under a
+    // status strip / notification, which shrinks `bounds`).
+    if (settings.analogDigitalClock) {
+      int half = (bounds.size.w < bounds.size.h ? bounds.size.w : bounds.size.h) / 2;
+      int band_top = bounds.size.h / 2 + half;     // circle bottom, layer-local y
+      int band_h = bounds.size.h - band_top;        // == h/2 - half
+      if (band_h >= ANALOG_DIGITAL_MIN_BAND) {
+        draw_digital_below(ctx, l, bounds, band_top, band_h);
+      }
+    }
     return;
   }
   #endif
