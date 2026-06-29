@@ -34,6 +34,12 @@ void DateHeader_updateTime(struct tm* timeInfo) {
   // day-of-month and month with no leading zeros
   snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d.%d",
            day, timeInfo->tm_mday, timeInfo->tm_mon + 1);
+#ifdef SCREENSHOT_FIXTURES
+  // Deterministic short demo date for appstore screenshots: a single-digit day
+  // fits the narrow centre column even with two sidebars (a wide 2-digit day
+  // truncates to "Mon 2..."). Screenshot-only; compiles out of the shipped app.
+  snprintf(s_date_buffer, sizeof(s_date_buffer), "%s 8.6", day);
+#endif
 }
 
 void DateHeader_redraw(void) {

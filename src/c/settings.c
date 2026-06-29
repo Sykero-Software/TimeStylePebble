@@ -226,9 +226,15 @@ void Settings_loadFromStorage() {
   settings.twtStatusBgColor = GColorCeleste;       // status strip (scenes 2/3) — pale turquoise
   settings.clockFontId = FONT_SETTING_LECO;
   settings.showBigDate = true;
+  settings.clockStyle = CLOCK_STYLE_ANALOG;        // analog face for this scene
+  settings.analogTickStyle = ANALOG_TICKS_BOLD;    // bold hour ticks
+  settings.analogDigitalClock = true;              // digital time line under the analog clock
   settings.secondaryAlwaysOn = true;               // keep the right column up without a status strip
   settings.useMetric = true;                       // weather in °C (18/11)
   settings.midiSecondPrecision = false;
+  // Feature-rich two-sidebar showcase scene. (A clean single-sidebar variant is
+  // a manual tweak: L={2,6,3}=battery/week/alt-tz, rightWidgetCount=0,
+  // secondaryAlwaysOn=false.)
   { uint8_t L[] = {15, 201, 17, 14}; memcpy(settings.widgetList, L, sizeof L); settings.widgetCount = sizeof L; }
   { uint8_t R[] = {8, 13, 9, 10};    memcpy(settings.rightWidgetList, R, sizeof R); settings.rightWidgetCount = sizeof R; }
 #endif
