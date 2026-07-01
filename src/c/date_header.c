@@ -10,6 +10,36 @@
 // line on emery with two panels + large fonts (122px) without it.
 static TextLayer* s_date_layer;
 static char s_date_buffer[24];
+static GRect s_frame;   // current layer frame; drives auto-scaling
+#define DATE_FIT_MARGIN 4   // px kept clear each side (TextLayer inset + safety)
+
+// Largest -> smallest. Bitham 30 keeps today's look on days it fits; Gothic
+// bold sizes are the fallback for tight dates. All fit BIG_DATE_HEIGHT (34px).
+static const char * const s_date_font_ladder[] = {
+  FONT_KEY_BITHAM_30_BLACK,
+  FONT_KEY_GOTHIC_28_BOLD,
+  FONT_KEY_GOTHIC_24_BOLD,
+  FONT_KEY_GOTHIC_18_BOLD,
+};
+
+// Return the largest ladder font whose rendered width fits `width`. Falls back
+// to the smallest if none fit (the layer's trailing-ellipsis then applies).
+static GFont pick_date_font(const char* text, int16_t width) {
+  const int count = sizeof(s_date_font_ladder) / sizeof(s_date_font_ladder[0]);
+  GFont chosen = fonts_get_system_font(s_date_font_ladder[count - 1]);
+  for (int i = 0; i < count; i++) {
+    GFont f = fonts_get_system_font(s_date_font_ladder[i]);
+    // Wide box -> no wrapping -> natural single-line width.
+    GSize sz = graphics_text_layout_get_content_size(
+        text, f, GRect(0, 0, 1000, 1000),
+        GTextOverflowModeWordWrap, GTextAlignmentCenter);
+    if (sz.w <= width - DATE_FIT_MARGIN) {
+      chosen = f;
+      break;
+    }
+  }
+  return chosen;
+}
 
 bool DateHeader_isSupported(void) {
 #if defined(PBL_RECT) && !defined(PBL_PLATFORM_APLITE)
@@ -54,21 +84,23 @@ void DateHeader_redraw(void) {
   if (!s_date_layer) return;
   text_layer_set_text_color(s_date_layer, settings.timeColor); // track color setting changes
   text_layer_set_background_color(s_date_layer, settings.dateBgColor); // track color setting changes
+  text_layer_set_font(s_date_layer, pick_date_font(s_date_buffer, s_frame.size.w));
   text_layer_set_text(s_date_layer, s_date_buffer);
   layer_mark_dirty(text_layer_get_layer(s_date_layer));
 }
 
 void DateHeader_setFrame(GRect frame) {
   if (!s_date_layer) return;
+  s_frame = frame;
   layer_set_frame(text_layer_get_layer(s_date_layer), frame);
 }
 
 void DateHeader_initLayer(Layer* parent, GRect frame) {
   if (!DateHeader_isSupported()) return;
   s_date_layer = text_layer_create(frame);
+  s_frame = frame;
   text_layer_set_background_color(s_date_layer, settings.dateBgColor); // GColorClear = inherit
   text_layer_set_text_color(s_date_layer, settings.timeColor);
-  text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(s_date_layer, GTextOverflowModeTrailingEllipsis);
   layer_add_child(parent, text_layer_get_layer(s_date_layer));
