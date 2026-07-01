@@ -31,17 +31,21 @@ function fcMember(param, name, tvps) {
     '</om:OM_Observation></wfs:member>';
 }
 
+// Rainy morning + drizzly night, but a dry afternoon: the 15:00-local sample (2,
+// mostly clear) is what FMI's daily forecast shows, NOT the day's worst (39).
 const SAMPLE =
   '<wfs:FeatureCollection>' +
   fcMember('temperature', 'Jyskä', [
-    ['2026-06-10T09:00:00Z', '16.38'],
+    ['2026-06-10T06:00:00Z', '10.0'],
     ['2026-06-10T12:00:00Z', '19.0'],
-    ['2026-06-10T15:00:00Z', '11.0']
+    ['2026-06-10T15:00:00Z', '17.0'],
+    ['2026-06-10T21:00:00Z', '12.0']
   ]) +
   fcMember('smartsymbol', 'Jyskä', [
-    ['2026-06-10T09:00:00Z', '27'],   // showers
-    ['2026-06-10T12:00:00Z', '1'],    // clear (nearest noon)
-    ['2026-06-10T15:00:00Z', '39']    // heavy rain (most severe of day)
+    ['2026-06-10T06:00:00Z', '39'],   // heavy rain in the morning (the day's "worst")
+    ['2026-06-10T12:00:00Z', '1'],    // clear at noon (nearest now -> currentSymbol)
+    ['2026-06-10T15:00:00Z', '2'],    // mostly clear at 15:00 -> the forecast symbol
+    ['2026-06-10T21:00:00Z', '111']   // night drizzle in the evening (must NOT win)
   ]) +
   fcMember('uvindex', 'Jyskä', [
     ['2026-06-10T12:00:00Z', '3'],
@@ -50,9 +54,11 @@ const SAMPLE =
   '</wfs:FeatureCollection>';
 
 const NOON = Math.floor(Date.parse('2026-06-10T12:00:00Z') / 1000);
+const AT15 = Math.floor(Date.parse('2026-06-10T15:00:00Z') / 1000);
+const AT21 = Math.floor(Date.parse('2026-06-10T21:00:00Z') / 1000);
 
 test('parseFmiForecastTvp parses current values nearest now + the location name', () => {
-  const f = parseFmiForecastTvp(SAMPLE, NOON);
+  const f = parseFmiForecastTvp(SAMPLE, NOON, AT15);
   assert.strictEqual(f.ok, true);
   assert.strictEqual(f.currentTemp, 19);     // nearest noon
   assert.strictEqual(f.currentSymbol, 1);    // clear at noon
@@ -60,11 +66,16 @@ test('parseFmiForecastTvp parses current values nearest now + the location name'
   assert.strictEqual(f.name, 'Jyskä');
 });
 
-test('parseFmiForecastTvp derives day high/low and most-severe forecast symbol', () => {
-  const f = parseFmiForecastTvp(SAMPLE, NOON);
-  assert.strictEqual(f.forecastHigh, 19);
-  assert.strictEqual(f.forecastLow, 11);
-  assert.strictEqual(f.forecastSymbol, 39);  // heavy rain outranks showers/clear
+test('parseFmiForecastTvp: day high/low, forecast symbol from the 15:00 sample (like FMI)', () => {
+  const f = parseFmiForecastTvp(SAMPLE, NOON, AT15);
+  assert.strictEqual(f.forecastHigh, 19);    // full-day max
+  assert.strictEqual(f.forecastLow, 10);     // full-day min
+  assert.strictEqual(f.forecastSymbol, 2);   // the 15:00 sample, NOT the morning's 39
+});
+
+test('parseFmiForecastTvp: forecast symbol tracks target time (nearest) and strips night offset', () => {
+  const f = parseFmiForecastTvp(SAMPLE, NOON, AT21);
+  assert.strictEqual(f.forecastSymbol, 11);  // 111 night drizzle -> 11 (day base)
 });
 
 test('parseFmiForecastTvp returns ok:false on exception/empty/non-string', () => {

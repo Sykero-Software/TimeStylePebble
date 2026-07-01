@@ -29,21 +29,6 @@ export interface FmiForecast {
 
 export type FmiForecastResult = FmiForecast | { ok: false };
 
-// Higher rank = more "notable" weather; used to pick the day's forecast symbol.
-export function symbolRank(base: number): number {
-  if (base >= 71 && base <= 77) { return 9; }                    // thundershowers
-  if (base >= 61) { return 8; }                                  // hail showers
-  if (base >= 51) { return 7; }                                  // snow
-  if (base >= 41) { return 7; }                                  // sleet
-  if (base === 33 || base === 36 || base === 39) { return 8; }   // heavy rain
-  if (base >= 31) { return 6; }                                  // light/moderate rain
-  if (base >= 11) { return 5; }                                  // drizzle/freezing/showers
-  if (base === 9) { return 3; }                                  // fog
-  if (base === 7) { return 2; }                                  // overcast
-  if (base === 4 || base === 6) { return 1; }                    // partly/mostly cloudy
-  return 0;                                                      // clear
-}
-
 function nearest(series: Sample[], nowEpochSec: number): Sample | null {
   let best: Sample | null = null;
   let bestDiff = Infinity;
@@ -54,7 +39,9 @@ function nearest(series: Sample[], nowEpochSec: number): Sample | null {
   return best;
 }
 
-export function parseFmiForecast(xml: unknown, nowEpochSec: number): FmiForecastResult {
+export function parseFmiForecast(
+  xml: unknown, nowEpochSec: number, fcSymbolEpochSec?: number,
+): FmiForecastResult {
   if (typeof xml !== 'string' || xml.indexOf('ExceptionReport') !== -1) {
     return { ok: false };
   }
@@ -86,15 +73,15 @@ export function parseFmiForecast(xml: unknown, nowEpochSec: number): FmiForecast
     if (temps[i].value < low) { low = temps[i].value; }
   }
 
-  // Forecast condition = the day's most notable weather, as a DAY-base code
-  // (strip the +100 night offset so the icon mapping yields a daytime icon).
-  let fcSym: number | null = null;
-  let fcRank = -1;
-  for (const s of syms) {
-    const base = s.value % 100;
-    const r = symbolRank(base);
-    if (r > fcRank) { fcRank = r; fcSym = base; }
-  }
+  // Forecast condition = the smartsymbol at ~15:00 local (fcSymbolEpochSec), or
+  // the nearest sample -- how FMI derives the day's forecast symbol (a single
+  // representative afternoon reading), NOT the day's most notable weather. Strip
+  // the +100 night offset so the mapping yields a daytime icon. Falls back to now
+  // when no target time is supplied.
+  const fcTarget = (typeof fcSymbolEpochSec === 'number' && !isNaN(fcSymbolEpochSec))
+    ? fcSymbolEpochSec : nowEpochSec;
+  const fcSample = syms.length ? nearest(syms, fcTarget) : null;
+  const fcSym: number | null = fcSample ? Math.round(fcSample.value) % 100 : null;
 
   return {
     ok: true,
