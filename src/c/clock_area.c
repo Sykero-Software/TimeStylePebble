@@ -2,6 +2,7 @@
 #include <pebble.h>
 
 #include "clock_area.h"
+#include "clock_area_calc.h"
 #include "settings.h"
 #include "sidebar.h"
 #include "clock_analog.h"
@@ -35,6 +36,21 @@ FFont* avenir_bold;
 FFont* leco;
 
 GRect screen_rect;
+
+// Breathing room kept between the widest digit line and the sidebar column(s)
+// when the width cap engages (px, total: split both sides by centring).
+#define CLOCK_WIDTH_MARGIN 4
+
+// Widest digit ('0'..'9') horizontal advance in font units — the stable
+// worst-case width source for a 2-digit line (see ClockArea_fitFontSize).
+static int widest_digit_adv(FFont* font) {
+  int m = 0;
+  for (char c = '0'; c <= '9'; c++) {
+    FGlyph* g = ffont_glyph_info(font, (uint16_t)c);
+    if (g && g->horiz_adv_x > m) { m = g->horiz_adv_x; }
+  }
+  return m;
+}
 
 // "private" functions
 void update_fonts() {
@@ -172,6 +188,17 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
       fctx_enable_aa(true);
     #endif
   }
+
+  // The font size above is derived from the clock area HEIGHT only. When both
+  // sidebar columns are active the area is narrow (apply_twt_layout insets it
+  // between the columns), so a height-derived font overflows the widest 2-digit
+  // line onto the sidebars (the reported bug). Cap it to fit the width; with one
+  // or no column the area is wide enough that this is a no-op, so the classic
+  // look is unchanged. (On round, bounds.size.w is the full screen width, so the
+  // cap never binds — round layout is untouched.)
+  font_size = ClockArea_fitFontSize(font_size, bounds.size.w - CLOCK_WIDTH_MARGIN,
+                                    widest_digit_adv(hours_font), hours_font->units_per_em,
+                                    widest_digit_adv(minutes_font), minutes_font->units_per_em);
 
   // if it's a round watch, EVERYTHING CHANGES
   #ifdef PBL_ROUND
