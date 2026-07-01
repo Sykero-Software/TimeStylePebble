@@ -7,6 +7,7 @@
 #include "messaging.h"
 #include "electricity.h"
 #include "crypto.h"
+#include "currency.h"
 #include "languages.h"
 #include "widget_list.h"
 
@@ -130,6 +131,13 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if (crypto_tuple != NULL && crypto_tuple->type == TUPLE_CSTRING) {
     Crypto_parse(crypto_tuple->value->cstring);
     persist_write_string(CRYPTO_PERSIST_KEY_DATA, crypto_tuple->value->cstring);
+  }
+
+  // Currency: same packed wid/label/value format as crypto, own message key.
+  Tuple *currency_tuple = dict_find(iterator, MESSAGE_KEY_CurrencyData);
+  if (currency_tuple != NULL && currency_tuple->type == TUPLE_CSTRING) {
+    Currency_parse(currency_tuple->value->cstring);
+    persist_write_string(CURRENCY_PERSIST_KEY_DATA, currency_tuple->value->cstring);
   }
 
   // does this message contain new config information?
