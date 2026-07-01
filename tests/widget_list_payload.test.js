@@ -24,7 +24,8 @@ test('non-array input yields an empty payload', () => {
 
 test('keeps crypto wids (legacy 15/16/17 and the 200+ range), drops other out-of-range', () => {
   assert.deepStrictEqual(widgetListToPayload([15, 16, 17, 200, 215]), [15, 16, 17, 200, 215]);
-  assert.deepStrictEqual(widgetListToPayload([216, 100, 199, 23]), []);
+  assert.deepStrictEqual(widgetListToPayload([216, 222]), [216, 222]);   // currency range kept
+  assert.deepStrictEqual(widgetListToPayload([223, 100, 199, 23]), []);  // 223 (marker collision) and others dropped
   assert.deepStrictEqual(widgetListToPayload([7, 200, 999]), [7, 200]);
 });
 

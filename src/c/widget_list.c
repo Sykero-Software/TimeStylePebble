@@ -10,6 +10,7 @@ bool WidgetList_isDrawableId(uint8_t id) {
   if (id == 0) { return false; }                       // EMPTY draws nothing
   if (id <= WL_MAX_WIDGET_TYPE) { return true; }
   if (id >= WL_CRYPTO_WID_BASE && id < WL_CRYPTO_WID_BASE + WL_MAX_CRYPTO) { return true; }
+  if (id >= WL_CURRENCY_WID_BASE && id < WL_CURRENCY_WID_BASE + WL_MAX_CURRENCY) { return true; }
   return false;
 }
 
