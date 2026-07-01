@@ -54,6 +54,7 @@ void Settings_loadFromStorage() {
   settings.midiVibe = false;   // opt-in default; also the upgrade default (appended field, no settings-version bump)
   settings.midiSecondPrecision = false;   // recording timer off by default; appended field, no settings-version bump
   settings.showBigDate = true;   // on by default (configurable); appended field, no settings-version bump
+  settings.showBigDateMonth = true;   // month shown by default (configurable); appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
   settings.twtTargetVibe = false;   // opt-in default; appended field, no settings-version bump
   settings.twtBudgetVibe = false;   // opt-in default; appended field, no settings-version bump
@@ -226,6 +227,7 @@ void Settings_loadFromStorage() {
   settings.twtStatusBgColor = GColorCeleste;       // status strip (scenes 2/3) — pale turquoise
   settings.clockFontId = FONT_SETTING_LECO;
   settings.showBigDate = true;
+  settings.showBigDateMonth = true;
   settings.clockStyle = CLOCK_STYLE_ANALOG;        // analog face for this scene
   settings.analogTickStyle = ANALOG_TICKS_BOLD;    // bold hour ticks
   settings.analogDigitalClock = true;              // digital time line under the analog clock

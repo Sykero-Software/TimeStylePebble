@@ -10,6 +10,38 @@
 // line on emery with two panels + large fonts (122px) without it.
 static TextLayer* s_date_layer;
 static char s_date_buffer[24];
+static GRect s_frame;   // current layer frame; drives auto-scaling
+#define DATE_FIT_MARGIN 4   // total px of width slack (TextLayer inset + safety);
+                            // if even the smallest font overflows, the layer's
+                            // trailing-ellipsis mode is the fallback.
+
+// Largest -> smallest. Bitham 30 keeps today's look on days it fits; Gothic
+// bold sizes are the fallback for tight dates. All fit BIG_DATE_HEIGHT (34px).
+static const char * const s_date_font_ladder[] = {
+  FONT_KEY_BITHAM_30_BLACK,
+  FONT_KEY_GOTHIC_28_BOLD,
+  FONT_KEY_GOTHIC_24_BOLD,
+  FONT_KEY_GOTHIC_18_BOLD,
+};
+
+// Return the largest ladder font whose rendered width fits `width`. Falls back
+// to the smallest if none fit (the layer's trailing-ellipsis then applies).
+static GFont pick_date_font(const char* text, int16_t width) {
+  const int count = sizeof(s_date_font_ladder) / sizeof(s_date_font_ladder[0]);
+  GFont chosen = fonts_get_system_font(s_date_font_ladder[count - 1]);
+  for (int i = 0; i < count; i++) {
+    GFont f = fonts_get_system_font(s_date_font_ladder[i]);
+    // Wide box -> no wrapping -> natural single-line width.
+    GSize sz = graphics_text_layout_get_content_size(
+        text, f, GRect(0, 0, 1000, 1000),
+        GTextOverflowModeWordWrap, GTextAlignmentCenter);
+    if (sz.w <= width - DATE_FIT_MARGIN) {
+      chosen = f;
+      break;
+    }
+  }
+  return chosen;
+}
 
 bool DateHeader_isSupported(void) {
 #if defined(PBL_RECT) && !defined(PBL_PLATFORM_APLITE)
@@ -31,14 +63,22 @@ void DateHeader_updateTime(struct tm* timeInfo) {
       day[i] = day[i] - 'A' + 'a';
     }
   }
-  // day-of-month and month with no leading zeros
-  snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d.%d",
-           day, timeInfo->tm_mday, timeInfo->tm_mon + 1);
+  // day-of-month (+ optional month) with no leading zeros
+  if (settings.showBigDateMonth) {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d.%d",
+             day, timeInfo->tm_mday, timeInfo->tm_mon + 1);
+  } else {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d",
+             day, timeInfo->tm_mday);
+  }
 #ifdef SCREENSHOT_FIXTURES
-  // Deterministic short demo date for appstore screenshots: a single-digit day
-  // fits the narrow centre column even with two sidebars (a wide 2-digit day
-  // truncates to "Mon 2..."). Screenshot-only; compiles out of the shipped app.
-  snprintf(s_date_buffer, sizeof(s_date_buffer), "%s 8.6", day);
+  // Deterministic short demo date for appstore screenshots; honours the month
+  // setting so both states can be captured. Screenshot-only; compiles out.
+  if (settings.showBigDateMonth) {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s 8.6", day);
+  } else {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s 8", day);
+  }
 #endif
 }
 
@@ -46,21 +86,26 @@ void DateHeader_redraw(void) {
   if (!s_date_layer) return;
   text_layer_set_text_color(s_date_layer, settings.timeColor); // track color setting changes
   text_layer_set_background_color(s_date_layer, settings.dateBgColor); // track color setting changes
+  // Re-measured every redraw: the string/width only change on a date rollover,
+  // setting, or layout change, but ≤4 measurements of a short static string are
+  // cheap enough to not bother caching, even on the per-second tick path.
+  text_layer_set_font(s_date_layer, pick_date_font(s_date_buffer, s_frame.size.w));
   text_layer_set_text(s_date_layer, s_date_buffer);
   layer_mark_dirty(text_layer_get_layer(s_date_layer));
 }
 
 void DateHeader_setFrame(GRect frame) {
   if (!s_date_layer) return;
+  s_frame = frame;
   layer_set_frame(text_layer_get_layer(s_date_layer), frame);
 }
 
 void DateHeader_initLayer(Layer* parent, GRect frame) {
   if (!DateHeader_isSupported()) return;
   s_date_layer = text_layer_create(frame);
+  s_frame = frame;
   text_layer_set_background_color(s_date_layer, settings.dateBgColor); // GColorClear = inherit
   text_layer_set_text_color(s_date_layer, settings.timeColor);
-  text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(s_date_layer, GTextOverflowModeTrailingEllipsis);
   layer_add_child(parent, text_layer_get_layer(s_date_layer));

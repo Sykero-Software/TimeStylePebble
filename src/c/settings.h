@@ -169,6 +169,11 @@ typedef struct {
   // clock circle. Appended field, zero-default (off) on load of an older blob;
   // no settings-version bump. Only consulted when clockStyle == CLOCK_STYLE_ANALOG.
   uint8_t analogDigitalClock;
+
+  // Show the month in the large date header ("Su 31.12" vs "Su 31"). Appended
+  // field, defaulted to true in Settings_loadFromStorage BEFORE the persist read
+  // so upgrading users (shorter blob) keep the month on. No settings-version bump.
+  bool showBigDateMonth;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
