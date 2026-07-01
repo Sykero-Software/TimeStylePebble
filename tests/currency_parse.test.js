@@ -16,26 +16,43 @@ const RATES = { EUR: { rates: { USD: 1.0823 } }, USD: { rates: { JPY: 162.4 } } 
 // packCurrencyData takes ratesByBase = { base: <rates object> }, so unwrap:
 const BY_BASE = { EUR: { USD: 1.0823 }, USD: { JPY: 162.4 } };
 
-test('normalizeRows uppercases codes, clamps decimals, drops malformed', () => {
+test('normalizeRows uppercases codes, clamps precision, drops malformed', () => {
   const out = normalizeRows([
     { wid: '216', base: 'eur', quote: 'usd', p: '4', label: '' },
     { wid: 217, base: 'USD', quote: '', p: 2, label: 'X' },   // empty quote -> dropped
     { base: 'GBP', quote: 'USD', p: 2 },                       // no wid -> dropped
-    { wid: 218, base: 'gbp', quote: 'jpy', p: 99, label: '' }, // p clamps to 6
+    { wid: 218, base: 'gbp', quote: 'jpy', p: 99, label: '' }, // p clamps to 8
     'garbage',
   ]);
   assert.strictEqual(out.length, 2);
-  assert.deepStrictEqual(out[0], { wid: 216, base: 'EUR', quote: 'USD', p: 4, label: '' });
-  assert.deepStrictEqual(out[1], { wid: 218, base: 'GBP', quote: 'JPY', p: 6, label: '' });
+  assert.deepStrictEqual(out[0], { wid: 216, base: 'EUR', quote: 'USD', p: 4, t: 0, label: '' });
+  assert.deepStrictEqual(out[1], { wid: 218, base: 'GBP', quote: 'JPY', p: 8, t: 0, label: '' });
 });
 
-test('normalizeRows defaults missing/NaN decimals to 4 and floors negatives to 0', () => {
+test('normalizeRows: precision defaults to 4, allows negatives (round), clamps to [-8,8]', () => {
   const out = normalizeRows([
-    { wid: 216, base: 'EUR', quote: 'USD', label: '' },        // no p -> 4
-    { wid: 217, base: 'USD', quote: 'JPY', p: -3, label: '' }, // negative -> 0
+    { wid: 216, base: 'EUR', quote: 'USD', label: '' },         // no p -> 4
+    { wid: 217, base: 'USD', quote: 'JPY', p: -3, label: '' },  // negative preserved (rounding)
+    { wid: 218, base: 'GBP', quote: 'JPY', p: 99, label: '' },  // clamps to 8
+    { wid: 219, base: 'CHF', quote: 'JPY', p: -50, label: '' }, // clamps to -8
   ]);
   assert.strictEqual(out[0].p, 4);
-  assert.strictEqual(out[1].p, 0);
+  assert.strictEqual(out[1].p, -3);
+  assert.strictEqual(out[2].p, 8);
+  assert.strictEqual(out[3].p, -8);
+});
+
+test('normalizeRows: trim t defaults to 0, floors negatives, clamps to 15', () => {
+  const out = normalizeRows([
+    { wid: 216, base: 'EUR', quote: 'USD', p: 4, t: 2, label: '' },
+    { wid: 217, base: 'USD', quote: 'JPY', p: 2, label: '' },        // no t -> 0
+    { wid: 218, base: 'GBP', quote: 'JPY', p: 2, t: -5, label: '' }, // negative -> 0
+    { wid: 219, base: 'CHF', quote: 'JPY', p: 2, t: 99, label: '' }, // clamps to 15
+  ]);
+  assert.strictEqual(out[0].t, 2);
+  assert.strictEqual(out[1].t, 0);
+  assert.strictEqual(out[2].t, 0);
+  assert.strictEqual(out[3].t, 15);
 });
 
 test('distinctBases returns unique bases in order', () => {
@@ -61,6 +78,20 @@ test('packCurrencyData uses prevValues when a rate is missing, else --', () => {
   assert.strictEqual(withPrev, ['216', 'USD', '1.0823', '217', 'Yen', '161.00'].join(DELIM));
   const noPrev = packCurrencyData(ROWS, partial, {});
   assert.strictEqual(noPrev, ['216', 'USD', '1.0823', '217', 'Yen', '--'].join(DELIM));
+});
+
+test('packCurrencyData: negative precision rounds (crypto-style)', () => {
+  const packed = packCurrencyData(
+    [{ wid: 216, base: 'USD', quote: 'JPY', p: -1, t: 0, label: 'JPY' }],
+    { USD: { JPY: 162.4 } }, {});
+  assert.strictEqual(packed, ['216', 'JPY', '16'].join(DELIM));   // round(162.4/10) = 16
+});
+
+test('packCurrencyData: trim cuts leading digits (crypto-style)', () => {
+  const packed = packCurrencyData(
+    [{ wid: 216, base: 'EUR', quote: 'USD', p: 3, t: 2, label: 'X' }],
+    { EUR: { USD: 1.160 } }, {});
+  assert.strictEqual(packed, ['216', 'X', '60'].join(DELIM));     // "1.160" trim 2 -> "60"
 });
 
 test('countValidRates counts rows with a finite fresh rate', () => {

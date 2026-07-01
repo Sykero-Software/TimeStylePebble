@@ -13,8 +13,9 @@ export interface CurrencyRow {
   wid: number;      // stable widget id in [216, 223)
   base: string;     // 3-letter ISO, uppercase (request base)
   quote: string;    // 3-letter ISO, uppercase (looked up in rates)
-  p: number;        // decimals (0..6)
-  label: string;    // sidebar label; '' -> auto "BASE/QUOTE"
+  p: number;        // display precision (see crypto_format.formatPrice): >=0 decimals; <0 rounds
+  t: number;        // leading digits to trim (see formatPrice); 0 = none
+  label: string;    // sidebar label; '' -> auto = quote currency
 }
 
 export const DELIM = '\x1f';                 // unit separator between wire fields
@@ -34,12 +35,17 @@ export function normalizeRows(raw: any): CurrencyRow[] {
     const base = up(r.base);
     const quote = up(r.quote);
     if (isNaN(wid) || base === '' || quote === '') { continue; }
+    // Same precision/trim semantics as the crypto list (crypto_parse.ts): p >= 0 is
+    // decimal places, p < 0 rounds to the nearest 10^(-p); t trims leading digits.
     let p = parseInt(r.p, 10);
     if (isNaN(p)) { p = 4; }
-    if (p < 0) { p = 0; }
-    if (p > 6) { p = 6; }
+    if (p > 8) { p = 8; }
+    if (p < -8) { p = -8; }
+    let t = parseInt(r.t, 10);
+    if (isNaN(t) || t < 0) { t = 0; }
+    if (t > 15) { t = 15; }
     const label = (typeof r.label === 'string') ? r.label : '';
-    out.push({ wid: wid, base: base, quote: quote, p: p, label: label });
+    out.push({ wid: wid, base: base, quote: quote, p: p, t: t, label: label });
   }
   return out;
 }
@@ -74,7 +80,7 @@ export function packCurrencyData(rows: CurrencyRow[], ratesByBase: any, prevValu
     const rate = rates ? rates[r.quote] : undefined;
     let value: string;
     if (typeof rate === 'number' && isFinite(rate)) {
-      value = formatPrice(rate, r.p, 0);
+      value = formatPrice(rate, r.p, r.t);
     } else if (prev[r.wid] !== undefined) {
       value = prev[r.wid];
     } else {

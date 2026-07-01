@@ -50,6 +50,7 @@ function currencyListInitialize(this: any, _minified: any, _clayConfig: any): vo
     const base = (row && typeof row.base === 'string' && row.base !== '') ? row.base : 'EUR';
     const quote = (row && typeof row.quote === 'string' && row.quote !== '') ? row.quote : 'USD';
     const p = (row && row.p !== undefined && row.p !== null) ? row.p : 4;
+    const t = (row && row.t !== undefined && row.t !== null) ? row.t : 0;
     const label = (row && typeof row.label === 'string') ? row.label : '';
     const wid = (row && row.wid !== undefined) ? parseInt(row.wid, 10) : 0;
     const baseKnown = (CURRENCIES.indexOf(base) !== -1);
@@ -61,8 +62,10 @@ function currencyListInitialize(this: any, _minified: any, _clayConfig: any): vo
         '<select class="cul-base">' + ccyOptionsHtml(baseKnown ? base : 'custom') + '</select>' +
         '<span class="cul-sep">/</span>' +
         '<select class="cul-quote">' + ccyOptionsHtml(quoteKnown ? quote : 'custom') + '</select>' +
-        '<input class="cul-p" type="number" step="1" min="0" max="6" title="decimals" value="' +
+        '<input class="cul-p" type="number" step="1" title="precision (decimals; negative rounds)" value="' +
           escAttr(String(p)) + '">' +
+        '<input class="cul-t" type="number" step="1" min="0" title="trim: leading digits to cut (1.160, trim 2 -> 60)" value="' +
+          escAttr(String(t)) + '">' +
         '<button type="button" class="cul-del" title="Remove">&#10005;</button>' +
       '</div>' +
       '<input class="cul-base-custom" type="text" maxlength="3" placeholder="base code" value="' +
@@ -93,11 +96,13 @@ function currencyListInitialize(this: any, _minified: any, _clayConfig: any): vo
       }
       const pIn = el.querySelector('.cul-p') as HTMLInputElement;
       let p = parseInt(pIn ? pIn.value : '4', 10);
-      if (isNaN(p) || p < 0) { p = 4; }
-      if (p > 6) { p = 6; }
+      if (isNaN(p)) { p = 4; }
+      const tIn = el.querySelector('.cul-t') as HTMLInputElement;
+      let t = parseInt(tIn ? tIn.value : '0', 10);
+      if (isNaN(t) || t < 0) { t = 0; }
       const labelIn = el.querySelector('.cul-label') as HTMLInputElement;
       const wid = parseInt(el.getAttribute('data-wid') || '0', 10) || 0;
-      rows.push({ wid: wid, base: base, quote: quote, p: p, label: labelIn ? labelIn.value : '' });
+      rows.push({ wid: wid, base: base, quote: quote, p: p, t: t, label: labelIn ? labelIn.value : '' });
     }
     return rows;
   }
@@ -152,7 +157,7 @@ function currencyListInitialize(this: any, _minified: any, _clayConfig: any): vo
     if (target.classList.contains('cul-add')) {
       const rows = currentRows();
       if (rows.length < MAX_CURRENCY) {
-        rows.push({ wid: nextFreeWid(), base: 'EUR', quote: 'USD', p: 4, label: '' });
+        rows.push({ wid: nextFreeWid(), base: 'EUR', quote: 'USD', p: 4, t: 0, label: '' });
         rebuild(rows);
         self.trigger('change');
       }
@@ -209,6 +214,7 @@ const currencyListComponent = {
     '.cul-row .cul-base,.cul-row .cul-quote{flex:1 1 4rem}' +
     '.cul-row .cul-sep{flex:0 0 auto;margin:0 4px 0 0;color:#fff}' +
     '.cul-row .cul-p{flex:0 0 3rem}' +
+    '.cul-row .cul-t{flex:0 0 3rem}' +
     '.cul-row .cul-base-custom,.cul-row .cul-quote-custom{flex:1 1 auto;margin-top:4px}' +
     '.cul-row .cul-label{flex:1 1 6rem;margin-top:4px}' +
     '.cul-row button{flex:0 0 auto;min-width:0;width:2.6rem;height:2.6rem;margin:0;padding:0}' +
