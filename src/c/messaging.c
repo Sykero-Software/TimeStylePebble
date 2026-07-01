@@ -143,6 +143,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *midiVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingMidiVibe);
   Tuple *midiSecPrec_tuple = dict_find(iterator, MESSAGE_KEY_SettingMidiSecondPrecision);
   Tuple *bigDate_tuple = dict_find(iterator, MESSAGE_KEY_SettingBigDate);
+  Tuple *bigDateMonth_tuple = dict_find(iterator, MESSAGE_KEY_SettingBigDateMonth);
   Tuple *twtShowRemaining_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtShowRemaining);
   Tuple *twtTargetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtTargetVibe);
   Tuple *twtBudgetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtBudgetVibe);
@@ -258,6 +259,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   if(bigDate_tuple != NULL) {
     settings.showBigDate = (bool)bigDate_tuple->value->int8;
+  }
+
+  if(bigDateMonth_tuple != NULL) {
+    settings.showBigDateMonth = (bool)bigDateMonth_tuple->value->int8;
   }
 
   if(twtShowRemaining_tuple != NULL) {
