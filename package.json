@@ -124,7 +124,8 @@
       "SettingClockStyle",
       "SettingAnalogTicks",
       "SettingAnalogDigitalClock",
-      "SettingBigDateMonth"
+      "SettingBigDateMonth",
+      "CurrencyData"
     ],
     "resources": {
       "media": [
