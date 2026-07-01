@@ -292,7 +292,7 @@ const config = [
         'Live fiat exchange rates from ExchangeRate-API (open access, no key). ' +
         'Add pairs (base / quote), then place each in the sidebar widget list above. ' +
         'Decimals sets digits after the point (EUR/USD → 4, USD/JPY → 2). ' +
-        'Leave the label empty to show "BASE/QUOTE".' },
+        'Leave the label empty to show the quote currency (e.g. USD); short labels fit the narrow sidebar best.' },
       { type: 'currencyList', messageKey: 'CurrencyList', defaultValue: [] },
     ],
   },

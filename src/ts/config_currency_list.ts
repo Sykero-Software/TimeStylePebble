@@ -69,7 +69,7 @@ function currencyListInitialize(this: any, _minified: any, _clayConfig: any): vo
         (baseKnown ? '' : escAttr(base)) + '"' + baseCustHidden + '>' +
       '<input class="cul-quote-custom" type="text" maxlength="3" placeholder="quote code" value="' +
         (quoteKnown ? '' : escAttr(quote)) + '"' + quoteCustHidden + '>' +
-      '<input class="cul-label" type="text" placeholder="' + escAttr(base + '/' + quote) +
+      '<input class="cul-label" type="text" placeholder="' + escAttr(quote) +
         '" maxlength="7" value="' + escAttr(label) + '">' +
       '</div>';
   }
