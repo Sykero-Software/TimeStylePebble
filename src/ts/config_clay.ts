@@ -121,6 +121,8 @@ const config = [
         ] },
       { type: 'radiogroup', messageKey: 'SettingBigDate', label: 'Large date above clock',
         defaultValue: '1', options: [{ label: 'None', value: '0' }, { label: 'Show', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingBigDateMonth', label: 'Show month in large date',
+        defaultValue: '1', options: [{ label: 'Hide', value: '0' }, { label: 'Show', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingHourlyVibe', label: 'Periodic vibration',
         defaultValue: '0', options: [
           { label: 'No vibration', value: '0' },

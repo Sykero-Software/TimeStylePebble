@@ -12,7 +12,8 @@ const GATED_KEYS = ['SettingUseMetric', 'weather_loc_mode', 'weather_datasource'
   'SettingAltClockOffset',
   'SettingShowBatteryPct', 'SettingDisableAutobattery',
   'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
-  'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingAnalogTicks'];
+  'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingAnalogTicks',
+  'SettingBigDateMonth'];
 
 function makeItem(value) {
   return {
@@ -53,6 +54,7 @@ function makeClay(widgetVals, opts) {
   byKey['SettingDisableAutobattery'].value = String(opts.autoBatteryDisabled ? 1 : 0);
   byKey['SettingFallbackColumn'].value = String(opts.fallbackColumn !== undefined ? opts.fallbackColumn : 0);
   byKey['SettingClockStyle'].value = String(opts.clockStyle !== undefined ? opts.clockStyle : 0);
+  byKey['SettingBigDate'] = makeItem(String(opts.bigDate !== undefined ? opts.bigDate : 1));
   byId['heading-weather'] = makeItem('');
   byId['heading-electricity'] = makeItem('');
   byId['analog-credit'] = makeItem('');
@@ -293,4 +295,22 @@ test('live change: switching to analog reveals the analog rows', () => {
   c.byKey['SettingClockStyle'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, true);
   assert.strictEqual(c.byKey['SettingAnalogTicks'].shown, true);
+});
+
+test('big date shown: month toggle visible', () => {
+  const c = render([], { bigDate: 1 });
+  assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, true);
+});
+
+test('big date none: month toggle hidden', () => {
+  const c = render([], { bigDate: 0 });
+  assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, false);
+});
+
+test('live change: turning the big date off hides the month toggle', () => {
+  const c = render([], { bigDate: 1 });
+  assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, true);
+  c.byKey['SettingBigDate'].value = '0';
+  c.byKey['SettingBigDate'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, false);
 });
