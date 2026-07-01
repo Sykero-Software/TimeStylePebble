@@ -44,6 +44,11 @@ export function getWeatherFromCoords(pos: GeoPosition): void {
   const now = new Date();
   const start = new Date(now); start.setHours(0, 0, 0, 0);   // local start of today
   const end = new Date(now); end.setHours(23, 59, 0, 0);     // local end of today
+  // FMI represents the day's forecast condition with the ~15:00-local reading
+  // (see weather_fmi_fc_parse.parseFmiForecastTvp); compute that instant here
+  // where the phone's local timezone is available.
+  const fcSymTime = new Date(now); fcSymTime.setHours(15, 0, 0, 0);
+  const fcSymbolEpochSec = Math.floor(fcSymTime.getTime() / 1000);
 
   const url = 'https://opendata.fmi.fi/wfs?service=WFS&version=2.0.0' +
     '&request=getFeature&storedquery_id=' + STORED_QUERY +
@@ -56,7 +61,7 @@ export function getWeatherFromCoords(pos: GeoPosition): void {
   console.log('FMI forecast URL: ' + url);
 
   weatherCommon.xhrRequest(url, 'GET', (responseText) => {
-    const f = parseFmiForecastTvp(responseText, Math.floor(now.getTime() / 1000));
+    const f = parseFmiForecastTvp(responseText, Math.floor(now.getTime() / 1000), fcSymbolEpochSec);
 
     if (!f.ok) {
       console.log('FMI: no usable data, falling back to Open-Meteo');

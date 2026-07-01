@@ -10,8 +10,6 @@
    whose observedProperty href carries param=<name>, with a MeasurementTimeseries
    of <wml2:time>/<wml2:value> pairs ('NaN' = gap). */
 
-import { symbolRank } from './weather_fmi_parse';
-
 const NAME_RE = /<gml:name[^>]*locationcode\/name[^>]*>([^<]+)<\/gml:name>/;
 const PARAM_RE = /param=([a-z0-9]+)/;
 const TVP_RE = /<wml2:time>([^<]+)<\/wml2:time>\s*<wml2:value>([^<]+)<\/wml2:value>/g;
@@ -44,7 +42,9 @@ function nearest(series: Sample[], nowEpochSec: number): Sample | null {
   return best;
 }
 
-export function parseFmiForecastTvp(xml: unknown, nowEpochSec: number): FmiForecastTvpResult {
+export function parseFmiForecastTvp(
+  xml: unknown, nowEpochSec: number, fcSymbolEpochSec?: number,
+): FmiForecastTvpResult {
   if (typeof xml !== 'string' || xml.indexOf('ExceptionReport') !== -1) {
     return { ok: false };
   }
@@ -89,15 +89,16 @@ export function parseFmiForecastTvp(xml: unknown, nowEpochSec: number): FmiForec
     if (temps[j].value < low) { low = temps[j].value; }
   }
 
-  // Forecast condition = the day's most notable weather as a DAY-base code
-  // (strip the +100 night offset so the icon mapping yields a daytime icon).
-  let fcSym: number | null = null;
-  let fcRank = -1;
-  for (const s of syms) {
-    const b = s.value % 100;
-    const r = symbolRank(b);
-    if (r > fcRank) { fcRank = r; fcSym = b; }
-  }
+  // Forecast condition = the smartsymbol at ~15:00 local (fcSymbolEpochSec), or
+  // the nearest sample -- this is how FMI derives the day's forecast symbol shown
+  // on ilmatieteenlaitos.fi (a single representative afternoon reading), NOT the
+  // day's most notable weather (which spuriously showed rain when a lone morning
+  // or night hour was wet). Strip the +100 night offset so the mapping yields a
+  // daytime icon. Falls back to now when no target time is supplied.
+  const fcTarget = (typeof fcSymbolEpochSec === 'number' && !isNaN(fcSymbolEpochSec))
+    ? fcSymbolEpochSec : nowEpochSec;
+  const fcSample = syms.length ? nearest(syms, fcTarget) : null;
+  const fcSym: number | null = fcSample ? Math.round(fcSample.value) % 100 : null;
 
   return {
     ok: true,

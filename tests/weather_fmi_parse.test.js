@@ -15,23 +15,26 @@ function member(time, name, value) {
     '<BsWfs:ParameterValue>' + value + '</BsWfs:ParameterValue>' +
     '</BsWfs:BsWfsElement></wfs:member>';
 }
+// Rainy morning, dry afternoon: the 15:00-local sample (2, mostly clear) is the
+// forecast symbol FMI shows for the day, NOT the morning's worst (39).
 const SAMPLE =
   '<wfs:FeatureCollection>' +
-  member('2026-06-09T09:00:00Z', 'temperature', '16.38') +
-  member('2026-06-09T09:00:00Z', 'smartsymbol', '27') +   // showers
-  member('2026-06-09T09:00:00Z', 'uvindex', '1') +
+  member('2026-06-09T06:00:00Z', 'temperature', '10.0') +
+  member('2026-06-09T06:00:00Z', 'smartsymbol', '39') +   // heavy rain (the day's worst)
+  member('2026-06-09T06:00:00Z', 'uvindex', '0') +
   member('2026-06-09T12:00:00Z', 'temperature', '19.0') +
-  member('2026-06-09T12:00:00Z', 'smartsymbol', '1') +    // clear
+  member('2026-06-09T12:00:00Z', 'smartsymbol', '1') +    // clear (nearest noon)
   member('2026-06-09T12:00:00Z', 'uvindex', '3') +
   member('2026-06-09T15:00:00Z', 'temperature', '11.0') +
-  member('2026-06-09T15:00:00Z', 'smartsymbol', '39') +   // heavy rain
+  member('2026-06-09T15:00:00Z', 'smartsymbol', '2') +    // mostly clear at 15:00
   member('2026-06-09T15:00:00Z', 'uvindex', '2') +
   '</wfs:FeatureCollection>';
 
 const NOON = Math.floor(Date.parse('2026-06-09T12:00:00Z') / 1000);
+const AT15 = Math.floor(Date.parse('2026-06-09T15:00:00Z') / 1000);
 
 test('parses current values at the timestep nearest to now', () => {
-  const f = parseFmiForecast(SAMPLE, NOON);
+  const f = parseFmiForecast(SAMPLE, NOON, AT15);
   assert.strictEqual(f.ok, true);
   assert.strictEqual(f.currentTemp, 19);     // nearest to noon
   assert.strictEqual(f.currentSymbol, 1);    // clear at noon
@@ -39,14 +42,14 @@ test('parses current values at the timestep nearest to now', () => {
 });
 
 test('derives day high/low across all timesteps', () => {
-  const f = parseFmiForecast(SAMPLE, NOON);
+  const f = parseFmiForecast(SAMPLE, NOON, AT15);
   assert.strictEqual(f.forecastHigh, 19);
-  assert.strictEqual(f.forecastLow, 11);
+  assert.strictEqual(f.forecastLow, 10);
 });
 
-test('forecast symbol is the day-base code of the most severe condition', () => {
-  const f = parseFmiForecast(SAMPLE, NOON);
-  assert.strictEqual(f.forecastSymbol, 39);  // heavy rain outranks showers/clear
+test('forecast symbol is the 15:00 sample (like FMI), not the day s worst', () => {
+  const f = parseFmiForecast(SAMPLE, NOON, AT15);
+  assert.strictEqual(f.forecastSymbol, 2);   // the 15:00 sample, NOT the morning s 39
 });
 
 test('returns ok:false on exception report, empty, or non-string', () => {
