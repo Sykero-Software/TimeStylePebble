@@ -5,6 +5,7 @@ import * as weather from './weather';
 import * as electricity from './electricity';
 import * as crypto from './crypto';
 import cryptoListComponent from './config_crypto_list';
+import currencyListComponent from './config_currency_list';
 import { migrateCryptoList } from './crypto_migrate';
 
 import Clay from 'pebble-clay';
@@ -19,6 +20,7 @@ import { toAppMessageValue } from './app_message_value';
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
 clay.registerComponent(cryptoListComponent);
+clay.registerComponent(currencyListComponent);
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', () => {

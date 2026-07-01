@@ -283,6 +283,20 @@ const config = [
     ],
   },
 
+  // ------------------------------------------------------------- Currency
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', id: 'heading-currency', defaultValue: 'Currency pairs' },
+      { type: 'text', defaultValue:
+        'Live fiat exchange rates from ExchangeRate-API (open access, no key). ' +
+        'Add pairs (base / quote), then place each in the sidebar widget list above. ' +
+        'Decimals sets digits after the point (EUR/USD → 4, USD/JPY → 2). ' +
+        'Leave the label empty to show "BASE/QUOTE".' },
+      { type: 'currencyList', messageKey: 'CurrencyList', defaultValue: [] },
+    ],
+  },
+
   // ------------------------------------------------------------- Work time
   {
     type: 'section',
