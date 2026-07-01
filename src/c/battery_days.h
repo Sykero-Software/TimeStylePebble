@@ -12,7 +12,7 @@
 #define BATTERY_DAYS_VERSION_PERSIST_KEY  315
 #define BATTERY_DAYS_VERSION              1
 
-void BatteryDays_init(void);                              // load persisted history
+void BatteryDays_init(void);                              // load persisted history + seed current reading
 void BatteryDays_save(void);                              // persist history
 void BatteryDays_onBattery(BatteryChargeState charge_state); // record a reading + save
 int  BatteryDays_currentEstimateTenths(void);            // estimate now (tenths) or BATTERY_DAYS_NONE

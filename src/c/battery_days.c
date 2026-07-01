@@ -13,6 +13,12 @@ void BatteryDays_init(void) {
     persist_read_data(BATTERY_DAYS_PERSIST_KEY, &s_buf, sizeof(s_buf));
     if (s_buf.count > BATTERY_SAMPLE_CAP) { s_buf.count = 0; }  // guard a corrupt blob
   }
+  // Seed the current reading so the estimate's clock starts at launch, not only at
+  // the first battery-change event (which, at ~1% steps, can be hours away -> long
+  // "--"). record() clears on charging, appends on a decrease and is a no-op on an
+  // unchanged percent, so this is safe on every launch and keeps history continuous.
+  BatteryChargeState st = battery_state_service_peek();
+  BatteryDays_record(&s_buf, (uint32_t)time(NULL), st.charge_percent, st.is_charging);
 }
 
 void BatteryDays_save(void) {

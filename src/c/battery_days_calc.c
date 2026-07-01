@@ -27,29 +27,24 @@ void BatteryDays_record(BatteryDaysBuffer *buf, uint32_t now, uint8_t pct, bool 
 }
 
 int BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now) {
+  (void)now;   // rate is measured over the retained history; independent of "now"
   if (buf->count < 2) {
     return BATTERY_DAYS_NONE;
   }
+  // Average the discharge rate over the WHOLE retained history (oldest..newest,
+  // several days at a normal 2-3 week battery life). A short trailing window would
+  // track the *instantaneous* rate, which swings widely between an active day
+  // (screen/BT/backlight -> fast) and an idle night (slow) -> a morning reading
+  // dominated by the slow overnight discharge would jump the estimate up. Averaging
+  // across full day/night cycles keeps it stable, matching the phone app's estimate.
   const BatteryDaysSample *newest = &buf->samples[buf->count - 1];
-
-  // window start = oldest sample within WINDOW_SEC of now. Guard samples[i].t <= now
-  // first: a sample timestamped after `now` (clock moved backwards, e.g. a manual
-  // time/TZ change) would underflow the unsigned subtraction and be wrongly excluded.
-  int start = buf->count - 1;
-  for (int i = 0; i < buf->count; i++) {
-    if (buf->samples[i].t <= now &&
-        now - buf->samples[i].t <= (uint32_t)BATTERY_DAYS_WINDOW_SEC) {
-      start = i;
-      break;
-    }
-  }
-  if (start >= buf->count - 1) {      // window left only the newest -> use last 2
-    start = buf->count - 2;
-  }
-  const BatteryDaysSample *oldest = &buf->samples[start];
+  const BatteryDaysSample *oldest = &buf->samples[0];
 
   if (newest->pct >= oldest->pct) {   // no net drop
     return BATTERY_DAYS_NONE;
+  }
+  if (newest->t <= oldest->t) {       // clock moved backwards / no elapsed time
+    return BATTERY_DAYS_NONE;         // (guards the unsigned dt subtraction below)
   }
   int drop = (int)oldest->pct - (int)newest->pct;
   uint32_t dt = newest->t - oldest->t;

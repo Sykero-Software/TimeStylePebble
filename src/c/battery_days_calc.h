@@ -10,7 +10,6 @@
 // (persist + time + battery service) lives in battery_days.c.
 
 #define BATTERY_SAMPLE_CAP        16     // ring-buffer capacity (~several days at 15-30d life)
-#define BATTERY_DAYS_WINDOW_SEC   86400  // trailing window for the rate (24 h)
 #define BATTERY_DAYS_MIN_DROP     2      // require >=2% drop before showing an estimate
 #define BATTERY_DAYS_MIN_SPAN_SEC 3600   // ...spanning >=1 h (suppresses noisy early estimates)
 #define BATTERY_DAYS_MAX_TENTHS   999    // clamp display to 99.9 days
@@ -32,4 +31,6 @@ typedef struct {
 void BatteryDays_record(BatteryDaysBuffer *buf, uint32_t now, uint8_t pct, bool is_charging);
 
 // Estimate remaining battery life in TENTHS of a day, or BATTERY_DAYS_NONE.
+// The rate is averaged over the whole retained history (oldest..newest sample) so
+// day/night usage swings don't jolt the number; `now` is currently unused.
 int  BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now);

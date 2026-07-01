@@ -51,20 +51,34 @@ int main(void) {
     BatteryDays_record(&b, 600, 78, false);   // 2% but only 10 min
     assert(BatteryDays_estimateTenths(&b, 600) == BATTERY_DAYS_NONE); }
 
-  // 24h window: an anchor older than 24h is excluded; rate uses in-window samples.
-  // 60->58 over the last 24h (2%/day); remaining 58% / 2%/day = 29.0d = 290 tenths
+  // whole-buffer average: the OLDEST retained sample anchors the rate, even when
+  // it is older than 24h. Averaging over the full retained history (several days)
+  // is what smooths out day/night usage swings.
+  // 70->58 over 3 days (4%/day); remaining 58% / 4%/day = 14.5d = 145 tenths.
   { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,       70, false);  // 3 days before "now" (outside window)
-    BatteryDays_record(&b, 2*86400, 60, false);  // 24h before "now"  (in window)
+    BatteryDays_record(&b, 0,       70, false);  // 3 days before "now"
+    BatteryDays_record(&b, 2*86400, 60, false);
     BatteryDays_record(&b, 3*86400, 58, false);  // "now"
-    assert(BatteryDays_estimateTenths(&b, 3*86400) == 290); }
+    assert(BatteryDays_estimateTenths(&b, 3*86400) == 145); }
 
-  // fallback to last-2 when the 24h window holds only the newest sample
+  // two samples: rate is just oldest->newest.
   // 50->40 over 10 days (1%/day); remaining 40% / 1%/day = 40.0d = 400 tenths
   { BatteryDaysBuffer b = {0};
     BatteryDays_record(&b, 0,        50, false);
     BatteryDays_record(&b, 10*86400, 40, false);
     assert(BatteryDays_estimateTenths(&b, 10*86400) == 400); }
+
+  // diurnal robustness: a fast active day (100->96 in 12h) followed by slow
+  // idle/overnight steps must NOT inflate the estimate. The old 24h-window logic
+  // dropped the fast first-day segment and reported ~47d (470 tenths); the
+  // whole-buffer average keeps it -> 6% over 36h = 4%/day, remaining 94% ->
+  // 23.5d = 235 tenths. (This is the "jumps up after the night" bug.)
+  { BatteryDaysBuffer b = {0};
+    BatteryDays_record(&b, 0,       100, false);  // active day start
+    BatteryDays_record(&b, 12*3600,  96, false);  // fast: 4% in 12h
+    BatteryDays_record(&b, 24*3600,  95, false);  // slow: 1% overnight
+    BatteryDays_record(&b, 36*3600,  94, false);  // slow: 1% overnight
+    assert(BatteryDays_estimateTenths(&b, 36*3600) == 235); }
 
   // clamp: extremely slow discharge capped at 99.9 days
   { BatteryDaysBuffer b = {0};
