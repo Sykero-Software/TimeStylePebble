@@ -31,14 +31,22 @@ void DateHeader_updateTime(struct tm* timeInfo) {
       day[i] = day[i] - 'A' + 'a';
     }
   }
-  // day-of-month and month with no leading zeros
-  snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d.%d",
-           day, timeInfo->tm_mday, timeInfo->tm_mon + 1);
+  // day-of-month (+ optional month) with no leading zeros
+  if (settings.showBigDateMonth) {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d.%d",
+             day, timeInfo->tm_mday, timeInfo->tm_mon + 1);
+  } else {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s %d",
+             day, timeInfo->tm_mday);
+  }
 #ifdef SCREENSHOT_FIXTURES
-  // Deterministic short demo date for appstore screenshots: a single-digit day
-  // fits the narrow centre column even with two sidebars (a wide 2-digit day
-  // truncates to "Mon 2..."). Screenshot-only; compiles out of the shipped app.
-  snprintf(s_date_buffer, sizeof(s_date_buffer), "%s 8.6", day);
+  // Deterministic short demo date for appstore screenshots; honours the month
+  // setting so both states can be captured. Screenshot-only; compiles out.
+  if (settings.showBigDateMonth) {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s 8.6", day);
+  } else {
+    snprintf(s_date_buffer, sizeof(s_date_buffer), "%s 8", day);
+  }
 #endif
 }
 
