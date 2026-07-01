@@ -11,7 +11,9 @@
 static TextLayer* s_date_layer;
 static char s_date_buffer[24];
 static GRect s_frame;   // current layer frame; drives auto-scaling
-#define DATE_FIT_MARGIN 4   // px kept clear each side (TextLayer inset + safety)
+#define DATE_FIT_MARGIN 4   // total px of width slack (TextLayer inset + safety);
+                            // if even the smallest font overflows, the layer's
+                            // trailing-ellipsis mode is the fallback.
 
 // Largest -> smallest. Bitham 30 keeps today's look on days it fits; Gothic
 // bold sizes are the fallback for tight dates. All fit BIG_DATE_HEIGHT (34px).
@@ -84,6 +86,9 @@ void DateHeader_redraw(void) {
   if (!s_date_layer) return;
   text_layer_set_text_color(s_date_layer, settings.timeColor); // track color setting changes
   text_layer_set_background_color(s_date_layer, settings.dateBgColor); // track color setting changes
+  // Re-measured every redraw: the string/width only change on a date rollover,
+  // setting, or layout change, but ≤4 measurements of a short static string are
+  // cheap enough to not bother caching, even on the per-second tick path.
   text_layer_set_font(s_date_layer, pick_date_font(s_date_buffer, s_frame.size.w));
   text_layer_set_text(s_date_layer, s_date_buffer);
   layer_mark_dirty(text_layer_get_layer(s_date_layer));
