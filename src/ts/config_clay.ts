@@ -273,7 +273,7 @@ const config = [
   {
     type: 'section',
     items: [
-      { type: 'heading', id: 'heading-crypto', defaultValue: 'Crypto / currency' },
+      { type: 'heading', id: 'heading-crypto', defaultValue: 'Crypto' },
       { type: 'text', defaultValue:
         'Prices load from CoinGecko; the Data Refresh interval (bottom of this page) ' +
         'sets how often. Add coins, then place each in the sidebar widget list above. ' +

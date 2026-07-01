@@ -39,7 +39,7 @@ typedef struct {
   uint8_t interval_code;  // 0..5, meaningful only when count > 1
 } WidgetSlot;
 
-// Drawable id: a normal type 1..WL_MAX_WIDGET_TYPE or a crypto wid. EMPTY(0) draws
+// Drawable id: a normal type 1..WL_MAX_WIDGET_TYPE or a crypto/currency wid. EMPTY(0) draws
 // nothing, so it is NOT drawable and is dropped from lists.
 bool WidgetList_isDrawableId(uint8_t id);
 
