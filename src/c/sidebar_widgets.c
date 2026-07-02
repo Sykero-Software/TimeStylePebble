@@ -1166,7 +1166,6 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
   }
 
   char steps_text[8];
-  bool use_small_font = false;
 
   if (use_distance) {
     int distance = 0;
@@ -1180,31 +1179,24 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
         health_service_get_measurement_system_for_display(
             HealthMetricWalkedDistanceMeters);
 
-    // format distance string
+    // Format distance as a bare number (no km/mi unit — it wastes sidebar space).
+    // Always expressed in the display unit's own scale: one decimal below 10, a
+    // whole number at 10 and above (e.g. 0,0 / 0,5 / 5,0 / 9,9 / 12).
     if (unit_system == MeasurementSystemMetric) {
-      if (distance < 100) {
-        snprintf(steps_text, sizeof(steps_text), "%im", distance);
-      } else if (distance < 1000) {
-        distance /= 100; // convert to tenths of km
-        snprintf(steps_text, sizeof(steps_text), ".%ikm", distance);
+      int tenths = distance / 100; // tenths of a km
+      if (tenths < 100) {
+        snprintf(steps_text, sizeof(steps_text), "%i%c%i", tenths / 10,
+                 settings.decimalSeparator, tenths % 10);
       } else {
-        distance /= 1000; // convert to km
-
-        if (distance > 9) {
-          use_small_font = true;
-        }
-
-        snprintf(steps_text, sizeof(steps_text), "%ikm", distance);
+        snprintf(steps_text, sizeof(steps_text), "%i", tenths / 10);
       }
     } else {
-      int miles_tenths = distance * 10 / 1609 % 10;
-      int miles_whole = (int)roundf(distance / 1609.0f);
-
-      if (miles_whole > 0) {
-        snprintf(steps_text, sizeof(steps_text), "%imi", miles_whole);
+      int tenths = distance * 10 / 1609; // tenths of a mile
+      if (tenths < 100) {
+        snprintf(steps_text, sizeof(steps_text), "%i%c%i", tenths / 10,
+                 settings.decimalSeparator, tenths % 10);
       } else {
-        snprintf(steps_text, sizeof(steps_text), "%c%imi",
-                 settings.decimalSeparator, miles_tenths);
+        snprintf(steps_text, sizeof(steps_text), "%i", tenths / 10);
       }
     }
   } else {
@@ -1236,7 +1228,7 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
   graphics_draw_text(
-      ctx, steps_text, (use_small_font) ? smSidebarFont : mdSidebarFont,
+      ctx, steps_text, mdSidebarFont,
       GRect(layout.textRectX + SidebarWidgets_xOffset,
             yPosition + layout.stepsTextY - hs, layout.textRectWidth, 20),
       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
