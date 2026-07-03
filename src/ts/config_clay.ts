@@ -123,6 +123,12 @@ const config = [
         defaultValue: '1', options: [{ label: 'None', value: '0' }, { label: 'Show', value: '1' }] },
       { type: 'radiogroup', messageKey: 'SettingBigDateMonth', label: 'Show month in large date',
         defaultValue: '1', options: [{ label: 'Hide', value: '0' }, { label: 'Show', value: '1' }] },
+      { type: 'radiogroup', messageKey: 'SettingBigDateFont', label: 'Large date font',
+        defaultValue: '0', options: [
+          { label: 'Bold (Bitham)', value: '0' },
+          { label: 'System (Gothic)', value: '1' },
+          { label: 'Serif', value: '2' },
+        ] },
       { type: 'radiogroup', messageKey: 'SettingHourlyVibe', label: 'Periodic vibration',
         defaultValue: '0', options: [
           { label: 'No vibration', value: '0' },

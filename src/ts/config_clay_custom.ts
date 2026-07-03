@@ -124,8 +124,9 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     toggle(key('SettingAnalogDigitalClock'), analog);
     toggle(byId('analog-credit'), analog);
 
-    // Month row only relevant when the large date is shown.
+    // Month row + font picker only relevant when the large date is shown.
     toggle(key('SettingBigDateMonth'), bigDate);
+    toggle(key('SettingBigDateFont'), bigDate);
   }
 
   // AFTER_BUILD fires once items are built and have initial values (Clay 1.0.4

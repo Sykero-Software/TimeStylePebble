@@ -13,7 +13,7 @@ const GATED_KEYS = ['SettingUseMetric', 'weather_loc_mode', 'weather_datasource'
   'SettingShowBatteryPct', 'SettingDisableAutobattery',
   'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
   'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingAnalogTicks',
-  'SettingBigDateMonth'];
+  'SettingBigDateMonth', 'SettingBigDateFont'];
 
 function makeItem(value) {
   return {
@@ -313,4 +313,14 @@ test('live change: turning the big date off hides the month toggle', () => {
   c.byKey['SettingBigDate'].value = '0';
   c.byKey['SettingBigDate'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, false);
+});
+
+test('big date shown: font picker visible', () => {
+  const c = render([], { bigDate: 1 });
+  assert.strictEqual(c.byKey['SettingBigDateFont'].shown, true);
+});
+
+test('big date none: font picker hidden', () => {
+  const c = render([], { bigDate: 0 });
+  assert.strictEqual(c.byKey['SettingBigDateFont'].shown, false);
 });
