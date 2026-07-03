@@ -33,6 +33,12 @@ int main(void) {
   // A trailing non-ASCII byte must still be caught (loop reaches the end).
   assert(DateHeader_textIsAscii("6.6 Ś") == false);
 
+  // Big-date font choice -> whether the font lacks extended glyphs (asciiOnly).
+  assert(DateHeader_fontIsAsciiOnly(BIG_DATE_FONT_BITHAM) == true);   // display font, no ext glyphs
+  assert(DateHeader_fontIsAsciiOnly(BIG_DATE_FONT_SERIF)  == true);   // Droid Serif, no ext glyphs (tofu)
+  assert(DateHeader_fontIsAsciiOnly(BIG_DATE_FONT_GOTHIC) == false);  // full coverage
+  assert(DateHeader_fontIsAsciiOnly(99) == true);                    // unknown -> safe (force Gothic)
+
   printf("test_date_header_calc: all assertions passed\n");
   return 0;
 }

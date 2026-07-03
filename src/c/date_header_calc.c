@@ -9,3 +9,10 @@ bool DateHeader_textIsAscii(const char* s) {
   }
   return true;
 }
+
+bool DateHeader_fontIsAsciiOnly(uint8_t fontId) {
+  switch (fontId) {
+    case BIG_DATE_FONT_GOTHIC: return false;   // full coverage
+    default:                   return true;    // Bitham, Serif, unknown -> ascii-only
+  }
+}
