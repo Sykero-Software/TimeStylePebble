@@ -8,6 +8,7 @@
 #include "electricity.h"
 #include "crypto.h"
 #include "languages.h"
+#include "date_header_calc.h"
 #include "widget_list.h"
 
 void (*message_processed_callback)(void);
@@ -162,6 +163,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *leadingZero_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowLeadingZero);
   Tuple *batteryPct_tuple = dict_find(iterator, MESSAGE_KEY_SettingShowBatteryPct);
   Tuple *clockFont_tuple = dict_find(iterator, MESSAGE_KEY_SettingClockFontId);
+  Tuple *bigDateFont_tuple = dict_find(iterator, MESSAGE_KEY_SettingBigDateFont);
   Tuple *hourlyVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingHourlyVibe);
   Tuple *useLargeFonts_tuple = dict_find(iterator, MESSAGE_KEY_SettingUseLargeFonts);
 
@@ -316,6 +318,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(clockFont_tuple != NULL && clockFont_tuple->value->int8 >= FONT_SETTING_DEFAULT
      && clockFont_tuple->value->int8 <= FONT_SETTING_BOLD_M) {
     settings.clockFontId = clockFont_tuple->value->int8;
+  }
+
+  if(bigDateFont_tuple != NULL && bigDateFont_tuple->value->int8 >= BIG_DATE_FONT_BITHAM
+     && bigDateFont_tuple->value->int8 <= BIG_DATE_FONT_SERIF) {
+    settings.bigDateFontId = bigDateFont_tuple->value->int8;
   }
 
   if(useLargeFonts_tuple != NULL) {
