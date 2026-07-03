@@ -2,6 +2,7 @@
 #include "languages.h"
 #include "crypto.h"
 #include "widget_list.h"
+#include "date_header_calc.h"
 #include <pebble.h>
 
 Settings settings;
@@ -55,6 +56,7 @@ void Settings_loadFromStorage() {
   settings.midiSecondPrecision = false;   // recording timer off by default; appended field, no settings-version bump
   settings.showBigDate = true;   // on by default (configurable); appended field, no settings-version bump
   settings.showBigDateMonth = true;   // month shown by default (configurable); appended field, no settings-version bump
+  settings.bigDateFontId = BIG_DATE_FONT_BITHAM;   // Bitham (current look) default; appended field, no settings-version bump
   settings.twtShowRemaining = false;   // opt-in default; appended field, no settings-version bump
   settings.twtTargetVibe = false;   // opt-in default; appended field, no settings-version bump
   settings.twtBudgetVibe = false;   // opt-in default; appended field, no settings-version bump
@@ -172,6 +174,7 @@ void Settings_loadFromStorage() {
 
   if (settings.languageId > LANGUAGE_IW) { settings.languageId = LANGUAGE_EN; clamped = true; }
   if (settings.clockFontId > FONT_SETTING_BOLD_M) { settings.clockFontId = FONT_SETTING_DEFAULT; clamped = true; }
+  if (settings.bigDateFontId > BIG_DATE_FONT_SERIF) { settings.bigDateFontId = BIG_DATE_FONT_BITHAM; clamped = true; }
   if (settings.hourlyVibe > VIBE_EVERY_HALF_HOUR) { settings.hourlyVibe = NO_VIBE; clamped = true; }
   for (int i = 0; i < 3; i++) {
     if (settings.widgets[i] > MAX_WIDGET_TYPE) { settings.widgets[i] = EMPTY; clamped = true; }

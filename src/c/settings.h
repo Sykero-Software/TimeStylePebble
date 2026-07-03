@@ -174,6 +174,11 @@ typedef struct {
   // field, defaulted to true in Settings_loadFromStorage BEFORE the persist read
   // so upgrading users (shorter blob) keep the month on. No settings-version bump.
   bool showBigDateMonth;
+
+  // Big date header font choice (0=Bitham default, 1=Gothic, 2=Serif). See
+  // BigDateFontId in date_header_calc.h. Appended field, zero-default (=Bitham,
+  // the current look) on load of an older blob; no settings-version bump.
+  uint8_t bigDateFontId;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
