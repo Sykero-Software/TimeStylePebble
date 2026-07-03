@@ -2,6 +2,7 @@
 // Copyright (c) 2026 Tuomas Airaksinen
 
 #include "date_header.h"
+#include "date_header_calc.h"
 #include "settings.h"
 #include "languages.h"
 
@@ -17,20 +18,26 @@ static GRect s_frame;   // current layer frame; drives auto-scaling
 
 // Largest -> smallest. Bitham 30 keeps today's look on days it fits; Gothic
 // bold sizes are the fallback for tight dates. All fit BIG_DATE_HEIGHT (34px).
-static const char * const s_date_font_ladder[] = {
-  FONT_KEY_BITHAM_30_BLACK,
-  FONT_KEY_GOTHIC_28_BOLD,
-  FONT_KEY_GOTHIC_24_BOLD,
-  FONT_KEY_GOTHIC_18_BOLD,
+// `asciiOnly`: Bitham is a decorative display font with no accented/extended-
+// Latin, Cyrillic, Greek, etc. glyphs — it renders them blank (Polish "Śro" ->
+// "ro"), so it is skipped for any non-ASCII date name. Gothic has full coverage
+// (and is what the sidebar already uses for these names).
+static const struct { const char* key; bool asciiOnly; } s_date_font_ladder[] = {
+  { FONT_KEY_BITHAM_30_BLACK, true  },
+  { FONT_KEY_GOTHIC_28_BOLD,  false },
+  { FONT_KEY_GOTHIC_24_BOLD,  false },
+  { FONT_KEY_GOTHIC_18_BOLD,  false },
 };
 
 // Return the largest ladder font whose rendered width fits `width`. Falls back
 // to the smallest if none fit (the layer's trailing-ellipsis then applies).
 static GFont pick_date_font(const char* text, int16_t width) {
   const int count = sizeof(s_date_font_ladder) / sizeof(s_date_font_ladder[0]);
-  GFont chosen = fonts_get_system_font(s_date_font_ladder[count - 1]);
+  const bool ascii = DateHeader_textIsAscii(text);
+  GFont chosen = fonts_get_system_font(s_date_font_ladder[count - 1].key);
   for (int i = 0; i < count; i++) {
-    GFont f = fonts_get_system_font(s_date_font_ladder[i]);
+    if (s_date_font_ladder[i].asciiOnly && !ascii) continue;  // font lacks the glyphs
+    GFont f = fonts_get_system_font(s_date_font_ladder[i].key);
     // Wide box -> no wrapping -> natural single-line width.
     GSize sz = graphics_text_layout_get_content_size(
         text, f, GRect(0, 0, 1000, 1000),
