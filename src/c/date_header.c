@@ -16,12 +16,22 @@ static GRect s_frame;   // current layer frame; drives auto-scaling
                             // if even the smallest font overflows, the layer's
                             // trailing-ellipsis mode is the fallback.
 
+// Gothic 36 Bold is bigger than the SDK's largest header-exposed Gothic (28) and
+// has full glyph coverage. The app SDK's pebble_fonts.h does NOT define a
+// FONT_KEY_GOTHIC_36_BOLD macro (it only lives in the toolchain's moddable host),
+// but the resource ships in the Core Devices / PebbleOS firmware
+// (resources/.../GOTHIC_36_BOLD.pbf) and fonts_get_system_font() loads it by its
+// resource-id string. Verified on the emery emulator. If a watch's firmware lacks
+// it, fonts_get_system_font falls back to a small default — acceptable since the
+// ladder below also carries the header-defined Gothic sizes for width fitting.
+#define BIG_DATE_GOTHIC_36_BOLD "RESOURCE_ID_GOTHIC_36_BOLD"
+
 // Map the configurable big-date font choice to a system font key. Bitham (the
 // default) and Serif are decorative display faces with no accented/extended
 // glyphs; Gothic has full coverage. See BigDateFontId in date_header_calc.h.
 static const char* big_date_top_font_key(uint8_t fontId) {
   switch (fontId) {
-    case BIG_DATE_FONT_GOTHIC: return FONT_KEY_GOTHIC_28_BOLD;
+    case BIG_DATE_FONT_GOTHIC: return BIG_DATE_GOTHIC_36_BOLD;
     case BIG_DATE_FONT_SERIF:  return FONT_KEY_DROID_SERIF_28_BOLD;
     case BIG_DATE_FONT_BITHAM:
     default:                   return FONT_KEY_BITHAM_30_BLACK;
@@ -40,6 +50,7 @@ static GFont pick_date_font(const char* text, int16_t width) {
   const uint8_t fontId = settings.bigDateFontId;
   const struct { const char* key; bool asciiOnly; } ladder[] = {
     { big_date_top_font_key(fontId), DateHeader_fontIsAsciiOnly(fontId) },
+    { BIG_DATE_GOTHIC_36_BOLD,  false },
     { FONT_KEY_GOTHIC_28_BOLD,  false },
     { FONT_KEY_GOTHIC_24_BOLD,  false },
     { FONT_KEY_GOTHIC_18_BOLD,  false },
