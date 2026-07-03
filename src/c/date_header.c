@@ -16,28 +16,39 @@ static GRect s_frame;   // current layer frame; drives auto-scaling
                             // if even the smallest font overflows, the layer's
                             // trailing-ellipsis mode is the fallback.
 
-// Largest -> smallest. Bitham 30 keeps today's look on days it fits; Gothic
-// bold sizes are the fallback for tight dates. All fit BIG_DATE_HEIGHT (34px).
-// `asciiOnly`: Bitham is a decorative display font with no accented/extended-
-// Latin, Cyrillic, Greek, etc. glyphs — it renders them blank (Polish "Śro" ->
-// "ro"), so it is skipped for any non-ASCII date name. Gothic has full coverage
-// (and is what the sidebar already uses for these names).
-static const struct { const char* key; bool asciiOnly; } s_date_font_ladder[] = {
-  { FONT_KEY_BITHAM_30_BLACK, true  },
-  { FONT_KEY_GOTHIC_28_BOLD,  false },
-  { FONT_KEY_GOTHIC_24_BOLD,  false },
-  { FONT_KEY_GOTHIC_18_BOLD,  false },
-};
+// Map the configurable big-date font choice to a system font key. Bitham (the
+// default) and Serif are decorative display faces with no accented/extended
+// glyphs; Gothic has full coverage. See BigDateFontId in date_header_calc.h.
+static const char* big_date_top_font_key(uint8_t fontId) {
+  switch (fontId) {
+    case BIG_DATE_FONT_GOTHIC: return FONT_KEY_GOTHIC_28_BOLD;
+    case BIG_DATE_FONT_SERIF:  return FONT_KEY_DROID_SERIF_28_BOLD;
+    case BIG_DATE_FONT_BITHAM:
+    default:                   return FONT_KEY_BITHAM_30_BLACK;
+  }
+}
 
-// Return the largest ladder font whose rendered width fits `width`. Falls back
-// to the smallest if none fit (the layer's trailing-ellipsis then applies).
+// Return the largest ladder font whose rendered width fits `width`. The ladder
+// top is the user-chosen font (settings.bigDateFontId); below it are the Gothic
+// fallback sizes (full glyph coverage). An asciiOnly top font (Bitham/Serif) is
+// skipped for a non-ASCII date name, and any too-wide font steps down — so
+// extended-glyph languages (Polish, Czech, Cyrillic, ...) always render
+// correctly in Gothic regardless of the choice. Falls back to the smallest if
+// none fit (the layer's trailing-ellipsis then applies).
 static GFont pick_date_font(const char* text, int16_t width) {
-  const int count = sizeof(s_date_font_ladder) / sizeof(s_date_font_ladder[0]);
   const bool ascii = DateHeader_textIsAscii(text);
-  GFont chosen = fonts_get_system_font(s_date_font_ladder[count - 1].key);
+  const uint8_t fontId = settings.bigDateFontId;
+  const struct { const char* key; bool asciiOnly; } ladder[] = {
+    { big_date_top_font_key(fontId), DateHeader_fontIsAsciiOnly(fontId) },
+    { FONT_KEY_GOTHIC_28_BOLD,  false },
+    { FONT_KEY_GOTHIC_24_BOLD,  false },
+    { FONT_KEY_GOTHIC_18_BOLD,  false },
+  };
+  const int count = sizeof(ladder) / sizeof(ladder[0]);
+  GFont chosen = fonts_get_system_font(ladder[count - 1].key);
   for (int i = 0; i < count; i++) {
-    if (s_date_font_ladder[i].asciiOnly && !ascii) continue;  // font lacks the glyphs
-    GFont f = fonts_get_system_font(s_date_font_ladder[i].key);
+    if (ladder[i].asciiOnly && !ascii) continue;  // font lacks the glyphs
+    GFont f = fonts_get_system_font(ladder[i].key);
     // Wide box -> no wrapping -> natural single-line width.
     GSize sz = graphics_text_layout_get_content_size(
         text, f, GRect(0, 0, 1000, 1000),
