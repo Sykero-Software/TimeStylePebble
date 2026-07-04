@@ -9,6 +9,13 @@
 // in LAYER-LOCAL coordinates, so — unlike the FCTX digital path in
 // clock_area.c — the layer frame origin is honored automatically and no manual
 // offset compensation is needed.
+//
+// Hand corner coordinates track upstream's "more precisely pre-generated hand
+// coordinates" (2026-07): the ideal hand geometry rounded to the nearest pixel.
+// We compute the same values at runtime (sin_lookup → float, round once per
+// corner) instead of baking per-board tables, so the face stays bounds-scalable.
+// See docs/superpowers/specs/2026-07-04-timestyle-analog-nearest-pixel-hands-design.md
+// (in the superrepo).
 #ifndef PBL_PLATFORM_APLITE
 #include <pebble.h>
 #include "clock_analog.h"
@@ -57,90 +64,39 @@ static void draw_all_ticks(GContext *ctx, GPoint center, int tick_r, int tick_le
   }
 }
 
-// pixel-perfect trig offset helpers
-static int32_t prv_trig_offset_trunc(int32_t value, int32_t trig) {
-  return ((int64_t)value * trig) / TRIG_MAX_RATIO;
+// Round a float coordinate to the nearest pixel (ties away from zero). Matches
+// nyquist's snap_to_nearest_pixel, so the corners computed below equal the
+// nearest-pixel hand coordinates upstream now pre-generates.
+static int rnd(float v) {
+  return (int)(v >= 0 ? v + 0.5f : v - 0.5f);
 }
 
-static int32_t prv_trig_offset_compensated(int32_t value, int32_t trig) {
-  int64_t scaled = (int64_t)value * trig;
-  int32_t base = scaled / TRIG_MAX_RATIO;
-  if (scaled % TRIG_MAX_RATIO != 0) {
-    base += (scaled > 0 ? 1 : -1);
-  }
-  return base;
-}
-
-static int64_t prv_abs64(int64_t v) {
-  return v < 0 ? -v : v;
-}
-
-// pentagon outline of a hand
+// Pentagon outline of a hand. The five corners are computed from the integer
+// sin_lookup/cos_lookup table converted to float, then each rounded ONCE to the
+// nearest pixel — reproducing at runtime the nearest-pixel coordinates upstream
+// now pre-generates (see the file header). This replaces the old integer
+// trunc/compensated rounding + 1px axis-shift heuristic: the outline now hugs the
+// ideal geometry (worst corner ~0.6px vs ~2.4px before) while the face stays
+// bounds-scalable across boards. Also used for the minute hand's halo.
 static void draw_hand_border(GContext *ctx, GPoint center, int32_t angle,
                              int outer_dist, int half_width, int apex_ext,
                              int tail, int stroke_w, GColor color) {
-  int32_t sin_a = sin_lookup(angle);
-  int32_t cos_a = cos_lookup(angle);
+  float sin_a = (float)sin_lookup(angle) / TRIG_MAX_RATIO;
+  float cos_a = (float)cos_lookup(angle) / TRIG_MAX_RATIO;
 
-  GPoint inner_pt = {
-    center.x - (int32_t)tail * sin_a / TRIG_MAX_RATIO,
-    center.y + (int32_t)tail * cos_a / TRIG_MAX_RATIO,
-  };
-  GPoint outer_pt = {
-    center.x + prv_trig_offset_compensated(outer_dist, sin_a),
-    center.y - prv_trig_offset_compensated(outer_dist, cos_a),
-  };
+  float inner_x = center.x - tail * sin_a;
+  float inner_y = center.y + tail * cos_a;
+  float outer_x = center.x + outer_dist * sin_a;
+  float outer_y = center.y - outer_dist * cos_a;
+  float side_x  = half_width * cos_a;
+  float side_y  = half_width * sin_a;
 
-  int32_t x_diff_left  = prv_trig_offset_trunc(half_width, cos_a);
-  int32_t y_diff_left  = prv_trig_offset_trunc(half_width, sin_a);
-  int32_t x_diff_right = prv_trig_offset_compensated(half_width, cos_a);
-  int32_t y_diff_right = prv_trig_offset_compensated(half_width, sin_a);
-
-  GPoint inner_right = { inner_pt.x + x_diff_right, inner_pt.y + y_diff_right };
-  GPoint inner_left  = { inner_pt.x - x_diff_left,  inner_pt.y - y_diff_left };
-  GPoint outer_right = { outer_pt.x + x_diff_right, outer_pt.y + y_diff_right };
-  GPoint outer_left  = { outer_pt.x - x_diff_left,  outer_pt.y - y_diff_left };
-  GPoint apex        = {
-    outer_pt.x + prv_trig_offset_compensated(apex_ext, sin_a),
-    outer_pt.y - prv_trig_offset_compensated(apex_ext, cos_a),
-  };
-
-  // Shift the inner edge by up to 1px to keep the hand axis through center.
-  int32_t inner_mid_x = (inner_left.x + inner_right.x) / 2;
-  int32_t inner_mid_y = (inner_left.y + inner_right.y) / 2;
-  int32_t outer_mid_x = (outer_left.x + outer_right.x) / 2;
-  int32_t outer_mid_y = (outer_left.y + outer_right.y) / 2;
-  int32_t axis_dx = outer_mid_x - inner_mid_x;
-  int32_t axis_dy = outer_mid_y - inner_mid_y;
-
-  if (axis_dx != 0 || axis_dy != 0) {
-    const int shifts[5][2] = { {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1} };
-    int best_index = 0;
-    int64_t best_error = -1;
-
-    for (int i = 0; i < 5; i++) {
-      int32_t sx = shifts[i][0];
-      int32_t sy = shifts[i][1];
-      int32_t test_inner_x = inner_mid_x + sx;
-      int32_t test_inner_y = inner_mid_y + sy;
-      int64_t cross = (int64_t)axis_dx * (center.y - test_inner_y)
-                    - (int64_t)axis_dy * (center.x - test_inner_x);
-      int64_t err = prv_abs64(cross);
-      if (best_error < 0 || err < best_error) {
-        best_error = err;
-        best_index = i;
-      }
-    }
-
-    if (best_index != 0) {
-      int32_t sx = shifts[best_index][0];
-      int32_t sy = shifts[best_index][1];
-      inner_left.x += sx;
-      inner_left.y += sy;
-      inner_right.x += sx;
-      inner_right.y += sy;
-    }
-  }
+  GPoint inner_left  = { rnd(inner_x - side_x), rnd(inner_y - side_y) };
+  GPoint inner_right = { rnd(inner_x + side_x), rnd(inner_y + side_y) };
+  GPoint outer_left  = { rnd(outer_x - side_x), rnd(outer_y - side_y) };
+  GPoint outer_right = { rnd(outer_x + side_x), rnd(outer_y + side_y) };
+  GPoint apex        = { rnd(outer_x + apex_ext * sin_a),
+                         rnd(outer_y - apex_ext * cos_a) };
 
   graphics_context_set_stroke_color(ctx, color);
   graphics_context_set_stroke_width(ctx, stroke_w);
