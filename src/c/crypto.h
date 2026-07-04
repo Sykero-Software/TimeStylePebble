@@ -11,7 +11,7 @@
 
 #define MAX_CRYPTO       16           // matches MAX_CRYPTO in the TS config
 #define CRYPTO_WID_BASE  200          // new-coin wid range [200, 200+MAX_CRYPTO)
-#define CRYPTO_LABEL_LEN 6            // up to 5 chars + NUL
+#define CRYPTO_LABEL_LEN 8            // up to 7 chars + NUL (fits currency "EUR/USD")
 #define CRYPTO_VALUE_LEN 16           // formatted value + NUL (fits worst-case p=8 + integer part)
 
 typedef struct {

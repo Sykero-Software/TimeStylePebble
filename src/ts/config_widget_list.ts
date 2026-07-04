@@ -85,6 +85,29 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
     }
     return out;
   }
+  function readCurrencyRows(): { wid: number; base: string; quote: string; label: string }[] {
+    const out: { wid: number; base: string; quote: string; label: string }[] = [];
+    const rowEls = document.querySelectorAll('.cul-root .cul-row');
+    for (let i = 0; i < rowEls.length; i++) {
+      const el = rowEls[i] as HTMLElement;
+      const wid = parseInt(el.getAttribute('data-wid') || '0', 10) || 0;
+      const baseSel = el.querySelector('.cul-base') as HTMLSelectElement;
+      let base = baseSel ? baseSel.value : '';
+      if (base === 'custom') {
+        const c = el.querySelector('.cul-base-custom') as HTMLInputElement;
+        base = c ? c.value.toUpperCase() : '';
+      }
+      const quoteSel = el.querySelector('.cul-quote') as HTMLSelectElement;
+      let quote = quoteSel ? quoteSel.value : '';
+      if (quote === 'custom') {
+        const c = el.querySelector('.cul-quote-custom') as HTMLInputElement;
+        quote = c ? c.value.toUpperCase() : '';
+      }
+      const labelIn = el.querySelector('.cul-label') as HTMLInputElement;
+      out.push({ wid: wid, base: base, quote: quote, label: labelIn ? labelIn.value : '' });
+    }
+    return out;
+  }
   function currentOptions(): { id: number; label: string }[] {
     const out: { id: number; label: string }[] = STATIC_OPTIONS.slice();
     const arr = readCryptoRows();
@@ -96,6 +119,17 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
       const coin = (typeof r.coin === 'string') ? r.coin : '';
       const label = (typeof r.label === 'string' && r.label !== '') ? r.label : coin.toUpperCase();
       out.push({ id: wid, label: label });
+    }
+    const carr = readCurrencyRows();
+    for (let i = 0; i < carr.length; i++) {
+      const r = carr[i];
+      if (!r) { continue; }
+      const cwid = r.wid;
+      if (isNaN(cwid) || cwid === 0) { continue; }
+      const base = (typeof r.base === 'string') ? r.base : '';
+      const quote = (typeof r.quote === 'string') ? r.quote : '';
+      const label = (typeof r.label === 'string' && r.label !== '') ? r.label : (base + '/' + quote);
+      out.push({ id: cwid, label: label });
     }
     return out;
   }

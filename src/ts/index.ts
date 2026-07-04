@@ -4,7 +4,9 @@
 import * as weather from './weather';
 import * as electricity from './electricity';
 import * as crypto from './crypto';
+import * as currency from './currency';
 import cryptoListComponent from './config_crypto_list';
+import currencyListComponent from './config_currency_list';
 import { migrateCryptoList } from './crypto_migrate';
 
 import Clay from 'pebble-clay';
@@ -19,6 +21,7 @@ import { toAppMessageValue } from './app_message_value';
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
 clay.registerComponent(cryptoListComponent);
+clay.registerComponent(currencyListComponent);
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', () => {
@@ -59,6 +62,16 @@ Pebble.addEventListener('ready', () => {
   if (window.localStorage.getItem('disable_crypto') !== 'yes') {
     crypto.updateCrypto(true);
   }
+
+  // currency: disabled until a widget selects a pair (set in webviewclosed). Force
+  // a send on (re)launch for the same reason as crypto (the watch's persisted
+  // CurrencyData is wiped by a reinstall/reboot, but currency_last_sent survives).
+  if (window.localStorage.getItem('disable_currency') === null) {
+    window.localStorage.setItem('disable_currency', 'yes');
+  }
+  if (window.localStorage.getItem('disable_currency') !== 'yes') {
+    currency.updateCurrency(true);
+  }
 });
 
 // Listen for incoming messages
@@ -80,6 +93,7 @@ Pebble.addEventListener('appmessage', (msg) => {
   weather.updateWeather();
   electricity.updateElectricity();
   crypto.updateCrypto();
+  currency.updateCurrency();
 });
 
 // One-time migration: the old config saved 6 separate SettingWidget*ID keys to
@@ -201,11 +215,15 @@ Pebble.addEventListener('webviewclosed', (e) => {
   const anyCrypto = widgetIDs.some((id) =>
     id === 15 || id === 16 || id === 17 || (id >= 200 && id < 216));
   window.localStorage.setItem('disable_crypto', anyCrypto ? 'no' : 'yes');
+  // currency: enabled iff any placed widget id is in the currency range [216, 223)
+  const anyCurrency = widgetIDs.some((id) => id >= 216 && id < 223);
+  window.localStorage.setItem('disable_currency', anyCurrency ? 'no' : 'yes');
 
   console.log('Preparing message: ' + JSON.stringify(dict));
   Pebble.sendAppMessage(dict, () => {
     weather.updateWeather(true);
     electricity.updateElectricity(true);
     crypto.updateCrypto(true);
+    currency.updateCurrency(true);
   }, () => { console.log('Failed to send config data!'); });
 });

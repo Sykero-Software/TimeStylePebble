@@ -58,6 +58,7 @@ function makeClay(widgetVals, opts) {
   byId['heading-weather'] = makeItem('');
   byId['heading-electricity'] = makeItem('');
   byId['analog-credit'] = makeItem('');
+  byId['heading-currency'] = makeItem('');
   return {
     // Mirror Clay 1.0.4's real event set (lib/clay-config.js). There is NO
     // AFTER_RENDER — using a missing constant passes `undefined` to on(), which
@@ -305,6 +306,27 @@ test('big date shown: month toggle visible', () => {
 test('big date none: month toggle hidden', () => {
   const c = render([], { bigDate: 0 });
   assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, false);
+});
+
+test('currency pair widget (216): currency heading shown', () => {
+  const c = render([216]);
+  assert.strictEqual(c.byId['heading-currency'].shown, true);
+});
+
+test('no currency widget (weather only): currency heading hidden', () => {
+  const c = render([7]);
+  assert.strictEqual(c.byId['heading-currency'].shown, false);
+});
+
+test('currency wid boundary: 222 is currency, 223 is not', () => {
+  assert.strictEqual(render([222]).byId['heading-currency'].shown, true);
+  // 223 is excluded from the currency range (223|0x20 == 0xFF, the rotating marker).
+  assert.strictEqual(render([223]).byId['heading-currency'].shown, false);
+});
+
+test('right-list currency widget reveals the currency heading', () => {
+  const c = render([], { rightVals: [216] });
+  assert.strictEqual(c.byId['heading-currency'].shown, true);
 });
 
 test('live change: turning the big date off hides the month toggle', () => {

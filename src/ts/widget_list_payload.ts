@@ -11,6 +11,8 @@ const MAX_WIDGET_LIST_BYTES = 16;   // matches MAX_WIDGET_LIST in src/c/sidebar_
 const MAX_WIDGET_TYPE = 22;         // BATTERY_DAYS
 const CRYPTO_WID_BASE = 200;
 const MAX_CRYPTO = 16;
+const CURRENCY_WID_BASE = 216;
+const MAX_CURRENCY = 7;
 const ROTATING_MARKER = 255;
 const MAX_GROUP_MEMBERS = 6;
 const WIDGET_HIDE_FLAG = 0x20;   // KEEP IN SYNC with src/c/widget_list.h
@@ -20,6 +22,7 @@ function isDrawableId(id: number): boolean {
   if (base === 0) { return false; }
   if (base >= 1 && base <= MAX_WIDGET_TYPE) { return true; }
   if (base >= CRYPTO_WID_BASE && base < CRYPTO_WID_BASE + MAX_CRYPTO) { return true; }
+  if (base >= CURRENCY_WID_BASE && base < CURRENCY_WID_BASE + MAX_CURRENCY) { return true; }
   return false;
 }
 

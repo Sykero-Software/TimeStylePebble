@@ -107,6 +107,10 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
       id === 15 || id === 16 || id === 17 || (id >= 200 && id < 216));
     toggle(byId('heading-crypto'), anyCrypto);
 
+    // Currency: show the section heading once any currency-pair widget is placed.
+    const anyCurrency = ids.some((id) => id >= 216 && id < 223);
+    toggle(byId('heading-currency'), anyCurrency);
+
     // Regional (alternate clock)
     toggle(key('SettingAltClockName'), has(ids, [3]));
     toggle(key('SettingAltClockOffset'), has(ids, [3]));

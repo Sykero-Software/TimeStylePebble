@@ -20,7 +20,9 @@ int main(void) {
   assert(!WidgetList_isDrawableId(23));     // first normal id past the max
   assert(WidgetList_isDrawableId(200));     // crypto base
   assert(WidgetList_isDrawableId(215));     // crypto last
-  assert(!WidgetList_isDrawableId(216));
+  assert(WidgetList_isDrawableId(216));     // currency base
+  assert(WidgetList_isDrawableId(222));     // currency last (7 slots: 216-222)
+  assert(!WidgetList_isDrawableId(223));    // 223 excluded: 223|0x20 == 0xFF (rotating marker)
   assert(!WidgetList_isDrawableId(255));    // marker is not an id
 
   // --- hide flag helpers (0x20) ---
@@ -35,6 +37,8 @@ int main(void) {
   assert(WidgetList_isDrawableId(7 | 0x20));       // hidden weather -> drawable
   assert(WidgetList_isDrawableId(20 | 0x20));      // hidden deep sleep
   assert(WidgetList_isDrawableId(200 | 0x20));     // hidden crypto
+  assert(WidgetList_baseId(216 | 0x20) == 216);    // currency base preserved
+  assert(WidgetList_isDrawableId(216 | 0x20));      // hidden currency -> drawable
   assert(WidgetList_isDrawableId(21 | 0x20));      // hidden distance
   assert(WidgetList_isDrawableId(22 | 0x20));      // hidden battery days
   assert(!WidgetList_isDrawableId(23 | 0x20));     // base 23 not drawable

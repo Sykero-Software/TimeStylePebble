@@ -279,13 +279,28 @@ const config = [
   {
     type: 'section',
     items: [
-      { type: 'heading', id: 'heading-crypto', defaultValue: 'Crypto / currency' },
+      { type: 'heading', id: 'heading-crypto', defaultValue: 'Crypto' },
       { type: 'text', defaultValue:
         'Prices load from CoinGecko; the Data Refresh interval (bottom of this page) ' +
         'sets how often. Add coins, then place each in the sidebar widget list above. ' +
         'Precision: positive = decimals (2 → 104000.00), negative = round (−3 → 104). ' +
         'Trim: cut N leading digits (1.160 with trim 2 → 60).' },
       { type: 'cryptoList', messageKey: 'CryptoList', defaultValue: [] },
+    ],
+  },
+
+  // ------------------------------------------------------------- Currency
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', id: 'heading-currency', defaultValue: 'Currency pairs' },
+      { type: 'text', defaultValue:
+        'Live fiat exchange rates from ExchangeRate-API (open access, no key). ' +
+        'Add pairs (base / quote), then place each in the sidebar widget list above. ' +
+        'Precision: positive = decimals (EUR/USD 4 → 1.0823), negative = round. ' +
+        'Trim: cut N leading digits (1.160, trim 2 → 60). ' +
+        'Leave the label empty to show the quote currency (e.g. USD); short labels fit the narrow sidebar best.' },
+      { type: 'currencyList', messageKey: 'CurrencyList', defaultValue: [] },
     ],
   },
 
