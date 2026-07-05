@@ -26,38 +26,55 @@ void BatteryDays_record(BatteryDaysBuffer *buf, uint32_t now, uint8_t pct, bool 
   buf->count++;
 }
 
-int BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now) {
-  (void)now;   // rate is measured over the retained history; independent of "now"
+uint32_t BatteryDays_bufferRateSecPerPct(const BatteryDaysBuffer *buf) {
   if (buf->count < 2) {
-    return BATTERY_DAYS_NONE;
+    return 0;
   }
-  // Average the discharge rate over the WHOLE retained history (oldest..newest,
-  // several days at a normal 2-3 week battery life). A short trailing window would
-  // track the *instantaneous* rate, which swings widely between an active day
-  // (screen/BT/backlight -> fast) and an idle night (slow) -> a morning reading
-  // dominated by the slow overnight discharge would jump the estimate up. Averaging
-  // across full day/night cycles keeps it stable, matching the phone app's estimate.
   const BatteryDaysSample *newest = &buf->samples[buf->count - 1];
   const BatteryDaysSample *oldest = &buf->samples[0];
-
   if (newest->pct >= oldest->pct) {   // no net drop
-    return BATTERY_DAYS_NONE;
+    return 0;
   }
   if (newest->t <= oldest->t) {       // clock moved backwards / no elapsed time
-    return BATTERY_DAYS_NONE;         // (guards the unsigned dt subtraction below)
+    return 0;
   }
   int drop = (int)oldest->pct - (int)newest->pct;
   uint32_t dt = newest->t - oldest->t;
   if (drop < BATTERY_DAYS_MIN_DROP || dt < (uint32_t)BATTERY_DAYS_MIN_SPAN_SEC) {
+    return 0;
+  }
+  // seconds per 1% drop = dt / drop (round to nearest)
+  return (uint32_t)(((uint64_t)dt + (uint32_t)drop / 2) / (uint32_t)drop);
+}
+
+uint32_t BatteryDays_blendLearned(uint32_t learned, uint32_t fresh) {
+  if (fresh == 0) {
+    return learned;     // nothing valid to fold in
+  }
+  if (learned == 0) {
+    return fresh;       // first real measurement replaces a seeded default
+  }
+  int64_t delta = (int64_t)fresh - (int64_t)learned;  // signed: fresh may be < learned
+  return (uint32_t)((int64_t)learned + delta / 4);
+}
+
+int BatteryDays_tenthsFromRate(uint8_t pct, uint32_t sec_per_pct) {
+  if (sec_per_pct == 0) {
     return BATTERY_DAYS_NONE;
   }
-
-  // days_left_from_now = remaining% / (drop% / dt_sec) / 86400  -> tenths = *10
-  //   = newest.pct * dt * 10 / (drop * 86400)
-  // 64-bit intermediates: newest.pct*dt*10 overflows 32-bit long for multi-week spans.
-  int64_t denom = (int64_t)drop * 86400;
-  int64_t tenths = ((int64_t)newest->pct * (int64_t)dt * 10 + denom / 2) / denom;
+  // days_left = pct * sec_per_pct / 86400 ; tenths = *10, round to nearest.
+  // 64-bit: pct*sec_per_pct*10 overflows 32-bit for slow discharge.
+  int64_t tenths = ((int64_t)pct * (int64_t)sec_per_pct * 10 + 86400 / 2) / 86400;
   if (tenths < 0) { tenths = 0; }
   if (tenths > BATTERY_DAYS_MAX_TENTHS) { tenths = BATTERY_DAYS_MAX_TENTHS; }
   return (int)tenths;
+}
+
+int BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now) {
+  (void)now;   // rate is measured over the retained history; independent of "now"
+  uint32_t rate = BatteryDays_bufferRateSecPerPct(buf);
+  if (rate == 0) {
+    return BATTERY_DAYS_NONE;   // not enough data yet (guards the [count-1] index below)
+  }
+  return BatteryDays_tenthsFromRate(buf->samples[buf->count - 1].pct, rate);
 }

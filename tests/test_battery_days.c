@@ -94,6 +94,34 @@ int main(void) {
     assert(b.count == BATTERY_SAMPLE_CAP);
     assert(b.samples[b.count - 1].pct == (uint8_t)(100 - (BATTERY_SAMPLE_CAP + 4))); }
 
+  // --- rate helpers (issue: estimate available right after charging) ---
+
+  // tenthsFromRate: math, defaults, clamp, zero-rate sentinel
+  assert(BatteryDays_tenthsFromRate(0,  8640) == 0);                       // empty battery
+  assert(BatteryDays_tenthsFromRate(40, 8640) == 40);                      // 40% at 8640 s/% = 4.0 d
+  assert(BatteryDays_tenthsFromRate(100, BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == 300); // fresh: 100% -> 30.0 d
+  assert(BatteryDays_tenthsFromRate(50,  BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == 150); // 50% -> 15.0 d
+  assert(BatteryDays_tenthsFromRate(100, 1u << 30) == BATTERY_DAYS_MAX_TENTHS);     // absurdly slow -> clamp
+  assert(BatteryDays_tenthsFromRate(90, 0) == BATTERY_DAYS_NONE);          // no rate -> sentinel
+
+  // bufferRateSecPerPct: valid vs below-threshold
+  { BatteryDaysBuffer b = {0};
+    assert(BatteryDays_bufferRateSecPerPct(&b) == 0);                      // empty
+    BatteryDays_record(&b, 0, 50, false);
+    assert(BatteryDays_bufferRateSecPerPct(&b) == 0);                      // single sample
+    BatteryDays_record(&b, 86400, 40, false);                             // 10% over 1 day
+    assert(BatteryDays_bufferRateSecPerPct(&b) == 8640); }                 // 86400/10
+  { BatteryDaysBuffer b = {0};                                             // 1% drop < MIN_DROP
+    BatteryDays_record(&b, 0,    80, false);
+    BatteryDays_record(&b, 7200, 79, false);
+    assert(BatteryDays_bufferRateSecPerPct(&b) == 0); }
+
+  // blendLearned: seed-replace, EWMA up/down, no underflow, keep-on-zero
+  assert(BatteryDays_blendLearned(0,    8640)  == 8640);                   // first real replaces default
+  assert(BatteryDays_blendLearned(8640, 0)     == 8640);                   // nothing valid -> keep
+  assert(BatteryDays_blendLearned(8000, 12000) == 9000);                   // 8000 + (12000-8000)/4
+  assert(BatteryDays_blendLearned(12000, 8000) == 11000);                  // 12000 + (8000-12000)/4, no underflow
+
   printf("All battery_days tests passed\n");
   return 0;
 }

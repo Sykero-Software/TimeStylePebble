@@ -15,6 +15,11 @@
 #define BATTERY_DAYS_MAX_TENTHS   999    // clamp display to 99.9 days
 #define BATTERY_DAYS_NONE         (-1)   // sentinel: not enough data yet (warm-up / charging)
 
+// Default assumed battery life for a fresh install (no learned rate yet):
+// 30-day life = 30*86400/100 seconds per 1% drop. The manufacturer's promised
+// future life; picked optimistically. Washes out at the first real measurement.
+#define BATTERY_DAYS_DEFAULT_SEC_PER_PCT 25920u
+
 typedef struct {
   uint32_t t;     // unix timestamp of the sample
   uint8_t  pct;   // charge_percent at that time
@@ -34,3 +39,20 @@ void BatteryDays_record(BatteryDaysBuffer *buf, uint32_t now, uint8_t pct, bool 
 // The rate is averaged over the whole retained history (oldest..newest sample) so
 // day/night usage swings don't jolt the number; `now` is currently unused.
 int  BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now);
+
+// Whole-history discharge rate in SECONDS per 1% drop (dt/drop over oldest..newest),
+// or 0 if the buffer is not yet valid (same count>=2 / drop>=MIN_DROP / span>=MIN_SPAN
+// / net-drop / elapsed-time guards as the estimate).
+uint32_t BatteryDays_bufferRateSecPerPct(const BatteryDaysBuffer *buf);
+
+// Fold a fresh valid rate (sec/%) into the persisted learned rate.
+//   fresh   == 0 -> keep learned (nothing valid to fold)
+//   learned == 0 -> take fresh as-is (a seeded default is replaced by the first
+//                   real measurement)
+//   otherwise    -> light EWMA toward fresh: learned + (fresh - learned)/4
+// Signed-safe: fresh may be smaller than learned.
+uint32_t BatteryDays_blendLearned(uint32_t learned, uint32_t fresh);
+
+// Remaining life in TENTHS of a day from a charge level + rate, clamped to
+// [0, BATTERY_DAYS_MAX_TENTHS]. sec_per_pct == 0 -> BATTERY_DAYS_NONE.
+int BatteryDays_tenthsFromRate(uint8_t pct, uint32_t sec_per_pct);
