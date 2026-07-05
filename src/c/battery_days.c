@@ -4,21 +4,6 @@
 
 static BatteryDaysState s_state;
 
-// TEMP DEBUG (battery-days full-cycle-rate verification): dump the estimator state
-// and the resulting estimate so we can confirm on real hardware that `learned`
-// climbs toward the true full-cycle rate (Core app ~8-9 d). REMOVE once verified.
-static void prv_log_state(const char *tag) {
-  BatteryChargeState st = battery_state_service_peek();
-  uint32_t rate = (s_state.learned > 0) ? BatteryDays_capRate(s_state.learned)
-                                        : BATTERY_DAYS_DEFAULT_SEC_PER_PCT;
-  int tenths = BatteryDays_tenthsFromRate(st.charge_percent, rate);
-  APP_LOG(APP_LOG_LEVEL_INFO,
-          "BDBG[%s] livePct=%d chg=%d learned=%lus/%% lastPct=%d haveLast=%d afterChg=%d => %d.%d d",
-          tag, st.charge_percent, st.is_charging,
-          (unsigned long)s_state.learned, s_state.last_pct,
-          s_state.have_last, s_state.after_charge, tenths / 10, tenths % 10);
-}
-
 void BatteryDays_init(void) {
   BatteryDays_reset(&s_state);
   if (persist_exists(BATTERY_DAYS_PERSIST_KEY) &&
@@ -39,7 +24,6 @@ void BatteryDays_init(void) {
   // decrease and is a no-op on an unchanged percent, so this is safe every launch.
   BatteryChargeState st = battery_state_service_peek();
   BatteryDays_record(&s_state, (uint32_t)time(NULL), st.charge_percent, st.is_charging);
-  prv_log_state("init");
 }
 
 void BatteryDays_save(void) {
@@ -50,7 +34,6 @@ void BatteryDays_save(void) {
 void BatteryDays_onBattery(BatteryChargeState charge_state) {
   BatteryDays_record(&s_state, (uint32_t)time(NULL),
                      charge_state.charge_percent, charge_state.is_charging);
-  prv_log_state("onBattery");
   BatteryDays_save();
 }
 

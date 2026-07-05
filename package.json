@@ -1,7 +1,7 @@
 {
   "name": "timestyle-pebble",
-  "author": "Sykerö Software",
-  "version": "8.5.11",
+  "author": "Syker\u00f6 Software",
+  "version": "8.5.12",
   "keywords": [
     "pebble-watchface"
   ],
@@ -11,7 +11,7 @@
     "pebble-fctx": "^1.6.5"
   },
   "pebble": {
-    "displayName": "Sykerö TimeStyle",
+    "displayName": "Syker\u00f6 TimeStyle",
     "uuid": "812efd3c-309b-4474-a942-35bcb55a76f2",
     "sdkVersion": "3",
     "enableMultiJS": true,
