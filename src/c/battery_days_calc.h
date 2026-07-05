@@ -56,3 +56,10 @@ uint32_t BatteryDays_blendLearned(uint32_t learned, uint32_t fresh);
 // Remaining life in TENTHS of a day from a charge level + rate, clamped to
 // [0, BATTERY_DAYS_MAX_TENTHS]. sec_per_pct == 0 -> BATTERY_DAYS_NONE.
 int BatteryDays_tenthsFromRate(uint8_t pct, uint32_t sec_per_pct);
+
+// Cap a discharge rate to the default ceiling: the 30-day default is the MAXIMUM
+// plausible life (the manufacturer's promised max), so a slower measured rate
+// (bigger sec/%, implying >30d) is implausible and falls back to the default.
+// A faster rate (fewer days) is kept; 0 (none) passes through unchanged.
+// Prevents a tiny-drop/long-span measurement from projecting an absurd life.
+uint32_t BatteryDays_capRate(uint32_t sec_per_pct);

@@ -122,6 +122,14 @@ int main(void) {
   assert(BatteryDays_blendLearned(8000, 12000) == 9000);                   // 8000 + (12000-8000)/4
   assert(BatteryDays_blendLearned(12000, 8000) == 11000);                  // 12000 + (8000-12000)/4, no underflow
 
+  // capRate: the 30-day default is a CEILING. A slower (bigger sec/%) measured
+  // rate implies an implausible >30d life (the "99.9 after charge" bug) -> capped
+  // to the default; a faster rate (fewer days) is kept; 0 (none) passes through.
+  assert(BatteryDays_capRate(0) == 0);                                     // none -> unchanged (glue picks default)
+  assert(BatteryDays_capRate(12960) == 12960);                            // 15d, faster than 30d -> kept
+  assert(BatteryDays_capRate(BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == BATTERY_DAYS_DEFAULT_SEC_PER_PCT); // exactly 30d -> kept
+  assert(BatteryDays_capRate(172800) == BATTERY_DAYS_DEFAULT_SEC_PER_PCT); // ~2%/4d slow outlier -> capped to 30d
+
   printf("All battery_days tests passed\n");
   return 0;
 }

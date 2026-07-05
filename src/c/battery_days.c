@@ -27,7 +27,8 @@ void BatteryDays_init(void) {
   // re-seeded buffer has count<2 -> bufferRate 0 -> no change; when a valid span
   // persisted it only nudges s_learned toward the correct whole-history rate (e.g.
   // first launch after this upgrade, when key 316 was absent).
-  s_learned = BatteryDays_blendLearned(s_learned, BatteryDays_bufferRateSecPerPct(&s_buf));
+  s_learned = BatteryDays_capRate(
+      BatteryDays_blendLearned(s_learned, BatteryDays_bufferRateSecPerPct(&s_buf)));
 }
 
 void BatteryDays_save(void) {
@@ -41,12 +42,16 @@ void BatteryDays_onBattery(BatteryChargeState charge_state) {
                      charge_state.charge_percent, charge_state.is_charging);
   // Update the learned rate from the (possibly now-valid) whole-history rate.
   // Charging just cleared s_buf, so bufferRate is 0 there -> learned is preserved.
-  s_learned = BatteryDays_blendLearned(s_learned, BatteryDays_bufferRateSecPerPct(&s_buf));
+  s_learned = BatteryDays_capRate(
+      BatteryDays_blendLearned(s_learned, BatteryDays_bufferRateSecPerPct(&s_buf)));
   BatteryDays_save();
 }
 
 int BatteryDays_currentEstimateTenths(void) {
   BatteryChargeState st = battery_state_service_peek();
-  uint32_t rate = (s_learned > 0) ? s_learned : BATTERY_DAYS_DEFAULT_SEC_PER_PCT;
+  // s_learned is already capped on update; cap again defensively so a pre-fix
+  // persisted rate (the >30d "99.9" bug) is bounded even on the very first draw.
+  uint32_t rate = (s_learned > 0) ? BatteryDays_capRate(s_learned)
+                                  : BATTERY_DAYS_DEFAULT_SEC_PER_PCT;
   return BatteryDays_tenthsFromRate(st.charge_percent, rate);
 }

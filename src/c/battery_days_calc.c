@@ -70,6 +70,13 @@ int BatteryDays_tenthsFromRate(uint8_t pct, uint32_t sec_per_pct) {
   return (int)tenths;
 }
 
+uint32_t BatteryDays_capRate(uint32_t sec_per_pct) {
+  // Bigger sec/% = slower discharge = longer life. The default is the ceiling.
+  return (sec_per_pct > BATTERY_DAYS_DEFAULT_SEC_PER_PCT)
+             ? BATTERY_DAYS_DEFAULT_SEC_PER_PCT
+             : sec_per_pct;
+}
+
 int BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now) {
   (void)now;   // rate is measured over the retained history; independent of "now"
   uint32_t rate = BatteryDays_bufferRateSecPerPct(buf);
