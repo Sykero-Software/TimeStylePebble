@@ -2,56 +2,64 @@
 // Copyright (c) 2026 Tuomas Airaksinen
 #include "battery_days.h"
 
-static BatteryDaysBuffer s_buf;
-static uint32_t s_learned;   // learned discharge rate (sec per 1% drop); 0 = none yet
+static BatteryDaysState s_state;
+
+// TEMP DEBUG (battery-days full-cycle-rate verification): dump the estimator state
+// and the resulting estimate so we can confirm on real hardware that `learned`
+// climbs toward the true full-cycle rate (Core app ~8-9 d). REMOVE once verified.
+static void prv_log_state(const char *tag) {
+  BatteryChargeState st = battery_state_service_peek();
+  uint32_t rate = (s_state.learned > 0) ? BatteryDays_capRate(s_state.learned)
+                                        : BATTERY_DAYS_DEFAULT_SEC_PER_PCT;
+  int tenths = BatteryDays_tenthsFromRate(st.charge_percent, rate);
+  APP_LOG(APP_LOG_LEVEL_INFO,
+          "BDBG[%s] livePct=%d chg=%d learned=%lus/%% lastPct=%d haveLast=%d afterChg=%d => %d.%d d",
+          tag, st.charge_percent, st.is_charging,
+          (unsigned long)s_state.learned, s_state.last_pct,
+          s_state.have_last, s_state.after_charge, tenths / 10, tenths % 10);
+}
 
 void BatteryDays_init(void) {
-  s_buf.count = 0;
+  BatteryDays_reset(&s_state);
   if (persist_exists(BATTERY_DAYS_PERSIST_KEY) &&
       persist_exists(BATTERY_DAYS_VERSION_PERSIST_KEY) &&
       persist_read_int(BATTERY_DAYS_VERSION_PERSIST_KEY) == BATTERY_DAYS_VERSION &&
-      persist_get_size(BATTERY_DAYS_PERSIST_KEY) == (int)sizeof(s_buf)) {
-    persist_read_data(BATTERY_DAYS_PERSIST_KEY, &s_buf, sizeof(s_buf));
-    if (s_buf.count > BATTERY_SAMPLE_CAP) { s_buf.count = 0; }  // guard a corrupt blob
+      persist_get_size(BATTERY_DAYS_PERSIST_KEY) == (int)sizeof(s_state)) {
+    persist_read_data(BATTERY_DAYS_PERSIST_KEY, &s_state, sizeof(s_state));
+  } else if (persist_exists(BATTERY_DAYS_LEGACY_RATE_KEY)) {
+    // One-time migration from v1: seed the EWMA with the old learned rate (capped),
+    // so the widget eases from the previous number toward the corrected rate rather
+    // than spiking to the 30-day default. It converges within ~20% of discharge.
+    uint32_t legacy = (uint32_t)persist_read_int(BATTERY_DAYS_LEGACY_RATE_KEY);
+    s_state.learned = BatteryDays_capRate(legacy);
   }
-  s_learned = persist_exists(BATTERY_DAYS_RATE_PERSIST_KEY)
-                  ? (uint32_t)persist_read_int(BATTERY_DAYS_RATE_PERSIST_KEY)
-                  : 0;
-  // Seed the current reading so the estimate's clock starts at launch, not only at
-  // the first battery-change event (which, at ~1% steps, can be hours away -> long
-  // "--"). record() clears on charging, appends on a decrease and is a no-op on an
-  // unchanged percent, so this is safe on every launch and keeps history continuous.
+  // Seed the current reading so a discharge segment that happened while the
+  // watchface was not the foreground app still gets folded in on launch, and the
+  // anchor is current. record() re-anchors on charging / a percent rise, folds on a
+  // decrease and is a no-op on an unchanged percent, so this is safe every launch.
   BatteryChargeState st = battery_state_service_peek();
-  BatteryDays_record(&s_buf, (uint32_t)time(NULL), st.charge_percent, st.is_charging);
-  // Fold any currently-valid history into the learned rate. Usually the freshly
-  // re-seeded buffer has count<2 -> bufferRate 0 -> no change; when a valid span
-  // persisted it only nudges s_learned toward the correct whole-history rate (e.g.
-  // first launch after this upgrade, when key 316 was absent).
-  s_learned = BatteryDays_capRate(
-      BatteryDays_blendLearned(s_learned, BatteryDays_bufferRateSecPerPct(&s_buf)));
+  BatteryDays_record(&s_state, (uint32_t)time(NULL), st.charge_percent, st.is_charging);
+  prv_log_state("init");
 }
 
 void BatteryDays_save(void) {
   persist_write_int(BATTERY_DAYS_VERSION_PERSIST_KEY, BATTERY_DAYS_VERSION);
-  persist_write_data(BATTERY_DAYS_PERSIST_KEY, &s_buf, sizeof(s_buf));
-  persist_write_int(BATTERY_DAYS_RATE_PERSIST_KEY, (int)s_learned);
+  persist_write_data(BATTERY_DAYS_PERSIST_KEY, &s_state, sizeof(s_state));
 }
 
 void BatteryDays_onBattery(BatteryChargeState charge_state) {
-  BatteryDays_record(&s_buf, (uint32_t)time(NULL),
+  BatteryDays_record(&s_state, (uint32_t)time(NULL),
                      charge_state.charge_percent, charge_state.is_charging);
-  // Update the learned rate from the (possibly now-valid) whole-history rate.
-  // Charging just cleared s_buf, so bufferRate is 0 there -> learned is preserved.
-  s_learned = BatteryDays_capRate(
-      BatteryDays_blendLearned(s_learned, BatteryDays_bufferRateSecPerPct(&s_buf)));
+  prv_log_state("onBattery");
   BatteryDays_save();
 }
 
 int BatteryDays_currentEstimateTenths(void) {
   BatteryChargeState st = battery_state_service_peek();
-  // s_learned is already capped on update; cap again defensively so a pre-fix
-  // persisted rate (the >30d "99.9" bug) is bounded even on the very first draw.
-  uint32_t rate = (s_learned > 0) ? BatteryDays_capRate(s_learned)
-                                  : BATTERY_DAYS_DEFAULT_SEC_PER_PCT;
+  // learned is already capped on update; cap again defensively so a stray oversized
+  // persisted rate is bounded even on the very first draw. Fall back to the 30-day
+  // default until the first plausible discharge segment has been learned.
+  uint32_t rate = (s_state.learned > 0) ? BatteryDays_capRate(s_state.learned)
+                                        : BATTERY_DAYS_DEFAULT_SEC_PER_PCT;
   return BatteryDays_tenthsFromRate(st.charge_percent, rate);
 }

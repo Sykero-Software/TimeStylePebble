@@ -4,131 +4,119 @@
 #include <assert.h>
 #include <stdio.h>
 
+// Convenience: full-life days*10 from a state's learned rate at a given percent.
+static int est_tenths(const BatteryDaysState *s, uint8_t pct) {
+  uint32_t rate = BatteryDays_rate(s);
+  if (rate == 0) { rate = BATTERY_DAYS_DEFAULT_SEC_PER_PCT; }
+  return BatteryDays_tenthsFromRate(pct, BatteryDays_capRate(rate));
+}
+
 int main(void) {
-  // empty / single sample -> NONE
-  { BatteryDaysBuffer b = {0};
-    assert(BatteryDays_estimateTenths(&b, 1000) == BATTERY_DAYS_NONE);
-    BatteryDays_record(&b, 1000, 90, false);
-    assert(b.count == 1);
-    assert(BatteryDays_estimateTenths(&b, 1000) == BATTERY_DAYS_NONE); }
-
-  // charging clears the buffer
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,    90, false);
-    BatteryDays_record(&b, 3600, 89, false);
-    assert(b.count == 2);
-    BatteryDays_record(&b, 7200, 89, true);   // charging
-    assert(b.count == 0); }
-
-  // a percent rise (e.g. just unplugged) restarts the history
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,    50, false);
-    BatteryDays_record(&b, 3600, 49, false);
-    BatteryDays_record(&b, 7200, 70, false);  // rose -> clear then anchor at 70
-    assert(b.count == 1 && b.samples[0].pct == 70); }
-
-  // no-change reading is ignored
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,    50, false);
-    BatteryDays_record(&b, 3600, 50, false);  // unchanged
-    assert(b.count == 1); }
-
-  // known rate: 50% -> 40% over exactly 1 day; remaining 40% / 10%/day = 4.0d = 40 tenths
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,     50, false);
-    BatteryDays_record(&b, 86400, 40, false);
-    assert(BatteryDays_estimateTenths(&b, 86400) == 40); }
-
-  // warm-up gate: drop < 2% -> NONE
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,    80, false);
-    BatteryDays_record(&b, 7200, 79, false);  // only 1% drop
-    assert(BatteryDays_estimateTenths(&b, 7200) == BATTERY_DAYS_NONE); }
-
-  // warm-up gate: span < 1h -> NONE
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,   80, false);
-    BatteryDays_record(&b, 600, 78, false);   // 2% but only 10 min
-    assert(BatteryDays_estimateTenths(&b, 600) == BATTERY_DAYS_NONE); }
-
-  // whole-buffer average: the OLDEST retained sample anchors the rate, even when
-  // it is older than 24h. Averaging over the full retained history (several days)
-  // is what smooths out day/night usage swings.
-  // 70->58 over 3 days (4%/day); remaining 58% / 4%/day = 14.5d = 145 tenths.
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,       70, false);  // 3 days before "now"
-    BatteryDays_record(&b, 2*86400, 60, false);
-    BatteryDays_record(&b, 3*86400, 58, false);  // "now"
-    assert(BatteryDays_estimateTenths(&b, 3*86400) == 145); }
-
-  // two samples: rate is just oldest->newest.
-  // 50->40 over 10 days (1%/day); remaining 40% / 1%/day = 40.0d = 400 tenths
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,        50, false);
-    BatteryDays_record(&b, 10*86400, 40, false);
-    assert(BatteryDays_estimateTenths(&b, 10*86400) == 400); }
-
-  // diurnal robustness: a fast active day (100->96 in 12h) followed by slow
-  // idle/overnight steps must NOT inflate the estimate. The old 24h-window logic
-  // dropped the fast first-day segment and reported ~47d (470 tenths); the
-  // whole-buffer average keeps it -> 6% over 36h = 4%/day, remaining 94% ->
-  // 23.5d = 235 tenths. (This is the "jumps up after the night" bug.)
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,       100, false);  // active day start
-    BatteryDays_record(&b, 12*3600,  96, false);  // fast: 4% in 12h
-    BatteryDays_record(&b, 24*3600,  95, false);  // slow: 1% overnight
-    BatteryDays_record(&b, 36*3600,  94, false);  // slow: 1% overnight
-    assert(BatteryDays_estimateTenths(&b, 36*3600) == 235); }
-
-  // clamp: extremely slow discharge capped at 99.9 days
-  { BatteryDaysBuffer b = {0};
-    BatteryDays_record(&b, 0,        100, false);
-    BatteryDays_record(&b, 30*86400,  98, false);  // 2% over 30 days
-    assert(BatteryDays_estimateTenths(&b, 30*86400) == BATTERY_DAYS_MAX_TENTHS); }
-
-  // eviction: more than CAP samples keeps exactly CAP, newest last
-  { BatteryDaysBuffer b = {0};
-    for (int i = 0; i < BATTERY_SAMPLE_CAP + 5; i++) {
-      BatteryDays_record(&b, (uint32_t)(i * 3600), (uint8_t)(100 - i), false);
-    }
-    assert(b.count == BATTERY_SAMPLE_CAP);
-    assert(b.samples[b.count - 1].pct == (uint8_t)(100 - (BATTERY_SAMPLE_CAP + 4))); }
-
-  // --- rate helpers (issue: estimate available right after charging) ---
-
-  // tenthsFromRate: math, defaults, clamp, zero-rate sentinel
+  // --- retained pure helpers: tenthsFromRate + capRate ---
   assert(BatteryDays_tenthsFromRate(0,  8640) == 0);                       // empty battery
   assert(BatteryDays_tenthsFromRate(40, 8640) == 40);                      // 40% at 8640 s/% = 4.0 d
-  assert(BatteryDays_tenthsFromRate(100, BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == 300); // fresh: 100% -> 30.0 d
+  assert(BatteryDays_tenthsFromRate(100, BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == 300); // fresh 100% -> 30.0 d
   assert(BatteryDays_tenthsFromRate(50,  BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == 150); // 50% -> 15.0 d
   assert(BatteryDays_tenthsFromRate(100, 1u << 30) == BATTERY_DAYS_MAX_TENTHS);     // absurdly slow -> clamp
   assert(BatteryDays_tenthsFromRate(90, 0) == BATTERY_DAYS_NONE);          // no rate -> sentinel
 
-  // bufferRateSecPerPct: valid vs below-threshold
-  { BatteryDaysBuffer b = {0};
-    assert(BatteryDays_bufferRateSecPerPct(&b) == 0);                      // empty
-    BatteryDays_record(&b, 0, 50, false);
-    assert(BatteryDays_bufferRateSecPerPct(&b) == 0);                      // single sample
-    BatteryDays_record(&b, 86400, 40, false);                             // 10% over 1 day
-    assert(BatteryDays_bufferRateSecPerPct(&b) == 8640); }                 // 86400/10
-  { BatteryDaysBuffer b = {0};                                             // 1% drop < MIN_DROP
-    BatteryDays_record(&b, 0,    80, false);
-    BatteryDays_record(&b, 7200, 79, false);
-    assert(BatteryDays_bufferRateSecPerPct(&b) == 0); }
+  assert(BatteryDays_capRate(0) == 0);
+  assert(BatteryDays_capRate(12960) == 12960);                             // 15d, faster than 30d -> kept
+  assert(BatteryDays_capRate(BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == BATTERY_DAYS_DEFAULT_SEC_PER_PCT);
+  assert(BatteryDays_capRate(172800) == BATTERY_DAYS_DEFAULT_SEC_PER_PCT); // slow outlier -> capped
 
-  // blendLearned: seed-replace, EWMA up/down, no underflow, keep-on-zero
-  assert(BatteryDays_blendLearned(0,    8640)  == 8640);                   // first real replaces default
-  assert(BatteryDays_blendLearned(8640, 0)     == 8640);                   // nothing valid -> keep
-  assert(BatteryDays_blendLearned(8000, 12000) == 9000);                   // 8000 + (12000-8000)/4
-  assert(BatteryDays_blendLearned(12000, 8000) == 11000);                  // 12000 + (8000-12000)/4, no underflow
+  // --- reset / cold start: no rate yet ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    assert(BatteryDays_rate(&s) == 0);
+    // first reading only anchors, still no rate
+    BatteryDays_record(&s, 1000, 90, false);
+    assert(BatteryDays_rate(&s) == 0); }
 
-  // capRate: the 30-day default is a CEILING. A slower (bigger sec/%) measured
-  // rate implies an implausible >30d life (the "99.9 after charge" bug) -> capped
-  // to the default; a faster rate (fewer days) is kept; 0 (none) passes through.
-  assert(BatteryDays_capRate(0) == 0);                                     // none -> unchanged (glue picks default)
-  assert(BatteryDays_capRate(12960) == 12960);                            // 15d, faster than 30d -> kept
-  assert(BatteryDays_capRate(BATTERY_DAYS_DEFAULT_SEC_PER_PCT) == BATTERY_DAYS_DEFAULT_SEC_PER_PCT); // exactly 30d -> kept
-  assert(BatteryDays_capRate(172800) == BATTERY_DAYS_DEFAULT_SEC_PER_PCT); // ~2%/4d slow outlier -> capped to 30d
+  // --- first real drop replaces the (zero) default with the measured segment rate ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    BatteryDays_record(&s, 0,     90, false);
+    BatteryDays_record(&s, 3600,  89, false);   // 1% over 1h -> 3600 s/%
+    assert(BatteryDays_rate(&s) == 3600); }
+
+  // --- unchanged percent does NOT advance the anchor: a long idle stretch yields
+  //     one big-dt (slow) segment when the drop finally lands ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    BatteryDays_record(&s, 0,     80, false);   // anchor
+    BatteryDays_record(&s, 3600,  80, false);   // unchanged
+    BatteryDays_record(&s, 7200,  80, false);   // unchanged
+    BatteryDays_record(&s, 21600, 79, false);   // drop after 6h idle -> 21600 s/%
+    assert(BatteryDays_rate(&s) == 21600); }
+
+  // --- percent-weighted step: a short active segment then a long idle segment; each
+  //     1% counts equally (weight = dp / HORIZON), moving learned one HORIZON-step ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    BatteryDays_record(&s, 0,      99, false);
+    BatteryDays_record(&s, 3600,   98, false);  // active: 3600 s/% -> learned=3600
+    assert(BatteryDays_rate(&s) == 3600);
+    BatteryDays_record(&s, 3600 + 36000, 97, false); // idle: 36000 s/% over 10h, dp=1
+    // learned += (36000-3600) * 1/20 = 3600 + 1620 = 5220
+    assert(BatteryDays_rate(&s) == 5220); }
+
+  // --- charging preserves `learned` and re-anchors; the post-charge settling drop
+  //     is DISCARDED (not folded) ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    BatteryDays_record(&s, 0,     90, false);
+    BatteryDays_record(&s, 7200,  88, false);   // 2% over 2h -> 3600 s/%
+    uint32_t before = BatteryDays_rate(&s);
+    assert(before == 3600);
+    BatteryDays_record(&s, 8000,  95, true);    // charging: re-anchor, learned kept
+    assert(BatteryDays_rate(&s) == before);
+    BatteryDays_record(&s, 8100,  94, false);   // unplugged, settling: 100s/1% -> DISCARDED
+    assert(BatteryDays_rate(&s) == before);     // unchanged: settling not folded
+    // a subsequent genuine segment DOES fold
+    BatteryDays_record(&s, 8100 + 7200, 93, false); // 7200 s/% real segment
+    assert(BatteryDays_rate(&s) != before); }
+
+  // --- a percent rise (missed charge event) is treated as a charge: re-anchor,
+  //     keep learned, discard the following settling segment ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    BatteryDays_record(&s, 0,     50, false);
+    BatteryDays_record(&s, 7200,  48, false);   // 3600 s/%
+    uint32_t before = BatteryDays_rate(&s);
+    BatteryDays_record(&s, 9000,  70, false);   // rose -> treat as charge
+    assert(BatteryDays_rate(&s) == before);
+    BatteryDays_record(&s, 9060,  69, false);   // 60s settling -> discarded
+    assert(BatteryDays_rate(&s) == before); }
+
+  // --- MIN_PLAUSIBLE floor: an implausibly fast segment (not post-charge) is not
+  //     folded (gauge glitch) ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    BatteryDays_record(&s, 0,      80, false);
+    BatteryDays_record(&s, 7200,   78, false);  // establishes learned=3600
+    uint32_t before = BatteryDays_rate(&s);
+    BatteryDays_record(&s, 7250,   77, false);  // 50s/1% < 120 floor -> discarded
+    assert(BatteryDays_rate(&s) == before); }
+
+  // --- FIELD REPRODUCTION: 12h active (1% / 5400s) + 12h idle (1% / 21600s) per
+  //     day. Time-weighted true rate = 86400s / 10% = 8640 s/% => full life 10 d,
+  //     7.4 d @ 74%. The OLD active-only view projected ~4.4 d. Include charges to
+  //     prove the learned rate survives them. ---
+  { BatteryDaysState s; BatteryDays_reset(&s);
+    uint32_t t = 0; int pct = 100;
+    for (int day = 0; day < 25; day++) {
+      // 12h active: 8 drops of 1% every 5400s (=12h, 8%)
+      for (int i = 0; i < 8; i++) { t += 5400; pct -= 1; BatteryDays_record(&s, t, (uint8_t)pct, false); }
+      // 12h idle: 2 drops of 1% every 21600s (=12h, 2%)
+      for (int i = 0; i < 2; i++) { t += 21600; pct -= 1; BatteryDays_record(&s, t, (uint8_t)pct, false); }
+      if (pct <= 60) {                    // recharge like the user does (tops up early)
+        t += 3600; pct = 95; BatteryDays_record(&s, t, (uint8_t)pct, true);   // charge
+        t += 60;              BatteryDays_record(&s, t, (uint8_t)pct, false);  // unplug (settling anchor)
+      }
+    }
+    uint32_t learned = BatteryDays_rate(&s);
+    // converged near the time-weighted 8640 s/% (EWMA ripple allowed), NOT the
+    // active-only ~5000 s/% that produced the 4.4 d bug.
+    printf("field-repro learned=%u  days@74=%d.%d\n",
+           learned, est_tenths(&s, 74) / 10, est_tenths(&s, 74) % 10);
+    assert(learned >= 7000 && learned <= 9800);
+    int tenths74 = est_tenths(&s, 74);
+    assert(tenths74 >= 60 && tenths74 <= 90);   // ~6.0-9.0 d, i.e. NOT the buggy 4.4 d
+  }
 
   printf("All battery_days tests passed\n");
   return 0;

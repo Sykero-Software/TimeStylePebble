@@ -8,58 +8,66 @@
 // Estimate "days of battery left" from charge_percent samples over time.
 // Pure logic (no Pebble API) so it is host-gcc unit-testable; the Pebble glue
 // (persist + time + battery service) lives in battery_days.c.
+//
+// Model: an exponential moving average of the discharge rate (seconds per 1%
+// drop), updated once per observed discharge segment and weighted by the PERCENT
+// dropped (each 1% counts equally). Averaging per-percent gives exactly the
+// projection rate total_seconds / total_percent = the average sec/% you will
+// experience going forward; a PERCENT horizon spanning ~2 days of drop therefore
+// folds in idle nights alongside active days. The average survives charge cycles
+// (only the charge LEVEL resets, the learned rate persists). See
+// docs/superpowers/specs/2026-07-06-timestyle-battery-estimate-fullcycle-design.md.
+//
+// NB: weighting by percent (not by wall-clock time) is deliberate. A time-weighted
+// average of sec/% over-weights slow idle segments and projects too FEW percent per
+// day -> too MANY days. total_time/total_drop (== equal weight per 1%) is the
+// correct projection basis.
 
-#define BATTERY_SAMPLE_CAP        16     // ring-buffer capacity (~several days at 15-30d life)
-#define BATTERY_DAYS_MIN_DROP     2      // require >=2% drop before showing an estimate
-#define BATTERY_DAYS_MIN_SPAN_SEC 3600   // ...spanning >=1 h (suppresses noisy early estimates)
 #define BATTERY_DAYS_MAX_TENTHS   999    // clamp display to 99.9 days
-#define BATTERY_DAYS_NONE         (-1)   // sentinel: not enough data yet (warm-up / charging)
+#define BATTERY_DAYS_NONE         (-1)   // sentinel: no rate yet / degenerate
 
 // Default assumed battery life for a fresh install (no learned rate yet):
-// 30-day life = 30*86400/100 seconds per 1% drop. The manufacturer's promised
-// future life; picked optimistically. Washes out at the first real measurement.
+// 30-day life = 30*86400/100 seconds per 1% drop. Also the CEILING (see capRate):
+// the manufacturer's promised max life, so a slower measured rate is implausible.
 #define BATTERY_DAYS_DEFAULT_SEC_PER_PCT 25920u
 
+// EWMA horizon in PERCENT dropped. ~20% spans about two days of discharge on a
+// ~10-day battery, so a full day/night cycle averages out; the average converges
+// over roughly this many percent while staying stable against short usage swings.
+#define BATTERY_DAYS_EWMA_PCT_HORIZON    20u
+
+// A discharge segment faster than this (fewer sec per 1%) is physically
+// implausible (1% in <120s => >830%/day) -> a gauge glitch or post-charge
+// settling; not folded into the learned rate.
+#define BATTERY_DAYS_MIN_PLAUSIBLE_SEC_PER_PCT 120u
+
+// Time-weighted discharge-rate estimator state (persisted by the glue).
 typedef struct {
-  uint32_t t;     // unix timestamp of the sample
-  uint8_t  pct;   // charge_percent at that time
-} BatteryDaysSample;
+  uint32_t learned;      // time-weighted EWMA rate, sec per 1% drop; 0 = none yet
+  uint32_t last_t;       // unix timestamp of the last recorded reading
+  uint8_t  last_pct;     // charge_percent of the last recorded reading
+  bool     have_last;    // false until the first reading is seen
+  bool     after_charge; // the next discharge segment is post-charge -> discard it
+} BatteryDaysState;
 
-typedef struct {
-  BatteryDaysSample samples[BATTERY_SAMPLE_CAP];  // oldest .. newest
-  uint8_t count;                                  // number of valid samples
-} BatteryDaysBuffer;
+// Reset to the cold-start empty state (no learned rate, no anchor).
+void BatteryDays_reset(BatteryDaysState *s);
 
-// Record a battery reading. Clears the buffer on charging or a percent rise
-// (discharge history becomes stale); pushes (now,pct) on a decrease; no-op on
-// no change. Evicts the oldest sample when full.
-void BatteryDays_record(BatteryDaysBuffer *buf, uint32_t now, uint8_t pct, bool is_charging);
+// Record a battery reading. Charging (or a percent rise) re-anchors and arms the
+// post-charge settling discard, leaving `learned` untouched; an unchanged percent
+// lets the elapsed time accumulate; a drop folds a time-weighted segment into
+// `learned` (unless it is the post-charge settling segment or implausibly fast).
+void BatteryDays_record(BatteryDaysState *s, uint32_t now, uint8_t pct, bool is_charging);
 
-// Estimate remaining battery life in TENTHS of a day, or BATTERY_DAYS_NONE.
-// The rate is averaged over the whole retained history (oldest..newest sample) so
-// day/night usage swings don't jolt the number; `now` is currently unused.
-int  BatteryDays_estimateTenths(const BatteryDaysBuffer *buf, uint32_t now);
-
-// Whole-history discharge rate in SECONDS per 1% drop (dt/drop over oldest..newest),
-// or 0 if the buffer is not yet valid (same count>=2 / drop>=MIN_DROP / span>=MIN_SPAN
-// / net-drop / elapsed-time guards as the estimate).
-uint32_t BatteryDays_bufferRateSecPerPct(const BatteryDaysBuffer *buf);
-
-// Fold a fresh valid rate (sec/%) into the persisted learned rate.
-//   fresh   == 0 -> keep learned (nothing valid to fold)
-//   learned == 0 -> take fresh as-is (a seeded default is replaced by the first
-//                   real measurement)
-//   otherwise    -> light EWMA toward fresh: learned + (fresh - learned)/4
-// Signed-safe: fresh may be smaller than learned.
-uint32_t BatteryDays_blendLearned(uint32_t learned, uint32_t fresh);
+// The learned discharge rate in seconds per 1% drop, or 0 if none learned yet.
+uint32_t BatteryDays_rate(const BatteryDaysState *s);
 
 // Remaining life in TENTHS of a day from a charge level + rate, clamped to
 // [0, BATTERY_DAYS_MAX_TENTHS]. sec_per_pct == 0 -> BATTERY_DAYS_NONE.
 int BatteryDays_tenthsFromRate(uint8_t pct, uint32_t sec_per_pct);
 
-// Cap a discharge rate to the default ceiling: the 30-day default is the MAXIMUM
-// plausible life (the manufacturer's promised max), so a slower measured rate
-// (bigger sec/%, implying >30d) is implausible and falls back to the default.
-// A faster rate (fewer days) is kept; 0 (none) passes through unchanged.
-// Prevents a tiny-drop/long-span measurement from projecting an absurd life.
+// Cap a discharge rate to the 30-day default ceiling: the default is the MAXIMUM
+// plausible life, so a slower measured rate (bigger sec/%, implying >30d) is
+// implausible and falls back to the default. A faster rate is kept; 0 passes
+// through unchanged.
 uint32_t BatteryDays_capRate(uint32_t sec_per_pct);
