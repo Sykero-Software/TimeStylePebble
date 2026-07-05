@@ -14,17 +14,19 @@ void BatteryDays_init(void) {
     persist_read_data(BATTERY_DAYS_PERSIST_KEY, &s_buf, sizeof(s_buf));
     if (s_buf.count > BATTERY_SAMPLE_CAP) { s_buf.count = 0; }  // guard a corrupt blob
   }
+  s_learned = persist_exists(BATTERY_DAYS_RATE_PERSIST_KEY)
+                  ? (uint32_t)persist_read_int(BATTERY_DAYS_RATE_PERSIST_KEY)
+                  : 0;
   // Seed the current reading so the estimate's clock starts at launch, not only at
   // the first battery-change event (which, at ~1% steps, can be hours away -> long
   // "--"). record() clears on charging, appends on a decrease and is a no-op on an
   // unchanged percent, so this is safe on every launch and keeps history continuous.
-  s_learned = persist_exists(BATTERY_DAYS_RATE_PERSIST_KEY)
-                  ? (uint32_t)persist_read_int(BATTERY_DAYS_RATE_PERSIST_KEY)
-                  : 0;
   BatteryChargeState st = battery_state_service_peek();
   BatteryDays_record(&s_buf, (uint32_t)time(NULL), st.charge_percent, st.is_charging);
-  // Fold any already-valid history into the learned rate (e.g. first launch after
-  // this upgrade, when key 316 was absent but the buffer still held a valid span).
+  // Fold any currently-valid history into the learned rate. Usually the freshly
+  // re-seeded buffer has count<2 -> bufferRate 0 -> no change; when a valid span
+  // persisted it only nudges s_learned toward the correct whole-history rate (e.g.
+  // first launch after this upgrade, when key 316 was absent).
   s_learned = BatteryDays_blendLearned(s_learned, BatteryDays_bufferRateSecPerPct(&s_buf));
 }
 
