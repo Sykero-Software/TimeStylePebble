@@ -11,6 +11,7 @@
 #define BATTERY_DAYS_PERSIST_KEY          314
 #define BATTERY_DAYS_VERSION_PERSIST_KEY  315
 #define BATTERY_DAYS_VERSION              1
+#define BATTERY_DAYS_RATE_PERSIST_KEY     316  // learned discharge rate (uint32 sec/%), 0 = none
 
 void BatteryDays_init(void);                              // load persisted history + seed current reading
 void BatteryDays_save(void);                              // persist history
