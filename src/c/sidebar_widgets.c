@@ -1531,13 +1531,14 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
 
 /***** Generic crypto / currency widget *****/
 
-// Compact reserved height for the phone-data widgets (crypto / currency / tuya).
-// They're all label+number, so they share one tight two-small-font-line layout that
-// packs denser than a basic widget — a label+number widget then no longer inflates a
-// rotating group relative to battery/date, and more of them fit in a column.
+// Reserved height for the phone-data widgets (crypto / currency / tuya). A touch
+// tighter than a basic widget (only trailing padding is removed — the value keeps
+// its normal font) so a label+number data widget stays <= battery/battery_days
+// height and no longer inflates a rotating group that mixes it with them.
+#define DATA_WIDGET_TRIM 5
 static int data_widget_height(void) {
   return SidebarWidgets_hideIdentifier ? (layout.basicWidgetHeight - layout.basicWidgetY)
-                                       : (layout.basicWidgetHeight - 8);
+                                       : (layout.basicWidgetHeight - DATA_WIDGET_TRIM);
 }
 
 int CryptoSlot_getHeight() { return data_widget_height(); }
@@ -1552,17 +1553,26 @@ void CryptoSlot_draw(GContext *ctx, int yPosition) {
   const char *label = (s && s->label[0]) ? s->label : "--";
   const char *value = (s && s->valid) ? s->value : "--";
 
-  // Compact two-line small-font layout: label above, number below. The small font
-  // also fits wide values (e.g. "104000", "1.0823") that overflow the big value font.
-  if (!SidebarWidgets_hideIdentifier) {
-    graphics_draw_text(ctx, label, smSidebarFont,
+  // Nudge the value up by the trimmed padding so it still fits the tighter box; keep
+  // the label just above it. Value font is UNCHANGED (normal size) for short values;
+  // a wide value (e.g. "104000", "1.0823") still uses the small font, which is the
+  // only way it fits the narrow sidebar width.
+  int valueY = layout.basicWidgetY - DATA_WIDGET_TRIM;
+  if (strlen(value) > 4) {
+    int hs = SidebarWidgets_hideIdentifier ? (layout.basicWidgetY) : 0;
+    if (!SidebarWidgets_hideIdentifier) {
+      graphics_draw_text(ctx, label, smSidebarFont,
+                         GRect(layout.textRectX + SidebarWidgets_xOffset,
+                               yPosition + layout.basicWidgetLabelY,
+                               layout.textRectWidth, 20),
+                         GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+    }
+    graphics_draw_text(ctx, value, smSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition - 3, layout.textRectWidth, 16),
+                             yPosition + valueY - hs,
+                             layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  } else {
+    draw_basic_widget(ctx, yPosition, label, value, valueY);
   }
-  int vy = SidebarWidgets_hideIdentifier ? (yPosition + 1) : (yPosition + 9);
-  graphics_draw_text(ctx, value, smSidebarFont,
-                     GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           vy, layout.textRectWidth, 16),
-                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
