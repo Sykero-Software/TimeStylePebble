@@ -1,36 +1,62 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (c) 2026 Tuomas Airaksinen
 
-/* Clay custom config function: hides settings that are irrelevant under the
-   current widget selection, and reveals them live as widgets / gating settings
-   change. Runs INSIDE the config webview (Clay serializes it via toSource), so it
-   MUST be fully self-contained — no require(), no closure over pkjs scope, and
-   the EMITTED code must not reference TS downlevel helpers (__spreadArray etc.),
-   which live in module scope and would be undefined once the function is
-   re-evaluated in the webview. Keep to native array methods; avoid spread /
-   destructuring. Dependency rationale (verified against src/c/sidebar_widgets.c):
-     - widget 14 (current price) uses none of the electricity inputs
-     - widget 19 (cheapest hour) uses quiet hours only
-     - widget 18 (next cheap) uses quiet hours + cheap factor/floor/ceiling
-   See docs/superpowers/specs/2026-06-11-timestyle-conditional-config-settings-design.md */
+/* Clay custom config function. Two client-side responsibilities inside the config
+   webview:
+     1. Gating — hide settings irrelevant to the current widget selection.
+     2. Accordion — each section heading is a collapsible row; only the open
+        section's items are shown (one open at a time, all collapsed on open).
+   Runs INSIDE the config webview (Clay serializes it via toSource), so it MUST be
+   fully self-contained — no require(), no closure over pkjs scope, and the EMITTED
+   code must not reference TS downlevel helpers (__spreadArray / _this etc.), which
+   live in module scope and would be undefined once re-evaluated in the webview.
+   Keep to native array methods; NO spread / destructuring / for...of. Widget-id
+   gating rationale (verified against src/c/sidebar_widgets.c): widget 14 (current
+   price) uses none of the electricity inputs; 19 (cheapest hour) uses quiet hours
+   only; 18 (next cheap) uses quiet hours + cheap factor/floor/ceiling.
+   See docs/superpowers/specs/2026-07-07-timestyle-config-accordion-design.md and
+   docs/superpowers/specs/2026-06-11-timestyle-conditional-config-settings-design.md */
+
+interface ClayElement {
+  on(event: string, cb: () => void): void;
+  set(spec: string, value?: unknown): void;
+}
 
 interface ClayItem {
+  id: string | null;
+  messageKey: string | null;
+  config: { type: string; defaultValue?: unknown };
+  $element: ClayElement;
+  $manipulatorTarget: ClayElement;
   get(): any;
   show(): void;
   hide(): void;
   on(event: string, cb: () => void): void;
 }
 
+interface ClayGroup {
+  heading: ClayItem;
+  items: ClayItem[];
+  label: string;
+}
+
+interface GateResult {
+  gk: { [k: string]: boolean };
+  gi: { [k: string]: boolean };
+}
+
 interface ClayConfigThis {
   getItemByMessageKey(key: string): ClayItem;
   getItemById(id: string): ClayItem | undefined;
+  getAllItems(): ClayItem[];
   on(event: string, cb: () => void): void;
   EVENTS: { AFTER_BUILD: string };
 }
 
-// `minified` is Clay's minified.js helper passed to every custom fn; unused here.
 function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
   const clayConfig = this;
+  let groups: ClayGroup[] = [];
+  let openIndex = -1;
 
   function widgetIds(): number[] {
     const ids: number[] = [];
@@ -46,34 +72,9 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     return set.some((v) => ids.indexOf(v) !== -1);
   }
   function key(k: string): ClayItem { return clayConfig.getItemByMessageKey(k); }
-  function byId(i: string): ClayItem | undefined { return clayConfig.getItemById(i); }
-  function toggle(item: ClayItem | undefined, on: boolean): void {
-    if (item) { if (on) { item.show(); } else { item.hide(); } }
-  }
-  function injectFloatingSaveStyle(): void {
-    if (typeof document === 'undefined') { return; }
-    if (document.getElementById('ts-floating-save')) { return; }
-    const style = document.createElement('style');
-    style.id = 'ts-floating-save';
-    style.textContent =
-      '.component-submit{position:fixed;bottom:0;left:0;right:0;margin:0;' +
-      'z-index:100;background:#262626;padding:8px 0;' +
-      'box-shadow:0 -2px 6px rgba(0,0,0,0.4);}' +
-      // Reserve clearance for the last setting on the SCROLLING FORM, not body.
-      // Clay's base CSS sets html,body{height:100%} (border-box). With a
-      // fixed-height body whose content overflows, a body padding-bottom sits
-      // INSIDE the body box (at the first screen's bottom), never after the
-      // overflowing content — so it reserves no trailing space and the fixed
-      // Save bar overlaps the last setting (the reported bug). #main-form is the
-      // in-flow content that grows with the page and sets the scroll extent, so
-      // its padding-bottom does create real clearance. 96px clears the bar
-      // (~72px: button line-box 1.4rem + 0.6rem padding + 0.7rem margin + the
-      // 8px container padding top/bottom) with a comfortable margin.
-      '#main-form{padding-bottom:96px;}';
-    document.head.appendChild(style);
-  }
 
-  function update(): void {
+  // ---- Gating: per-item visibility decisions (a key absent from gk/gi = visible)
+  function computeGate(): GateResult {
     const ids = widgetIds();
     const weather = has(ids, [7, 8, 13]);
     const temp = has(ids, [7, 8]);
@@ -84,62 +85,142 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     const fallbackManual = parseInt(key('SettingFallbackColumn').get(), 10) !== 0;
     const analog = parseInt(key('SettingClockStyle').get(), 10) === 1;
     const bigDate = parseInt(key('SettingBigDate').get(), 10) === 1;
-
-    // Weather
-    toggle(byId('heading-weather'), weather);
-    toggle(key('weather_loc_mode'), weather);
-    toggle(key('weather_datasource'), weather);
-    toggle(key('SettingUseMetric'), temp);
-    toggle(key('weather_loc'), manual);
-    toggle(key('weather_loc_lat'), manual);
-    toggle(key('weather_loc_lng'), manual);
-
-    // Electricity
-    toggle(byId('heading-electricity'), cheapHour);
-    toggle(key('SettingElecQuietStart'), cheapHour);
-    toggle(key('SettingElecQuietEnd'), cheapHour);
-    toggle(key('SettingElecCheapFactorPct'), nextCheap);
-    toggle(key('elec_cheap_floor'), nextCheap);
-    toggle(key('elec_cheap_ceiling'), nextCheap);
-
-    // Crypto: show the section heading once any crypto coin widget is placed.
     const anyCrypto = ids.some((id) =>
       id === 15 || id === 16 || id === 17 || (id >= 200 && id < 216));
-    toggle(byId('heading-crypto'), anyCrypto);
-
-    // Currency: show the section heading once any currency-pair widget is placed.
     const anyCurrency = ids.some((id) => id >= 216 && id < 223);
-    toggle(byId('heading-currency'), anyCurrency);
-
-    // Regional (alternate clock)
-    toggle(key('SettingAltClockName'), has(ids, [3]));
-    toggle(key('SettingAltClockOffset'), has(ids, [3]));
-
-    // Battery meter style (relevant when the meter can appear)
-    toggle(key('SettingShowBatteryPct'), has(ids, [2]) || autoBattery);
-
-    // Auto-battery threshold: only relevant when auto-battery is on.
-    toggle(key('SettingAutoBatteryThreshold'), autoBattery);
-    // Fallback position: only when a specific (non-Automatic) column is chosen.
-    toggle(key('SettingFallbackPosition'), fallbackManual);
-
-    // Analog clock: these rows are only relevant when the analog face is selected.
-    toggle(key('SettingAnalogTicks'), analog);
-    toggle(key('SettingAnalogDigitalClock'), analog);
-    toggle(byId('analog-credit'), analog);
-
-    // Month row + font picker only relevant when the large date is shown.
-    toggle(key('SettingBigDateMonth'), bigDate);
-    toggle(key('SettingBigDateFont'), bigDate);
+    const altClock = has(ids, [3]);
+    const gk: { [k: string]: boolean } = {};
+    const gi: { [k: string]: boolean } = {};
+    gk.SettingUseMetric = temp;
+    gk.weather_loc_mode = weather;
+    gk.weather_datasource = weather;
+    gk.weather_loc = manual;
+    gk.weather_loc_lat = manual;
+    gk.weather_loc_lng = manual;
+    gk.SettingElecQuietStart = cheapHour;
+    gk.SettingElecQuietEnd = cheapHour;
+    gk.SettingElecCheapFactorPct = nextCheap;
+    gk.elec_cheap_floor = nextCheap;
+    gk.elec_cheap_ceiling = nextCheap;
+    gk.SettingAltClockName = altClock;
+    gk.SettingAltClockOffset = altClock;
+    gk.SettingShowBatteryPct = has(ids, [2]) || autoBattery;
+    gk.SettingAutoBatteryThreshold = autoBattery;
+    gk.SettingFallbackPosition = fallbackManual;
+    gk.SettingAnalogTicks = analog;
+    gk.SettingAnalogDigitalClock = analog;
+    gk.SettingBigDateMonth = bigDate;
+    gk.SettingBigDateFont = bigDate;
+    gi['analog-credit'] = analog;
+    gi['heading-weather'] = weather;
+    gi['heading-electricity'] = cheapHour;
+    gi['heading-crypto'] = anyCrypto;
+    gi['heading-currency'] = anyCurrency;
+    return { gk: gk, gi: gi };
   }
 
-  // AFTER_BUILD fires once items are built and have initial values (Clay 1.0.4
-  // has no AFTER_RENDER); items are show/hide-able and getters valid by then.
+  function gateVisible(it: ClayItem, g: GateResult): boolean {
+    if (it.messageKey && g.gk.hasOwnProperty(it.messageKey)) { return g.gk[it.messageKey]; }
+    if (it.id && g.gi.hasOwnProperty(it.id)) { return g.gi[it.id]; }
+    return true;
+  }
+  function setShown(it: ClayItem, on: boolean): void {
+    if (on) { it.show(); } else { it.hide(); }
+  }
+
+  // ---- Accordion: group items by heading, wire clicks, render chevrons
+  function buildGroups(): void {
+    groups = [];
+    const items = clayConfig.getAllItems();
+    let cur: ClayGroup | null = null;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.config.type === 'heading') {
+        cur = { heading: it, items: [], label: String(it.config.defaultValue || '') };
+        groups.push(cur);
+      } else if (cur) {
+        cur.items.push(it);
+      }
+    }
+  }
+
+  function wireHeadings(): void {
+    groups.forEach((grp, idx) => {
+      grp.heading.$element.on('click', () => {
+        openIndex = (openIndex === idx) ? -1 : idx;
+        applyVisibility();
+      });
+    });
+  }
+
+  function setChevron(grp: ClayGroup, isOpen: boolean): void {
+    const mark = isOpen ? '▾' : '▸';   // ▾ open, ▸ collapsed
+    grp.heading.$manipulatorTarget.set('innerHTML', mark + ' ' + grp.label);
+  }
+
+  function applyVisibility(): void {
+    const g = computeGate();
+    // If the open section became gated-off (widget removed), treat it as closed.
+    if (openIndex >= 0 && openIndex < groups.length &&
+        !gateVisible(groups[openIndex].heading, g)) {
+      openIndex = -1;
+    }
+    for (let gi = 0; gi < groups.length; gi++) {
+      const grp = groups[gi];
+      const headOk = gateVisible(grp.heading, g);
+      setShown(grp.heading, headOk);
+      if (headOk) { setChevron(grp, gi === openIndex); }
+      const open = headOk && (gi === openIndex);
+      for (let j = 0; j < grp.items.length; j++) {
+        const it = grp.items[j];
+        if (it.config.type === 'submit') { it.show(); continue; }
+        setShown(it, gateVisible(it, g) && open);
+      }
+    }
+  }
+
+  function injectFloatingSaveStyle(): void {
+    if (typeof document === 'undefined') { return; }
+    if (document.getElementById('ts-floating-save')) { return; }
+    const style = document.createElement('style');
+    style.id = 'ts-floating-save';
+    // Reserve clearance on #main-form (the scrolling content), NOT body: Clay sets
+    // html,body{height:100%}, so a body padding-bottom sits inside the fixed-height
+    // body box and never clears the fixed Save bar (the 8.x last-setting bug).
+    style.textContent =
+      '.component-submit{position:fixed;bottom:0;left:0;right:0;margin:0;' +
+      'z-index:100;background:#262626;padding:8px 0;' +
+      'box-shadow:0 -2px 6px rgba(0,0,0,0.4);}' +
+      '#main-form{padding-bottom:96px;}';
+    document.head.appendChild(style);
+  }
+
+  function injectAccordionStyle(): void {
+    if (typeof document === 'undefined') { return; }
+    if (document.getElementById('ts-accordion')) { return; }
+    const style = document.createElement('style');
+    style.id = 'ts-accordion';
+    style.textContent =
+      '.component-heading{cursor:pointer;background:#2b2b2b;margin:0;' +
+      'padding:8px;border-top:1px solid #000;}' +
+      '.component-heading h1,.component-heading h2,.component-heading h3,' +
+      '.component-heading h4,.component-heading h5{margin:0;}' +
+      '.component-heading:active{background:#3a3a3a;}';
+    document.head.appendChild(style);
+  }
+
+  // AFTER_BUILD fires once items are built with initial values (Clay 1.0.4 has no
+  // AFTER_RENDER); getItem*/show/hide/$element are all valid by then.
   clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, () => {
     injectFloatingSaveStyle();
-    update();
-    ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery', 'SettingFallbackColumn', 'SettingClockStyle', 'SettingBigDate']
-      .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', update); });
+    injectAccordionStyle();
+    buildGroups();
+    openIndex = -1;
+    wireHeadings();
+    applyVisibility();
+    ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery',
+     'SettingFallbackColumn', 'SettingClockStyle', 'SettingBigDate']
+      .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', applyVisibility); });
   });
 }
 

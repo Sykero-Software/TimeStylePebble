@@ -134,6 +134,7 @@ function openSectionFor(c, keyOrId) {
 
 test('no widgets: weather/electricity/alt hidden; battery style shown (auto-battery on)', () => {
   const c = render([]);
+  openSectionFor(c, 'SettingShowBatteryPct');
   assert.strictEqual(c.byId['heading-weather'].shown, false);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, false);
   assert.strictEqual(c.byKey['weather_loc_mode'].shown, false);
@@ -146,6 +147,7 @@ test('no widgets: weather/electricity/alt hidden; battery style shown (auto-batt
 
 test('weather temp widget (7): weather shown incl units; manual fields hidden in auto mode', () => {
   const c = render([7]);
+  openSectionFor(c, 'SettingUseMetric');
   assert.strictEqual(c.byId['heading-weather'].shown, true);
   assert.strictEqual(c.byKey['weather_loc_mode'].shown, true);
   assert.strictEqual(c.byKey['weather_datasource'].shown, true);
@@ -157,6 +159,7 @@ test('weather temp widget (7): weather shown incl units; manual fields hidden in
 
 test('UV index only (13): weather shown but units hidden (UV is unitless)', () => {
   const c = render([13]);
+  openSectionFor(c, 'SettingUseMetric');
   assert.strictEqual(c.byId['heading-weather'].shown, true);
   assert.strictEqual(c.byKey['weather_loc_mode'].shown, true);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, false);
@@ -164,12 +167,14 @@ test('UV index only (13): weather shown but units hidden (UV is unitless)', () =
 
 test('hidden-identifier flag (0x20) still gates the widget\'s settings', () => {
   const c = render([7 | 0x20]);   // hidden weather is still weather
+  openSectionFor(c, 'SettingUseMetric');
   assert.strictEqual(c.byId['heading-weather'].shown, true);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
 });
 
 test('weather + manual location: manual fields shown', () => {
   const c = render([8], { locMode: 'manual' });
+  openSectionFor(c, 'weather_loc');
   assert.strictEqual(c.byKey['weather_loc'].shown, true);
   assert.strictEqual(c.byKey['weather_loc_lat'].shown, true);
   assert.strictEqual(c.byKey['weather_loc_lng'].shown, true);
@@ -184,6 +189,7 @@ test('current-price electricity only (14): whole electricity section hidden', ()
 
 test('cheapest-hour (19): heading + quiet hours shown; cheap factor/floor/ceiling hidden', () => {
   const c = render([19]);
+  openSectionFor(c, 'SettingElecQuietStart');
   assert.strictEqual(c.byId['heading-electricity'].shown, true);
   assert.strictEqual(c.byKey['SettingElecQuietStart'].shown, true);
   assert.strictEqual(c.byKey['SettingElecQuietEnd'].shown, true);
@@ -194,6 +200,7 @@ test('cheapest-hour (19): heading + quiet hours shown; cheap factor/floor/ceilin
 
 test('next-cheap (18): quiet hours + cheap factor/floor/ceiling all shown', () => {
   const c = render([18]);
+  openSectionFor(c, 'SettingElecQuietStart');
   assert.strictEqual(c.byId['heading-electricity'].shown, true);
   assert.strictEqual(c.byKey['SettingElecQuietStart'].shown, true);
   assert.strictEqual(c.byKey['SettingElecCheapFactorPct'].shown, true);
@@ -203,17 +210,20 @@ test('next-cheap (18): quiet hours + cheap factor/floor/ceiling all shown', () =
 
 test('alt time zone widget (3): alt clock name + offset shown', () => {
   const c = render([3]);
+  openSectionFor(c, 'SettingAltClockName');
   assert.strictEqual(c.byKey['SettingAltClockName'].shown, true);
   assert.strictEqual(c.byKey['SettingAltClockOffset'].shown, true);
 });
 
 test('battery style: shown with battery widget even if auto-battery off', () => {
   const c = render([2], { autoBatteryDisabled: true });
+  openSectionFor(c, 'SettingShowBatteryPct');
   assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, true);
 });
 
 test('battery style: hidden when no battery widget AND auto-battery off', () => {
   const c = render([], { autoBatteryDisabled: true });
+  openSectionFor(c, 'SettingShowBatteryPct');
   assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, false);
 });
 
@@ -222,6 +232,7 @@ test('live change: selecting a weather widget reveals weather after re-render', 
   assert.strictEqual(c.byId['heading-weather'].shown, false);
   c.byKey['WidgetList'].value = [7];
   c.byKey['WidgetList'].changeHandlers.forEach((fn) => fn());
+  openSectionFor(c, 'SettingUseMetric');
   assert.strictEqual(c.byId['heading-weather'].shown, true);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
 });
@@ -231,6 +242,7 @@ test('live change: switching weather location to manual reveals lat/lng/label', 
   assert.strictEqual(c.byKey['weather_loc'].shown, false);
   c.byKey['weather_loc_mode'].value = 'manual';
   c.byKey['weather_loc_mode'].changeHandlers.forEach((fn) => fn());
+  openSectionFor(c, 'weather_loc');
   assert.strictEqual(c.byKey['weather_loc'].shown, true);
   assert.strictEqual(c.byKey['weather_loc_lat'].shown, true);
   assert.strictEqual(c.byKey['weather_loc_lng'].shown, true);
@@ -238,6 +250,7 @@ test('live change: switching weather location to manual reveals lat/lng/label', 
 
 test('live change: disabling auto-battery hides battery style when no battery widget', () => {
   const c = render([]);  // no widgets, auto-battery on -> style shown
+  openSectionFor(c, 'SettingShowBatteryPct');
   assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, true);
   c.byKey['SettingDisableAutobattery'].value = '1';
   c.byKey['SettingDisableAutobattery'].changeHandlers.forEach((fn) => fn());
@@ -246,6 +259,7 @@ test('live change: disabling auto-battery hides battery style when no battery wi
 
 test('right-list weather widget reveals weather section', () => {
   const c = render([], { rightVals: [7] });
+  openSectionFor(c, 'SettingUseMetric');
   assert.strictEqual(c.byId['heading-weather'].shown, true);
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
 });
@@ -260,22 +274,28 @@ test('live change: adding a weather widget to the right list reveals weather', (
 
 test('battery threshold: shown when auto-battery on, hidden when off', () => {
   const on = render([]);
+  openSectionFor(on, 'SettingAutoBatteryThreshold');
   assert.strictEqual(on.byKey['SettingAutoBatteryThreshold'].shown, true);
   const off = render([], { autoBatteryDisabled: true });
+  openSectionFor(off, 'SettingAutoBatteryThreshold');
   assert.strictEqual(off.byKey['SettingAutoBatteryThreshold'].shown, false);
 });
 
 test('fallback position: hidden in Automatic column, shown for Left/Right', () => {
   const auto = render([], { fallbackColumn: 0 });
+  openSectionFor(auto, 'SettingFallbackPosition');
   assert.strictEqual(auto.byKey['SettingFallbackPosition'].shown, false);
   const left = render([], { fallbackColumn: 1 });
+  openSectionFor(left, 'SettingFallbackPosition');
   assert.strictEqual(left.byKey['SettingFallbackPosition'].shown, true);
   const right = render([], { fallbackColumn: 2 });
+  openSectionFor(right, 'SettingFallbackPosition');
   assert.strictEqual(right.byKey['SettingFallbackPosition'].shown, true);
 });
 
 test('live change: choosing a fallback column reveals the position input', () => {
   const c = render([], { fallbackColumn: 0 });
+  openSectionFor(c, 'SettingFallbackPosition');
   assert.strictEqual(c.byKey['SettingFallbackPosition'].shown, false);
   c.byKey['SettingFallbackColumn'].value = '1';
   c.byKey['SettingFallbackColumn'].changeHandlers.forEach((fn) => fn());
@@ -284,6 +304,7 @@ test('live change: choosing a fallback column reveals the position input', () =>
 
 test('live change: disabling auto-battery hides the threshold chooser', () => {
   const c = render([]);
+  openSectionFor(c, 'SettingAutoBatteryThreshold');
   assert.strictEqual(c.byKey['SettingAutoBatteryThreshold'].shown, true);
   c.byKey['SettingDisableAutobattery'].value = '1';
   c.byKey['SettingDisableAutobattery'].changeHandlers.forEach((fn) => fn());
@@ -296,20 +317,22 @@ test('floating save: AFTER_BUILD injects a fixed-position style once (idempotent
   try {
     const c = render([]);   // render() fires AFTER_BUILD once
     const styles = global.document.head.children;
-    assert.strictEqual(styles.length, 1, 'exactly one <style> injected');
-    assert.strictEqual(styles[0].tagName, 'style');
-    assert.match(styles[0].textContent, /\.component-submit/);
-    assert.match(styles[0].textContent, /position\s*:\s*fixed/);
-    // Clearance for the last setting MUST be reserved on the scrolling form
-    // (#main-form), NOT body: Clay sets html,body{height:100%}, so body
-    // padding-bottom is swallowed inside the fixed-height body box and never
-    // clears the fixed Save bar (the original 8.x bug — last setting unreachable).
-    assert.match(styles[0].textContent, /#main-form\s*\{[^}]*padding-bottom/);
-    assert.doesNotMatch(styles[0].textContent, /(^|[^-])\bbody\s*\{[^}]*padding-bottom/,
+    assert.strictEqual(styles.length, 2, 'two <style>s injected (save + accordion)');
+    const save = styles.filter((s) => s.id === 'ts-floating-save')[0];
+    const acc = styles.filter((s) => s.id === 'ts-accordion')[0];
+    assert.ok(save, 'floating-save style present');
+    assert.ok(acc, 'accordion style present');
+    assert.match(save.textContent, /\.component-submit/);
+    assert.match(save.textContent, /position\s*:\s*fixed/);
+    // Clearance reserved on the scrolling form (#main-form), NOT body (Clay sets
+    // html,body{height:100%}, which swallows a body padding-bottom — the 8.x bug).
+    assert.match(save.textContent, /#main-form\s*\{[^}]*padding-bottom/);
+    assert.doesNotMatch(save.textContent, /(^|[^-])\bbody\s*\{[^}]*padding-bottom/,
       'must NOT reserve clearance on body (height:100% swallows it)');
-    // Firing AFTER_BUILD again must not add a duplicate <style>.
+    assert.match(acc.textContent, /\.component-heading\s*\{[^}]*cursor\s*:\s*pointer/);
+    // Firing AFTER_BUILD again must not add duplicates.
     c._handlers.AFTER_BUILD();
-    assert.strictEqual(global.document.head.children.length, 1, 'no duplicate <style>');
+    assert.strictEqual(global.document.head.children.length, 2, 'no duplicate <style>');
   } finally {
     global.document = prev;
   }
@@ -317,6 +340,7 @@ test('floating save: AFTER_BUILD injects a fixed-position style once (idempotent
 
 test('digital clock style: analog rows hidden', () => {
   const c = render([], { clockStyle: 0 });
+  openSectionFor(c, 'SettingClockStyle');
   assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, false);
   assert.strictEqual(c.byKey['SettingAnalogTicks'].shown, false);
   assert.strictEqual(c.byId['analog-credit'].shown, false);
@@ -324,6 +348,7 @@ test('digital clock style: analog rows hidden', () => {
 
 test('analog clock style: analog rows shown', () => {
   const c = render([], { clockStyle: 1 });
+  openSectionFor(c, 'SettingClockStyle');
   assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, true);
   assert.strictEqual(c.byKey['SettingAnalogTicks'].shown, true);
   assert.strictEqual(c.byId['analog-credit'].shown, true);
@@ -331,6 +356,7 @@ test('analog clock style: analog rows shown', () => {
 
 test('live change: switching to analog reveals the analog rows', () => {
   const c = render([], { clockStyle: 0 });
+  openSectionFor(c, 'SettingClockStyle');
   assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, false);
   c.byKey['SettingClockStyle'].value = '1';
   c.byKey['SettingClockStyle'].changeHandlers.forEach((fn) => fn());
@@ -340,11 +366,13 @@ test('live change: switching to analog reveals the analog rows', () => {
 
 test('big date shown: month toggle visible', () => {
   const c = render([], { bigDate: 1 });
+  openSectionFor(c, 'SettingBigDateMonth');
   assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, true);
 });
 
 test('big date none: month toggle hidden', () => {
   const c = render([], { bigDate: 0 });
+  openSectionFor(c, 'SettingBigDateMonth');
   assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, false);
 });
 
@@ -371,6 +399,7 @@ test('right-list currency widget reveals the currency heading', () => {
 
 test('live change: turning the big date off hides the month toggle', () => {
   const c = render([], { bigDate: 1 });
+  openSectionFor(c, 'SettingBigDateMonth');
   assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, true);
   c.byKey['SettingBigDate'].value = '0';
   c.byKey['SettingBigDate'].changeHandlers.forEach((fn) => fn());
@@ -379,10 +408,83 @@ test('live change: turning the big date off hides the month toggle', () => {
 
 test('big date shown: font picker visible', () => {
   const c = render([], { bigDate: 1 });
+  openSectionFor(c, 'SettingBigDateFont');
   assert.strictEqual(c.byKey['SettingBigDateFont'].shown, true);
 });
 
 test('big date none: font picker hidden', () => {
   const c = render([], { bigDate: 0 });
+  openSectionFor(c, 'SettingBigDateFont');
   assert.strictEqual(c.byKey['SettingBigDateFont'].shown, false);
+});
+
+// ---------------------------------------------------------------- Accordion
+test('accordion: all section items collapsed on open; non-gated headings shown', () => {
+  const c = render([7]);   // weather widget -> weather heading gated-visible
+  // Non-gated headings visible (find the Clock heading = first heading).
+  const items = c.getAllItems();
+  const firstHeading = items.filter((it) => it.config.type === 'heading')[0];
+  assert.strictEqual(firstHeading.shown, true, 'first heading (Clock) visible');
+  assert.strictEqual(c.byId['heading-weather'].shown, true, 'gated-on heading visible');
+  // Every non-heading, non-submit item starts hidden (nothing open).
+  items.forEach((it) => {
+    if (it.config.type !== 'heading' && it.config.type !== 'submit') {
+      assert.strictEqual(it.shown, false, 'item hidden while its section is collapsed: ' + (it.messageKey || it.id || it.config.type));
+    }
+  });
+});
+
+test('accordion: submit (Save) stays visible while collapsed', () => {
+  const c = render([]);
+  const submit = c.getAllItems().filter((it) => it.config.type === 'submit')[0];
+  assert.ok(submit, 'submit item exists');
+  assert.strictEqual(submit.shown, true);
+});
+
+test('accordion: clicking a heading opens only that section', () => {
+  const c = render([7]);
+  openSectionFor(c, 'SettingUseMetric');   // opens Weather
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, true, 'opened section item shown');
+  assert.strictEqual(c.byKey['SettingClockStyle'].shown, false, 'other section stays collapsed');
+});
+
+test('accordion: opening a second section closes the first (one open at a time)', () => {
+  const c = render([7]);
+  openSectionFor(c, 'SettingUseMetric');    // Weather open
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
+  openSectionFor(c, 'SettingClockStyle');   // Clock open -> Weather closes
+  assert.strictEqual(c.byKey['SettingClockStyle'].shown, true);
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, false, 'previously-open section closed');
+});
+
+test('accordion: clicking an open heading again collapses it', () => {
+  const c = render([7]);
+  openSectionFor(c, 'SettingUseMetric');   // open
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
+  openSectionFor(c, 'SettingUseMetric');   // toggle closed
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, false);
+});
+
+test('accordion: combined gate+open — Weather open with UV-only keeps units hidden', () => {
+  const c = render([13]);                  // UV widget: weather on, units off
+  openSectionFor(c, 'SettingUseMetric');
+  assert.strictEqual(c.byId['heading-weather'].shown, true);
+  assert.strictEqual(c.byKey['weather_loc_mode'].shown, true, 'gate-on item shown when open');
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, false, 'gate-off item hidden even when section open');
+});
+
+test('accordion: gated-off section cannot be opened (heading hidden, items stay hidden)', () => {
+  const c = render([]);                    // no widgets -> weather gated off
+  assert.strictEqual(c.byId['heading-weather'].shown, false, 'gated-off heading hidden');
+  openSectionFor(c, 'SettingUseMetric');   // tries to open weather
+  assert.strictEqual(c.byKey['weather_loc_mode'].shown, false, 'items stay hidden for a gated-off section');
+});
+
+test('accordion: chevron flips ▸ -> ▾ when a section opens', () => {
+  const c = render([7]);
+  const w = c.byId['heading-weather'];
+  openSectionFor(c, 'SettingClockStyle');  // Weather collapsed
+  assert.match(w.$manipulatorTarget.innerHTML, /▸/, 'collapsed shows ▸');
+  openSectionFor(c, 'SettingUseMetric');   // Weather open
+  assert.match(w.$manipulatorTarget.innerHTML, /▾/, 'open shows ▾');
 });
