@@ -183,9 +183,9 @@ const config = [
         'column.<br>' +
         '(Widgets with no separate identifier — Empty, Today’s Date, Seconds, ' +
         'Bluetooth disconnect — have no such button.)' },
-      { type: 'heading', defaultValue: 'Left sidebar widgets' },
+      { type: 'text', defaultValue: '<b>Left sidebar widgets</b>' },
       { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
-      { type: 'heading', defaultValue: 'Right sidebar widgets' },
+      { type: 'text', defaultValue: '<b>Right sidebar widgets</b>' },
       { type: 'widgetList', messageKey: 'WidgetListRight', defaultValue: [] },
       { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
         defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },

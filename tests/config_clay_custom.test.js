@@ -488,3 +488,29 @@ test('accordion: chevron flips ▸ -> ▾ when a section opens', () => {
   openSectionFor(c, 'SettingUseMetric');   // Weather open
   assert.match(w.$manipulatorTarget.innerHTML, /▾/, 'open shows ▾');
 });
+
+test('accordion: Sidebar widgets is a single group (13 rows, not split by sub-labels)', () => {
+  const c = render([]);
+  const headings = c.getAllItems().filter((it) => it.config.type === 'heading');
+  assert.strictEqual(headings.length, 13, 'exactly 13 accordion heading rows (13 sections 1:1)');
+  const head = openSectionFor(c, 'SettingShowBatteryPct');
+  assert.strictEqual(head.config.defaultValue, 'Sidebar widgets',
+    'battery setting opens under the "Sidebar widgets" heading, not a sub-label');
+  assert.strictEqual(c.byKey['SettingShowBatteryPct'].shown, true);
+  assert.strictEqual(c.byKey['SettingFallbackColumn'].shown, true);
+  assert.strictEqual(c.byKey['WidgetListRight'].shown, true);
+});
+
+test('accordion: removing an open section\'s gating widget closes it; re-adding reopens collapsed', () => {
+  const c = render([7]);                    // weather widget present
+  openSectionFor(c, 'SettingUseMetric');    // open Weather
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, true);
+  c.byKey['WidgetList'].value = [];         // remove weather widget
+  c.byKey['WidgetList'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byId['heading-weather'].shown, false, 'heading hidden when gated off');
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, false, 'items hidden when force-closed');
+  c.byKey['WidgetList'].value = [7];        // re-add weather widget
+  c.byKey['WidgetList'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byId['heading-weather'].shown, true, 'heading shown again');
+  assert.strictEqual(c.byKey['SettingUseMetric'].shown, false, 'came back collapsed, not auto-opened');
+});
