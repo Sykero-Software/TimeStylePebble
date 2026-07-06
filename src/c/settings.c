@@ -169,18 +169,19 @@ void Settings_loadFromStorage() {
 
   // One-time 16->32-byte widget-list migration. Older builds stored the lists in the
   // 16-byte widgetListV1/rightWidgetListV1 fields; carry them into the new, larger
-  // widgetList/rightWidgetList arrays once. Gated so it never clobbers a fresh
-  // install's just-built list (widgetCountV1 == 0) nor a later boot
-  // (widgetListV2Init persisted true).
+  // widgetList/rightWidgetList arrays once. Only fills a list that is still EMPTY, so
+  // it never clobbers a fresh install's just-built list nor a list already populated
+  // (e.g. by a config save after a struct-grow build that shipped without this
+  // migration). widgetListV2Init makes it a one-time step.
   if (!settings.widgetListV2Init) {
     settings.widgetListV2Init = true;
-    if (settings.widgetCountV1 > 0) {
+    if (settings.widgetCount == 0 && settings.widgetCountV1 > 0) {
       int n = settings.widgetCountV1;
       if (n > MAX_WIDGET_LIST_V1) { n = MAX_WIDGET_LIST_V1; }
       memcpy(settings.widgetList, settings.widgetListV1, n);
       settings.widgetCount = n;
     }
-    if (settings.rightWidgetCountV1 > 0) {
+    if (settings.rightWidgetCount == 0 && settings.rightWidgetCountV1 > 0) {
       int n = settings.rightWidgetCountV1;
       if (n > MAX_WIDGET_LIST_V1) { n = MAX_WIDGET_LIST_V1; }
       memcpy(settings.rightWidgetList, settings.rightWidgetListV1, n);
