@@ -1531,18 +1531,16 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
 
 /***** Generic crypto / currency widget *****/
 
-// Compact reserved height for a Tuya sensor: label + number both in the small
-// sidebar font, kept SHORTER than a basic widget so a rotating group that mixes a
-// sensor with battery/date/etc. does not grow taller than its other members.
-static int tuya_widget_height(void) {
+// Compact reserved height for the phone-data widgets (crypto / currency / tuya).
+// They're all label+number, so they share one tight two-small-font-line layout that
+// packs denser than a basic widget — a label+number widget then no longer inflates a
+// rotating group relative to battery/date, and more of them fit in a column.
+static int data_widget_height(void) {
   return SidebarWidgets_hideIdentifier ? (layout.basicWidgetHeight - layout.basicWidgetY)
-                                        : (layout.basicWidgetHeight - 8);
+                                       : (layout.basicWidgetHeight - 8);
 }
 
-int CryptoSlot_getHeight() {
-  return Tuya_isWid(SidebarWidgets_currentWidgetType) ? tuya_widget_height()
-                                                      : basic_widget_height();
-}
+int CryptoSlot_getHeight() { return data_widget_height(); }
 
 void CryptoSlot_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
@@ -1554,42 +1552,17 @@ void CryptoSlot_draw(GContext *ctx, int yPosition) {
   const char *label = (s && s->label[0]) ? s->label : "--";
   const char *value = (s && s->valid) ? s->value : "--";
 
-  // Tuya sensor: compact two-line small-font layout (label above, number below),
-  // tighter than the basic widget so it stays <= battery/date height.
-  if (Tuya_isWid(wid)) {
-    if (!SidebarWidgets_hideIdentifier) {
-      graphics_draw_text(ctx, label, smSidebarFont,
-                         GRect(layout.textRectX + SidebarWidgets_xOffset,
-                               yPosition - 3, layout.textRectWidth, 16),
-                         GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-    }
-    int vy = SidebarWidgets_hideIdentifier ? (yPosition + 1) : (yPosition + 9);
-    graphics_draw_text(ctx, value, smSidebarFont,
+  // Compact two-line small-font layout: label above, number below. The small font
+  // also fits wide values (e.g. "104000", "1.0823") that overflow the big value font.
+  if (!SidebarWidgets_hideIdentifier) {
+    graphics_draw_text(ctx, label, smSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             vy, layout.textRectWidth, 16),
+                             yPosition - 3, layout.textRectWidth, 16),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-    return;
   }
-
-  // A long value (e.g. "104000.00", "1.1552") overflows the sidebar in the
-  // basic-widget value font on every board (verified for the old EUR widget), so
-  // render label + value on two lines with the small sidebar font when the value
-  // is wide; otherwise use the basic-widget layout.
-  if (strlen(value) > 4) {
-    int hs = SidebarWidgets_hideIdentifier ? (layout.basicWidgetY + 3) : 0;
-    if (!SidebarWidgets_hideIdentifier) {
-      graphics_draw_text(ctx, label, smSidebarFont,
-                         GRect(layout.textRectX + SidebarWidgets_xOffset,
-                               yPosition + layout.basicWidgetLabelY,
-                               layout.textRectWidth, 20),
-                         GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-    }
-    graphics_draw_text(ctx, value, smSidebarFont,
-                       GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.basicWidgetY + 3 - hs,
-                             layout.textRectWidth, 20),
-                       GTextOverflowModeFill, GTextAlignmentCenter, NULL);
-  } else {
-    draw_basic_widget(ctx, yPosition, label, value, layout.basicWidgetY);
-  }
+  int vy = SidebarWidgets_hideIdentifier ? (yPosition + 1) : (yPosition + 9);
+  graphics_draw_text(ctx, value, smSidebarFont,
+                     GRect(layout.textRectX + SidebarWidgets_xOffset,
+                           vy, layout.textRectWidth, 16),
+                     GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
