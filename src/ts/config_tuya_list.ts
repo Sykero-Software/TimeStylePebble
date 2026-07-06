@@ -27,6 +27,18 @@ function tuyaListInitialize(this: any, _minified: any, clayConfig: any): void {
     for (let i = 0; i < catalogDevices.length; i++) { if (catalogDevices[i].id === id) { return catalogDevices[i]; } }
     return null;
   }
+  // Human-readable sample for the dropdown: apply the datapoint's scale like the
+  // watch does, so a temperature reported raw as 128 (scale 1) shows "12.8", not
+  // "128". Booleans -> On/Off; non-numeric (strings) pass through.
+  function formatSample(value: any, scale: any): string {
+    if (typeof value === 'boolean') { return value ? 'On' : 'Off'; }
+    if (typeof value !== 'number') { return String(value); }
+    const sc = (typeof scale === 'number' && scale > 0) ? scale : 0;
+    if (sc === 0) { return String(value); }
+    let divisor = 1;
+    for (let i = 0; i < sc; i++) { divisor *= 10; }
+    return (value / divisor).toFixed(sc);
+  }
   function deviceOptionsHtml(selId: string): string {
     let html = '';
     let found = false;
@@ -48,7 +60,7 @@ function tuyaListInitialize(this: any, _minified: any, clayConfig: any): void {
       const unit = (c.unit ? ' ' + c.unit : '');
       // Show the current reading so the right datapoint is obvious (e.g. a soil
       // sensor's real moisture 'humidity1 = 96' vs a stale 'humidity = 0').
-      const sample = (c.sample !== undefined && c.sample !== null) ? (' = ' + c.sample + unit) : '';
+      const sample = (c.sample !== undefined && c.sample !== null) ? (' = ' + formatSample(c.sample, c.scale) + unit) : '';
       if (c.code === selCode) { found = true; }
       html += '<option value="' + escAttr(c.code) + '"' + (c.code === selCode ? ' selected' : '') + '>' + escAttr(c.code + sample) + '</option>';
     }
