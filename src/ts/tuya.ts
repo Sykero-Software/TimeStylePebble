@@ -51,6 +51,14 @@ function saveCatalog(cat: any): void {
   try { window.localStorage.setItem(CATALOG_KEY, JSON.stringify(cat)); } catch (e) {}
 }
 
+// True once a previous config-open discovered at least one device. Lets the config
+// page open instantly from cache (refreshing in the background) instead of blocking
+// on a full re-discovery every time — see index.ts showConfiguration.
+export function hasCachedCatalog(): boolean {
+  const cat = loadCatalog();
+  return !!(cat && cat.devices && cat.devices.length > 0);
+}
+
 // XMLHttpRequest -> parsed Tuya envelope (same wrapper as PebbleTuyaControl).
 function http(opts: any): Promise<any> {
   return new Promise((resolve, reject) => {

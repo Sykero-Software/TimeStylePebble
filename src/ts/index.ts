@@ -161,9 +161,21 @@ Pebble.addEventListener('showConfiguration', () => {
     seedTuyaCatalog();
     Pebble.openURL(clay.generateUrl());
   };
-  // Discovery is best-effort; never let a hung Tuya request block the config page.
-  const fallback = setTimeout(openConfig, 12000);
-  tuya.discoverCatalog(() => { clearTimeout(fallback); openConfig(); });
+  if (tuya.hasCachedCatalog()) {
+    // Devices were discovered before: open instantly from the cached catalog and
+    // refresh it in the background for the next open. A newly-added Tuya device
+    // appears one config-open later — worth it to avoid a multi-second wait every
+    // time. seedTuyaCatalog() (in openConfig) already ran, so the background
+    // saveCatalog only affects the next open.
+    openConfig();
+    tuya.discoverCatalog(() => {});
+  } else {
+    // First open with credentials (no cache yet): block on discovery so the sensor
+    // list is populated, with a fallback so a hung Tuya request never wedges the
+    // config page. No creds -> discoverCatalog calls back immediately (opens fast).
+    const fallback = setTimeout(openConfig, 12000);
+    tuya.discoverCatalog(() => { clearTimeout(fallback); openConfig(); });
+  }
 });
 
 Pebble.addEventListener('webviewclosed', (e) => {

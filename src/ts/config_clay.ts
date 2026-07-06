@@ -333,6 +333,9 @@ const config = [
         { label: 'China', value: 'cn' }, { label: 'India', value: 'in' } ] },
       { type: 'text', defaultValue:
         'Save your credentials, then <b>close and reopen this page</b> so your devices can load. ' +
+        '(The first load talks to the Tuya cloud and can take a few seconds; after that the list ' +
+        'is cached, so this page opens instantly and refreshes in the background &mdash; a ' +
+        'newly-added device shows up the next time you open settings.)<br><br>' +
         'Add a sensor, pick its datapoint &mdash; the dropdown shows each code&#39;s current value, ' +
         'so the right one is easy to spot (e.g. a soil sensor&#39;s real moisture) &mdash; then place ' +
         'it in the sidebar widget list near the top of this page.<br><br>' +
