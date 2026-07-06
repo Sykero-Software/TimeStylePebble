@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert');
 const {
   parseSpecCodes, parseProperties, mergeCodes, shortUnit, buildCatalog, catalogScaleMap,
+  catalogCodesById,
 } = require('../src/pkjs/tuya_spec');
 
 const SPEC = { status: [
@@ -66,6 +67,46 @@ test('mergeCodes: every property is selectable, scale/unit from spec, sample fro
   assert.strictEqual(tc.scale, 1);
   assert.strictEqual(tc.unit, '℃');
   assert.strictEqual(tc.sample, 152);
+});
+
+test('mergeCodes: falls back to a previous catalog scale/unit when the spec is empty', () => {
+  // /specification fetch failed (spec empty) but shadow/properties succeeded; the
+  // previously-cached codes still carry the right scale/unit -> keep them, don't zero.
+  const props = parseProperties({ properties: [
+    { code: 'temp_current', type: 'value', value: 235 },
+    { code: 'humidity1', type: 'value', value: 96 },   // no prev entry -> defaults
+  ]});
+  const prev = [
+    { code: 'temp_current', type: 'Integer', scale: 1, unit: '℃' },
+    { code: 'battery', type: 'Integer', scale: 0, unit: '%' },
+  ];
+  const merged = mergeCodes([], props, prev);
+  const tc = merged.find((c) => c.code === 'temp_current');
+  assert.strictEqual(tc.scale, 1);      // preserved from prev, NOT degraded to 0
+  assert.strictEqual(tc.unit, '℃');
+  assert.strictEqual(tc.sample, 235);
+  const h1 = merged.find((c) => c.code === 'humidity1');
+  assert.strictEqual(h1.scale, 0);      // no prev + no spec -> 0
+});
+
+test('mergeCodes: a present spec still wins over the previous catalog', () => {
+  const spec = parseSpecCodes({ status: [
+    { code: 'temp_current', type: 'Integer', values: '{"unit":"℃","scale":2}' },
+  ]});
+  const props = parseProperties({ properties: [{ code: 'temp_current', type: 'value', value: 235 }] });
+  const prev = [{ code: 'temp_current', type: 'Integer', scale: 1, unit: 'stale' }];
+  const merged = mergeCodes(spec, props, prev);
+  assert.strictEqual(merged[0].scale, 2);   // fresh spec, not the stale prev
+  assert.strictEqual(merged[0].unit, '℃');
+});
+
+test('catalogCodesById extracts a deviceId->codes[] map from a cached catalog', () => {
+  const cat = buildCatalog([{ id: 'dev1', name: 'Sauna' }], { dev1: parseSpecCodes(SPEC) });
+  const byId = catalogCodesById(cat);
+  assert.strictEqual(byId.dev1.length, 4);
+  assert.strictEqual(byId.dev1[0].code, 'va_temperature');
+  assert.deepStrictEqual(catalogCodesById(null), {});
+  assert.deepStrictEqual(catalogCodesById({ devices: 'x' }), {});
 });
 
 test('shortUnit maps temperature to ° and keeps %', () => {

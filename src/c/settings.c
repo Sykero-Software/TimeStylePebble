@@ -65,11 +65,14 @@ void Settings_loadFromStorage() {
   settings.widgets2[1] = EMPTY;
   settings.widgets2[2] = EMPTY;
   settings.secondaryAlwaysOn = false;   // auto-hide by default; appended field, no settings-version bump
-  // widgetCount defaults to 0 so the migration below always (re)builds the list
+  // widgetCount defaults to 0 so the dual-list migration below (re)builds the list
   // from the legacy widgets[]/widgets2[] arrays -- which carry both the
-  // fresh-install defaults (seeded above) and an upgrading user's real config.
-  // (An older persisted blob predates these appended fields; persist_read_data
-  // leaves the tail at this 0 default, so the migration fires.)
+  // fresh-install defaults (seeded above) and an upgrading user's real config --
+  // BUT only when there is no byte-array list to carry (widgetCountV1 == 0). A blob
+  // from the single-list era already holds the real list in widgetListV1, which the
+  // V2 migration carries verbatim; rebuilding from the lossy widgets[] there would
+  // strand a duplicate copy. (An older persisted blob predates these appended
+  // fields; persist_read_data leaves the tail at this 0 default, so it fires.)
   settings.widgetCount = 0;
   settings.statusStripFullWidth = false;   // full-height columns by default; appended field
   settings.rightWidgetCount = 0;   // right column empty by default; appended field
@@ -142,7 +145,12 @@ void Settings_loadFromStorage() {
     settings.dualListInit = true;
     migrated = true;
 
-    if (settings.widgetCount == 0) {
+    // Rebuild from the legacy widgets[]/widgets2[] arrays only when there is no
+    // byte-array list to carry. A single-list-era blob has its real list in
+    // widgetListV1 (widgetCountV1 > 0); the V2 migration below carries that
+    // verbatim, so rebuilding here (lossy: built-in types only) would leave a
+    // duplicate stranded in the other column after the split.
+    if (settings.widgetCount == 0 && settings.widgetCountV1 == 0) {
       int n = 0;
       for (int i = 0; i < 3; i++) {
         if (settings.widgets[i] != EMPTY && settings.widgets[i] <= MAX_WIDGET_TYPE)
@@ -175,6 +183,7 @@ void Settings_loadFromStorage() {
   // migration). widgetListV2Init makes it a one-time step.
   if (!settings.widgetListV2Init) {
     settings.widgetListV2Init = true;
+    migrated = true;   // persist the flag + carried list so this runs exactly once
     if (settings.widgetCount == 0 && settings.widgetCountV1 > 0) {
       int n = settings.widgetCountV1;
       if (n > MAX_WIDGET_LIST_V1) { n = MAX_WIDGET_LIST_V1; }

@@ -59,26 +59,48 @@ export function parseProperties(propsResult: any): Property[] {
 // selectable code, carrying its current value as `sample` (shown in the config
 // dropdown) and its scale/unit from the /specification where the code is declared
 // there (custom DPs absent from the spec default to scale 0 / no unit).
-export function mergeCodes(specCodes: SensorCode[], props: Property[]): SensorCode[] {
+export function mergeCodes(specCodes: SensorCode[], props: Property[], prevCodes?: SensorCode[]): SensorCode[] {
   const specByCode: Record<string, SensorCode> = {};
   const sc = Array.isArray(specCodes) ? specCodes : [];
   for (let i = 0; i < sc.length; i++) { specByCode[sc[i].code] = sc[i]; }
+  // Fallback scale/unit from a previously-cached catalog for this device. When a
+  // device's /specification fetch fails transiently (shadow/properties still
+  // succeeds), the spec is empty and every code would default to scale 0 — showing
+  // e.g. a temperature of 235 instead of 23.5 until a future good discovery. Keep
+  // the last-known scale/unit for those codes instead of degrading to 0.
+  const prevByCode: Record<string, SensorCode> = {};
+  const pc = Array.isArray(prevCodes) ? prevCodes : [];
+  for (let i = 0; i < pc.length; i++) { prevByCode[pc[i].code] = pc[i]; }
   const out: SensorCode[] = [];
   const ps = Array.isArray(props) ? props : [];
   for (let i = 0; i < ps.length; i++) {
     const p = ps[i];
     const s = specByCode[p.code];
+    const fb = prevByCode[p.code];
     // Only carry a sample for numeric/boolean readings. Some DPs hold huge config
     // strings (e.g. a soil sensor's `plants_1` plant table); keeping those as the
     // dropdown sample bloats the catalog and breaks the config layout.
     const sample = (typeof p.value === 'number' || typeof p.value === 'boolean') ? p.value : undefined;
     out.push({
       code: p.code,
-      type: p.type || (s ? s.type : ''),
-      scale: s ? s.scale : 0,
-      unit: s ? s.unit : '',
+      type: p.type || (s ? s.type : (fb ? fb.type : '')),
+      scale: s ? s.scale : (fb ? fb.scale : 0),
+      unit: s ? s.unit : (fb ? fb.unit : ''),
       sample: sample,
     });
+  }
+  return out;
+}
+
+// Extract {deviceId: SensorCode[]} from a cached catalog (buildCatalog's shape),
+// so a re-discovery can fall back to the last-known scale/unit per device when a
+// device's /specification fetch fails. Missing/malformed catalog -> {}.
+export function catalogCodesById(catalog: any): Record<string, SensorCode[]> {
+  const out: Record<string, SensorCode[]> = {};
+  const devs = (catalog && Array.isArray(catalog.devices)) ? catalog.devices : [];
+  for (let i = 0; i < devs.length; i++) {
+    const d = devs[i];
+    if (d && typeof d.id === 'string' && Array.isArray(d.codes)) { out[d.id] = d.codes; }
   }
   return out;
 }

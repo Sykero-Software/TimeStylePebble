@@ -10,7 +10,7 @@
    tuya_client.ts / tuya_spec.ts / tuya_parse.ts (unit-tested). */
 
 import { createClient } from './tuya_client';
-import { parseSpecCodes, parseProperties, mergeCodes, buildCatalog, catalogScaleMap } from './tuya_spec';
+import { parseSpecCodes, parseProperties, mergeCodes, buildCatalog, catalogScaleMap, catalogCodesById } from './tuya_spec';
 import {
   normalizeRows, distinctDevices, buildPropertiesPath, packTuyaData,
   countValidValues, parseLastSent, TuyaRow,
@@ -101,6 +101,9 @@ function getClient(): any {
 export function discoverCatalog(cb: () => void): void {
   const c = getClient();
   if (!c) { cb(); return; }
+  // Last-known per-device codes (scale/unit): fall back to these when a device's
+  // /specification fetch fails, so a transient error doesn't degrade good scales.
+  const prevByDevice = catalogCodesById(loadCatalog());
   let devices: any[] = [];
   const codesById: Record<string, any> = {};
   c.request('GET', '/v1.0/iot-01/associated-users/devices').then((resp: any) => {
@@ -116,13 +119,22 @@ export function discoverCatalog(cb: () => void): void {
           .then((spec: any) => { specCodes = parseSpecCodes(spec.result); })
           .catch(() => { specCodes = []; })
           .then(() => c.request('GET', buildPropertiesPath(d.id)))
-          .then((props: any) => { codesById[d.id] = mergeCodes(specCodes, parseProperties(props.result)); })
-          .catch(() => { codesById[d.id] = specCodes; });
+          .then((props: any) => { codesById[d.id] = mergeCodes(specCodes, parseProperties(props.result), prevByDevice[d.id]); })
+          .catch(() => { codesById[d.id] = specCodes.length ? specCodes : (prevByDevice[d.id] || []); });
       });
     });
     return chain;
   }).then(() => {
-    saveCatalog(buildCatalog(devices, codesById));
+    // Don't let a degraded result (device list came back empty — lapsed app-account
+    // link, transient token/region error) wipe a good cached catalog: the poll's
+    // scale map and the config picker both depend on it. Keep the old cache instead.
+    const fresh = buildCatalog(devices, codesById);
+    const old = loadCatalog();
+    if (fresh.devices.length === 0 && old && Array.isArray(old.devices) && old.devices.length > 0) {
+      console.log('tuya: discovery returned no devices, keeping cached catalog');
+    } else {
+      saveCatalog(fresh);
+    }
     cb();
   }).catch(() => { cb(); });
 }
