@@ -8,7 +8,6 @@
    "wid<US>label<US>value<US>..." parsed by the shared CryptoSlot C code. */
 
 import { formatPrice } from './crypto_format';
-import { shortUnit } from './tuya_spec';
 
 export interface TuyaRow {
   wid: number;
@@ -72,8 +71,10 @@ export function packTuyaData(rows: TuyaRow[], valuesById: any, scaleMap: any, pr
     const su = (scaleMap && scaleMap[r.deviceId] && scaleMap[r.deviceId][r.code]) || { scale: 0, unit: '' };
     let value: string;
     if (typeof raw === 'number' && isFinite(raw)) {
+      // Unit suffix is intentionally NOT appended: the narrow sidebar is tight and
+      // the user knows what each configured sensor means (per product decision).
       const scaled = raw / Math.pow(10, su.scale || 0);
-      value = formatPrice(scaled, r.p, r.t) + shortUnit(su.unit || '');
+      value = formatPrice(scaled, r.p, r.t);
     } else if (typeof raw === 'boolean') {
       value = raw ? 'On' : 'Off';
     } else if (typeof raw === 'string' && raw !== '') {

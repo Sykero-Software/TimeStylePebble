@@ -34,10 +34,11 @@ test('buildStatusPath targets the device status endpoint', () => {
   assert.strictEqual(buildStatusPath('devA'), '/v1.0/iot-03/devices/devA/status');
 });
 
-test('packTuyaData applies scale, p/t, short unit; label falls back to code', () => {
+test('packTuyaData applies scale + p/t (no unit suffix); label falls back to code', () => {
   const vals = { devA: { va_temperature: 235, va_humidity: 47 } };  // 235 scale1 -> 23.5
   const packed = packTuyaData(ROWS, vals, SCALE, {});
-  assert.strictEqual(packed, ['128', 'Sauna', '23.5°', '129', 'va_humidity', '47%'].join(DELIM));
+  // Unit suffix intentionally dropped (compact sidebar; user knows the meaning).
+  assert.strictEqual(packed, ['128', 'Sauna', '23.5', '129', 'va_humidity', '47'].join(DELIM));
 });
 
 test('packTuyaData: boolean -> On/Off, string passthrough, missing -> prev then --', () => {
