@@ -144,7 +144,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   // Tuya sensors: same packed wid/label/value format as crypto, own message key.
   Tuple *tuya_tuple = dict_find(iterator, MESSAGE_KEY_TuyaData);
-  if (tuya_tuple) {
+  if (tuya_tuple != NULL && tuya_tuple->type == TUPLE_CSTRING) {
     Tuya_parse(tuya_tuple->value->cstring);
     persist_write_string(TUYA_PERSIST_KEY_DATA, tuya_tuple->value->cstring);
   }

@@ -154,10 +154,16 @@ function seedTuyaCatalog() {
 Pebble.addEventListener('showConfiguration', () => {
   migrateWidgetListSettings();
   migrateCryptoList();
-  tuya.discoverCatalog(() => {
+  let opened = false;
+  const openConfig = () => {
+    if (opened) { return; }
+    opened = true;
     seedTuyaCatalog();
     Pebble.openURL(clay.generateUrl());
-  });
+  };
+  // Discovery is best-effort; never let a hung Tuya request block the config page.
+  const fallback = setTimeout(openConfig, 12000);
+  tuya.discoverCatalog(() => { clearTimeout(fallback); openConfig(); });
 });
 
 Pebble.addEventListener('webviewclosed', (e) => {

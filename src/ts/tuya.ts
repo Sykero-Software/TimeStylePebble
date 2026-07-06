@@ -60,6 +60,8 @@ function http(opts: any): Promise<any> {
     Object.keys(h).forEach((k) => { xhr.setRequestHeader(k, h[k]); });
     xhr.onload = () => { try { resolve(JSON.parse(xhr.responseText)); } catch (e) { reject(new Error('Bad JSON from Tuya')); } };
     xhr.onerror = () => { reject(new Error('Network error')); };
+    xhr.timeout = 15000;
+    xhr.ontimeout = function () { reject(new Error('Timeout')); };
     xhr.send(opts.body || null);
   });
 }
