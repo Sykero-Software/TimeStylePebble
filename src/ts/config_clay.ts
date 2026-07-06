@@ -310,16 +310,34 @@ const config = [
     items: [
       { type: 'heading', id: 'heading-tuya', defaultValue: 'Tuya sensors' },
       { type: 'text', defaultValue:
-        'Show readings from Tuya cloud sensors (temperature, humidity, battery, …). ' +
-        'Enter your Tuya IoT Platform Access ID / Secret and region, save, then reopen ' +
-        'this page: your devices load into the dropdowns. Add sensors, then place each ' +
-        'in the sidebar widget list above. Precision: positive = decimals, negative = round. ' +
-        'Trim: cut N leading digits. Leave the label empty to show the datapoint code.' },
-      { type: 'input', messageKey: 'TuyaAccessId', label: 'Tuya Access ID', attributes: { placeholder: 'access id' } },
-      { type: 'input', messageKey: 'TuyaAccessSecret', label: 'Tuya Access Secret', attributes: { placeholder: 'access secret' } },
-      { type: 'select', messageKey: 'TuyaRegion', label: 'Tuya region', defaultValue: 'eu', options: [
-        { label: 'Europe', value: 'eu' }, { label: 'US', value: 'us' },
+        'Show live readings from your Tuya cloud sensors (soil moisture, temperature, ' +
+        'humidity, battery, …) in a sidebar widget. This talks to Tuya&#39;s cloud, so it ' +
+        'needs your own free Tuya developer keys &mdash; the official Tuya / Smart Life app ' +
+        'cannot be read directly.<br><br>' +
+        '<b>1.</b> Go to <b>iot.tuya.com</b> and sign up. In the left menu pick <b>Cloud &gt; ' +
+        'Development</b> and <b>Create Cloud Project</b> (type: Smart Home). This is a ' +
+        '<i>Cloud Project</i>, not an <i>App</i>. Pick the <b>Data Center</b> for your region ' +
+        '(e.g. Central Europe).<br>' +
+        '<b>2.</b> The project shows an <b>Access ID</b> and <b>Access Secret</b> &mdash; paste ' +
+        'them below.<br>' +
+        '<b>3.</b> In the project open <b>Devices &gt; Link App Account</b> and scan the QR with ' +
+        'the Smart&nbsp;Life app (<b>Me &gt; Scan</b>). Your sensors then appear under the ' +
+        'project.<br>' +
+        '<b>4.</b> Choose the <b>same Data Center</b> below as your account&#39;s region.<br><br>' +
+        'Already use the <b>Sykerö Tuya Lights</b> watchapp? It takes the very same Access ID / ' +
+        'Access Secret / Data Center &mdash; just reuse them here.' },
+      { type: 'input', messageKey: 'TuyaAccessId', label: 'Access ID', attributes: { placeholder: 'from your Cloud Project' } },
+      { type: 'input', messageKey: 'TuyaAccessSecret', label: 'Access Secret', attributes: { placeholder: 'from your Cloud Project' } },
+      { type: 'select', messageKey: 'TuyaRegion', label: 'Data center', defaultValue: 'eu', options: [
+        { label: 'Central Europe', value: 'eu' }, { label: 'Western America', value: 'us' },
         { label: 'China', value: 'cn' }, { label: 'India', value: 'in' } ] },
+      { type: 'text', defaultValue:
+        'Save your credentials, then <b>close and reopen this page</b> so your devices can load. ' +
+        'Add a sensor, pick its datapoint &mdash; the dropdown shows each code&#39;s current value, ' +
+        'so the right one is easy to spot (e.g. a soil sensor&#39;s real moisture) &mdash; then place ' +
+        'it in the sidebar widget list near the top of this page.<br><br>' +
+        'Precision: positive = decimals, negative = round. Trim: cut N leading digits. ' +
+        'Leave the label empty to use the datapoint code.' },
       { type: 'tuyaCatalog', messageKey: 'TuyaCatalog', defaultValue: '' },
       { type: 'tuyaList', messageKey: 'TuyaList', defaultValue: [] },
     ],
