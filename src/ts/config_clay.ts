@@ -304,6 +304,27 @@ const config = [
     ],
   },
 
+  // ------------------------------------------------------------------ Tuya sensors
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', id: 'heading-tuya', defaultValue: 'Tuya sensors' },
+      { type: 'text', defaultValue:
+        'Show readings from Tuya cloud sensors (temperature, humidity, battery, …). ' +
+        'Enter your Tuya IoT Platform Access ID / Secret and region, save, then reopen ' +
+        'this page: your devices load into the dropdowns. Add sensors, then place each ' +
+        'in the sidebar widget list above. Precision: positive = decimals, negative = round. ' +
+        'Trim: cut N leading digits. Leave the label empty to show the datapoint code.' },
+      { type: 'input', messageKey: 'TuyaAccessId', label: 'Tuya Access ID', attributes: { placeholder: 'access id' } },
+      { type: 'input', messageKey: 'TuyaAccessSecret', label: 'Tuya Access Secret', attributes: { placeholder: 'access secret' } },
+      { type: 'select', messageKey: 'TuyaRegion', label: 'Tuya region', defaultValue: 'eu', options: [
+        { label: 'Europe', value: 'eu' }, { label: 'US', value: 'us' },
+        { label: 'China', value: 'cn' }, { label: 'India', value: 'in' } ] },
+      { type: 'tuyaCatalog', messageKey: 'TuyaCatalog', defaultValue: '' },
+      { type: 'tuyaList', messageKey: 'TuyaList', defaultValue: [] },
+    ],
+  },
+
   // ------------------------------------------------------------- Work time
   {
     type: 'section',

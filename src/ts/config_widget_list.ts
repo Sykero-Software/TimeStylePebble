@@ -108,6 +108,20 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
     }
     return out;
   }
+  function readTuyaRows(): { wid: number; deviceId: string; code: string; label: string }[] {
+    const out: { wid: number; deviceId: string; code: string; label: string }[] = [];
+    const rowEls = document.querySelectorAll('.tul-root .tul-row');
+    for (let i = 0; i < rowEls.length; i++) {
+      const el = rowEls[i] as HTMLElement;
+      const wid = parseInt(el.getAttribute('data-wid') || '0', 10) || 0;
+      const devSel = el.querySelector('.tul-device') as HTMLSelectElement;
+      const codeSel = el.querySelector('.tul-code') as HTMLSelectElement;
+      const labelIn = el.querySelector('.tul-label') as HTMLInputElement;
+      out.push({ wid: wid, deviceId: devSel ? devSel.value : '', code: codeSel ? codeSel.value : '',
+        label: labelIn ? labelIn.value : '' });
+    }
+    return out;
+  }
   function currentOptions(): { id: number; label: string }[] {
     const out: { id: number; label: string }[] = STATIC_OPTIONS.slice();
     const arr = readCryptoRows();
@@ -130,6 +144,15 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
       const quote = (typeof r.quote === 'string') ? r.quote : '';
       const label = (typeof r.label === 'string' && r.label !== '') ? r.label : (base + '/' + quote);
       out.push({ id: cwid, label: label });
+    }
+    const tarr = readTuyaRows();
+    for (let i = 0; i < tarr.length; i++) {
+      const r = tarr[i];
+      if (!r) { continue; }
+      const twid = r.wid;
+      if (isNaN(twid) || twid === 0) { continue; }
+      const label = (typeof r.label === 'string' && r.label !== '') ? r.label : (r.code || 'Tuya');
+      out.push({ id: twid, label: label });
     }
     return out;
   }

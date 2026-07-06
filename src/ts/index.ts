@@ -8,6 +8,8 @@ import * as currency from './currency';
 import * as tuya from './tuya';
 import cryptoListComponent from './config_crypto_list';
 import currencyListComponent from './config_currency_list';
+import tuyaListComponent from './config_tuya_list';
+import tuyaCatalogComponent from './config_tuya_catalog';
 import { migrateCryptoList } from './crypto_migrate';
 
 import Clay from 'pebble-clay';
@@ -23,6 +25,8 @@ const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false })
 clay.registerComponent(widgetListComponent);
 clay.registerComponent(cryptoListComponent);
 clay.registerComponent(currencyListComponent);
+clay.registerComponent(tuyaCatalogComponent);
+clay.registerComponent(tuyaListComponent);
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', () => {
