@@ -74,6 +74,9 @@ void Settings_loadFromStorage() {
   settings.statusStripFullWidth = false;   // full-height columns by default; appended field
   settings.rightWidgetCount = 0;   // right column empty by default; appended field
   settings.dualListInit = false;   // appended field; one-time split migration below fires once
+  settings.widgetListV2Init = false;   // appended field; one-time 16->32-byte list migration below
+  settings.widgetCountV1 = 0;          // legacy list counts; a genuine v7 blob overwrites these
+  settings.rightWidgetCountV1 = 0;
   settings.elecQuietStart = 23;        // appended field, no settings-version bump
   settings.elecQuietEnd = 7;
   settings.elecCheapFactorPct = 70;
@@ -161,6 +164,27 @@ void Settings_loadFromStorage() {
       }
       settings.rightWidgetCount = moved;
       settings.widgetCount = 0;
+    }
+  }
+
+  // One-time 16->32-byte widget-list migration. Older builds stored the lists in the
+  // 16-byte widgetListV1/rightWidgetListV1 fields; carry them into the new, larger
+  // widgetList/rightWidgetList arrays once. Gated so it never clobbers a fresh
+  // install's just-built list (widgetCountV1 == 0) nor a later boot
+  // (widgetListV2Init persisted true).
+  if (!settings.widgetListV2Init) {
+    settings.widgetListV2Init = true;
+    if (settings.widgetCountV1 > 0) {
+      int n = settings.widgetCountV1;
+      if (n > MAX_WIDGET_LIST_V1) { n = MAX_WIDGET_LIST_V1; }
+      memcpy(settings.widgetList, settings.widgetListV1, n);
+      settings.widgetCount = n;
+    }
+    if (settings.rightWidgetCountV1 > 0) {
+      int n = settings.rightWidgetCountV1;
+      if (n > MAX_WIDGET_LIST_V1) { n = MAX_WIDGET_LIST_V1; }
+      memcpy(settings.rightWidgetList, settings.rightWidgetListV1, n);
+      settings.rightWidgetCount = n;
     }
   }
 
