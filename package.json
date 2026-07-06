@@ -1,17 +1,18 @@
 {
   "name": "timestyle-pebble",
-  "author": "Syker\u00f6 Software",
+  "author": "Sykerö Software",
   "version": "8.5.12",
   "keywords": [
     "pebble-watchface"
   ],
   "private": true,
   "dependencies": {
+    "js-sha256": "^0.11.1",
     "pebble-clay": "^1.0.4",
     "pebble-fctx": "^1.6.5"
   },
   "pebble": {
-    "displayName": "Syker\u00f6 TimeStyle",
+    "displayName": "Sykerö TimeStyle",
     "uuid": "812efd3c-309b-4474-a942-35bcb55a76f2",
     "sdkVersion": "3",
     "enableMultiJS": true,
