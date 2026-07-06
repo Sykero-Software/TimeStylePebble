@@ -993,40 +993,26 @@ void BTDisconnect_draw(GContext *ctx, int yPosition) {
   }
 }
 
-// Padding trimmed off the bottom of every label+number widget (week, alt-tz, UV,
-// swatch, crypto/currency/tuya) so they pack denser — the user sets the density by
-// how many widgets they place, so the per-widget slack is minimal. Bigger on the
-// tall-font boards (emery/gabbro: GOTHIC_24/28 values, more slack) than on the 144px
-// boards (GOTHIC_18, less room), so the value never clips.
-#if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
-#define WIDGET_PAD_TRIM 9
-#else
-#define WIDGET_PAD_TRIM 5
-#endif
-
 static void draw_basic_widget(GContext *ctx, int yPosition, const char *label,
                               const char *value, int valueYOffset) {
   int hs = SidebarWidgets_hideIdentifier ? layout.basicWidgetY : 0;
-  int trim = SidebarWidgets_hideIdentifier ? 0 : WIDGET_PAD_TRIM;  // value-only case is already tight
-  // Shift the WHOLE label+value block up by `trim` so the reserved height shrinks from
-  // the bottom while the label-to-value spacing stays exactly as before.
   if (!SidebarWidgets_hideIdentifier) {
     graphics_draw_text(ctx, label, smSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.basicWidgetLabelY - trim,
+                             yPosition + layout.basicWidgetLabelY,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
   graphics_draw_text(ctx, value, currentSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + valueYOffset - trim - hs, layout.textRectWidth, 20),
+                           yPosition + valueYOffset - hs, layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
 static int basic_widget_height(void) {
   return SidebarWidgets_hideIdentifier
       ? (layout.basicWidgetHeight - layout.basicWidgetY)
-      : (layout.basicWidgetHeight - WIDGET_PAD_TRIM);
+      : layout.basicWidgetHeight;
 }
 
 /***** Week Number Widget *****/
@@ -1545,8 +1531,6 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
 
 /***** Generic crypto / currency widget *****/
 
-// Crypto/currency/tuya share the compact label+number layout of the basic widgets
-// (same height + value nudge, via basic_widget_height / draw_basic_widget).
 int CryptoSlot_getHeight() { return basic_widget_height(); }
 
 void CryptoSlot_draw(GContext *ctx, int yPosition) {
@@ -1559,12 +1543,12 @@ void CryptoSlot_draw(GContext *ctx, int yPosition) {
   const char *label = (s && s->label[0]) ? s->label : "--";
   const char *value = (s && s->valid) ? s->value : "--";
 
-  // A wide value (e.g. "104000", "1.0823") overflows the sidebar in the normal value
-  // font, so render it in the small font (same tight vertical placement as
-  // draw_basic_widget). Short values go through draw_basic_widget unchanged.
+  // A long value (e.g. "104000.00", "1.1552") overflows the sidebar in the
+  // basic-widget value font on every board (verified for the old EUR widget), so
+  // render label + value on two lines with the small sidebar font when the value
+  // is wide; otherwise use the basic-widget layout.
   if (strlen(value) > 4) {
-    int hs = SidebarWidgets_hideIdentifier ? layout.basicWidgetY : 0;
-    int trim = SidebarWidgets_hideIdentifier ? 0 : WIDGET_PAD_TRIM;
+    int hs = SidebarWidgets_hideIdentifier ? (layout.basicWidgetY + 3) : 0;
     if (!SidebarWidgets_hideIdentifier) {
       graphics_draw_text(ctx, label, smSidebarFont,
                          GRect(layout.textRectX + SidebarWidgets_xOffset,
@@ -1574,7 +1558,7 @@ void CryptoSlot_draw(GContext *ctx, int yPosition) {
     }
     graphics_draw_text(ctx, value, smSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.basicWidgetY - trim - hs,
+                             yPosition + layout.basicWidgetY + 3 - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   } else {
