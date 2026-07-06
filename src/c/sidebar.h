@@ -6,9 +6,9 @@ extern int sidebarWidth;
 // Per-column vertical padding (top and bottom). Shared with main.c so it can
 // compute the per-column inner height available for widget packing.
 #if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
-#define V_PADDING_DEFAULT 9
+#define V_PADDING_DEFAULT 5
 #else
-#define V_PADDING_DEFAULT 8
+#define V_PADDING_DEFAULT 4
 #endif
 
 // "public" functions
