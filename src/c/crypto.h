@@ -3,6 +3,7 @@
 
 #pragma once
 #include <pebble.h>
+#include "data_slots.h"
 
 // The whole CryptoData wire string (the bytes the phone sent) is persisted under
 // this one key and re-parsed on boot. Pebble persist values cap at 256 bytes, so
@@ -11,15 +12,10 @@
 
 #define MAX_CRYPTO       16           // matches MAX_CRYPTO in the TS config
 #define CRYPTO_WID_BASE  200          // new-coin wid range [200, 200+MAX_CRYPTO)
-#define CRYPTO_LABEL_LEN 8            // up to 7 chars + NUL (fits currency "EUR/USD")
-#define CRYPTO_VALUE_LEN 16           // formatted value + NUL (fits worst-case p=8 + integer part)
+#define CRYPTO_LABEL_LEN DATA_SLOT_LABEL_LEN
+#define CRYPTO_VALUE_LEN DATA_SLOT_VALUE_LEN
 
-typedef struct {
-  uint8_t wid;                  // stable widget id (15/16/17 or 200+)
-  char    label[CRYPTO_LABEL_LEN];
-  char    value[CRYPTO_VALUE_LEN];
-  bool    valid;                // false until a usable value parsed for this slot
-} CryptoSlot;
+typedef DataSlot CryptoSlot;   // shared slot struct (see data_slots.h)
 
 extern CryptoSlot Crypto_slots[MAX_CRYPTO];
 extern uint8_t    Crypto_count;

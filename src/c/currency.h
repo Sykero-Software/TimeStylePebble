@@ -3,7 +3,7 @@
 
 #pragma once
 #include <pebble.h>
-#include "crypto.h"   // reuse the CryptoSlot struct + label/value buffers
+#include "crypto.h"   // reuse the CryptoSlot alias (see data_slots.h) + label/value buffers
 
 // The whole CurrencyData wire string is persisted under this one key and
 // re-parsed on boot. 313 = crypto, 314/315 = battery-days, so 316 is free.
