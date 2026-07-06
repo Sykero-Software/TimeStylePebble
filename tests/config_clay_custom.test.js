@@ -4,26 +4,53 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const clayConfigCustom = require('../src/pkjs/config_clay_custom');
+const configArr = require('../src/pkjs/config_clay');
 
-const GATED_KEYS = ['SettingUseMetric', 'weather_loc_mode', 'weather_datasource',
-  'weather_loc', 'weather_loc_lat', 'weather_loc_lng',
-  'SettingElecQuietStart', 'SettingElecQuietEnd', 'SettingElecCheapFactorPct',
-  'elec_cheap_floor', 'elec_cheap_ceiling', 'SettingAltClockName',
-  'SettingAltClockOffset',
-  'SettingShowBatteryPct', 'SettingDisableAutobattery',
-  'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
-  'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingAnalogTicks',
-  'SettingBigDateMonth', 'SettingBigDateFont'];
+// Flatten the real config exactly like Clay's _addItems: sections are unwrapped
+// (their items spliced in, in order); top-level items (the submit button) kept.
+function flattenConfig(cfg) {
+  const out = [];
+  cfg.forEach((entry) => {
+    if (entry.type === 'section' && Array.isArray(entry.items)) {
+      entry.items.forEach((it) => out.push(it));
+    } else {
+      out.push(entry);
+    }
+  });
+  return out;
+}
 
-function makeItem(value) {
+// Minified-element stub: records class ops, click handlers and innerHTML sets.
+function makeElement() {
   return {
-    value: value,
+    classes: {},
+    clickHandlers: [],
+    innerHTML: '',
+    on(ev, fn) { if (ev === 'click') { this.clickHandlers.push(fn); } },
+    set(spec, value) {
+      if (spec === 'innerHTML') { this.innerHTML = value; return; }
+      if (typeof spec === 'string' && spec.charAt(0) === '+') { this.classes[spec.slice(1)] = true; }
+      else if (typeof spec === 'string' && spec.charAt(0) === '-') { delete this.classes[spec.slice(1)]; }
+    }
+  };
+}
+
+function makeItem(cfg) {
+  const el = makeElement();
+  return {
+    config: cfg,
+    id: cfg.id || null,
+    messageKey: cfg.messageKey || null,
+    value: cfg.defaultValue,
     shown: true,
     changeHandlers: [],
+    $element: el,
+    $manipulatorTarget: el,
     get() { return this.value; },
     show() { this.shown = true; },
     hide() { this.shown = false; },
-    on(_ev, fn) { this.changeHandlers.push(fn); }
+    // Production uses item.on only for 'change'; heading clicks go via $element.on.
+    on(ev, fn) { if (ev === 'click') { this.$element.clickHandlers.push(fn); } else { this.changeHandlers.push(fn); } }
   };
 }
 
@@ -41,55 +68,68 @@ function makeDocument() {
   };
 }
 
-// widgetVals: left-list widget IDs. opts: {locMode, autoBatteryDisabled, rightVals}
+// widgetVals: left-list widget IDs. opts: {locMode, autoBatteryDisabled, rightVals,
+// fallbackColumn, clockStyle, bigDate}
 function makeClay(widgetVals, opts) {
   opts = opts || {};
+  const items = flattenConfig(configArr).map(makeItem);
   const byKey = {};
   const byId = {};
-  // widgetList component value is the array of selected widget ids (ints)
-  byKey['WidgetList'] = makeItem((widgetVals || []).map((v) => parseInt(v, 10) || 0));
-  byKey['WidgetListRight'] = makeItem((opts.rightVals || []).map((v) => parseInt(v, 10) || 0));
-  GATED_KEYS.forEach((k) => { byKey[k] = makeItem(''); });
+  items.forEach((it) => {
+    if (it.messageKey) { byKey[it.messageKey] = it; }
+    if (it.id) { byId[it.id] = it; }
+  });
+  byKey['WidgetList'].value = (widgetVals || []).map((v) => parseInt(v, 10) || 0);
+  byKey['WidgetListRight'].value = (opts.rightVals || []).map((v) => parseInt(v, 10) || 0);
   byKey['weather_loc_mode'].value = opts.locMode || 'auto';
   byKey['SettingDisableAutobattery'].value = String(opts.autoBatteryDisabled ? 1 : 0);
   byKey['SettingFallbackColumn'].value = String(opts.fallbackColumn !== undefined ? opts.fallbackColumn : 0);
   byKey['SettingClockStyle'].value = String(opts.clockStyle !== undefined ? opts.clockStyle : 0);
-  byKey['SettingBigDate'] = makeItem(String(opts.bigDate !== undefined ? opts.bigDate : 1));
-  byId['heading-weather'] = makeItem('');
-  byId['heading-electricity'] = makeItem('');
-  byId['analog-credit'] = makeItem('');
-  byId['heading-currency'] = makeItem('');
+  byKey['SettingBigDate'].value = String(opts.bigDate !== undefined ? opts.bigDate : 1);
   return {
-    // Mirror Clay 1.0.4's real event set (lib/clay-config.js). There is NO
-    // AFTER_RENDER — using a missing constant passes `undefined` to on(), which
-    // Clay's _transformEventNames crashes on (`undefined.split`). The mock below
-    // reproduces that crash so a wrong event constant fails the tests.
+    // Mirror Clay 1.0.4's real event set. There is NO AFTER_RENDER — a missing
+    // constant passes undefined to on(), which Clay's _transformEventNames
+    // crashes on (undefined.split). The on() below reproduces that crash.
     EVENTS: { BEFORE_BUILD: 'BEFORE_BUILD', AFTER_BUILD: 'AFTER_BUILD',
               BEFORE_DESTROY: 'BEFORE_DESTROY', AFTER_DESTROY: 'AFTER_DESTROY' },
     _handlers: {},
     getItemByMessageKey(k) { return byKey[k]; },
     getItemById(i) { return byId[i]; },
+    getAllItems() { return items; },
     on(ev, fn) {
-      // ClayEvents.on() does events.split(' ') immediately -> TypeError if ev is
-      // undefined (the AFTER_RENDER bug). Reproduce that here.
       if (typeof ev !== 'string') {
         throw new TypeError("Cannot read properties of undefined (reading 'split')");
       }
       this._handlers[ev] = fn;
     },
     byKey,
-    byId
+    byId,
+    items
   };
 }
 
 function render(widgetVals, opts) {
   const clay = makeClay(widgetVals, opts);
   clayConfigCustom.call(clay, {});  // minified arg unused by logic
-  // Clay fires AFTER_BUILD once items are built; simulate it.
   assert.ok(clay._handlers.AFTER_BUILD,
     'custom fn must register an AFTER_BUILD handler');
   clay._handlers.AFTER_BUILD();
   return clay;
+}
+
+// Open the accordion section that owns `keyOrId` by firing its heading's click
+// handlers (as the webview would on a tap). Walks items tracking the last heading
+// seen, stops at the target. No-op if the target/heading isn't found.
+function openSectionFor(c, keyOrId) {
+  const items = c.getAllItems();
+  let head = null;
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    if (it.config.type === 'heading') { head = it; }
+    if (it.messageKey === keyOrId || it.id === keyOrId) { break; }
+  }
+  if (head) { head.$element.clickHandlers.forEach((fn) => fn()); }
+  return head;
 }
 
 test('no widgets: weather/electricity/alt hidden; battery style shown (auto-battery on)', () => {
