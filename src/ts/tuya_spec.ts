@@ -6,8 +6,9 @@
    page), and a scale/unit lookup for the poll driver. No Pebble/browser globals ->
    unit-tested in tests/tuya_spec.test.js. */
 
-export interface SensorCode { code: string; type: string; scale: number; unit: string }
+export interface SensorCode { code: string; type: string; scale: number; unit: string; sample?: any }
 export interface CatalogDevice { id: string; name: string; codes: SensorCode[] }
+export interface Property { code: string; type: string; value: any }
 
 function parseValues(values: any): { scale: number; unit: string } {
   try {
@@ -37,6 +38,49 @@ export function parseSpecCodes(specResult: any): SensorCode[] {
   const st = (specResult && specResult.status) || [];
   for (let i = 0; i < st.length; i++) { add(st[i]); }   // status overrides functions
   return order.map((c) => byCode[c]);
+}
+
+// Parse a /v2.0/cloud/thing/{id}/shadow/properties result into [{code, type, value}].
+// This endpoint returns ALL datapoints INCLUDING manufacturer-custom DPs (e.g. a soil
+// sensor's real moisture under `humidity1`) that /specification + iot-03/status omit,
+// with fresh values. It carries no scale/unit, so scale/unit still come from the spec.
+export function parseProperties(propsResult: any): Property[] {
+  const props = (propsResult && propsResult.properties) || [];
+  const out: Property[] = [];
+  for (let i = 0; i < props.length; i++) {
+    const p = props[i];
+    if (!p || typeof p.code !== 'string') { continue; }
+    out.push({ code: p.code, type: String(p.type || ''), value: p.value });
+  }
+  return out;
+}
+
+// Build the catalog code list for one device: EVERY reported property becomes a
+// selectable code, carrying its current value as `sample` (shown in the config
+// dropdown) and its scale/unit from the /specification where the code is declared
+// there (custom DPs absent from the spec default to scale 0 / no unit).
+export function mergeCodes(specCodes: SensorCode[], props: Property[]): SensorCode[] {
+  const specByCode: Record<string, SensorCode> = {};
+  const sc = Array.isArray(specCodes) ? specCodes : [];
+  for (let i = 0; i < sc.length; i++) { specByCode[sc[i].code] = sc[i]; }
+  const out: SensorCode[] = [];
+  const ps = Array.isArray(props) ? props : [];
+  for (let i = 0; i < ps.length; i++) {
+    const p = ps[i];
+    const s = specByCode[p.code];
+    // Only carry a sample for numeric/boolean readings. Some DPs hold huge config
+    // strings (e.g. a soil sensor's `plants_1` plant table); keeping those as the
+    // dropdown sample bloats the catalog and breaks the config layout.
+    const sample = (typeof p.value === 'number' || typeof p.value === 'boolean') ? p.value : undefined;
+    out.push({
+      code: p.code,
+      type: p.type || (s ? s.type : ''),
+      scale: s ? s.scale : 0,
+      unit: s ? s.unit : '',
+      sample: sample,
+    });
+  }
+  return out;
 }
 
 export function shortUnit(unit: string): string {

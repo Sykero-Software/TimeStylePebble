@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const {
-  normalizeRows, distinctDevices, buildStatusPath, packTuyaData,
+  normalizeRows, distinctDevices, buildPropertiesPath, packTuyaData,
   countValidValues, parseLastSent, DELIM,
 } = require('../src/pkjs/tuya_parse');
 
@@ -30,8 +30,8 @@ test('distinctDevices returns unique ids in order', () => {
   assert.deepStrictEqual(distinctDevices(ROWS), ['devA']);
 });
 
-test('buildStatusPath targets the device status endpoint', () => {
-  assert.strictEqual(buildStatusPath('devA'), '/v1.0/iot-03/devices/devA/status');
+test('buildPropertiesPath targets the v2.0 thing-shadow properties endpoint', () => {
+  assert.strictEqual(buildPropertiesPath('devA'), '/v2.0/cloud/thing/devA/shadow/properties');
 });
 
 test('packTuyaData applies scale + p/t (no unit suffix); label falls back to code', () => {

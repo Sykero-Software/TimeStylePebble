@@ -10,9 +10,9 @@
    tuya_client.ts / tuya_spec.ts / tuya_parse.ts (unit-tested). */
 
 import { createClient } from './tuya_client';
-import { parseSpecCodes, buildCatalog, catalogScaleMap } from './tuya_spec';
+import { parseSpecCodes, parseProperties, mergeCodes, buildCatalog, catalogScaleMap } from './tuya_spec';
 import {
-  normalizeRows, distinctDevices, buildStatusPath, packTuyaData,
+  normalizeRows, distinctDevices, buildPropertiesPath, packTuyaData,
   countValidValues, parseLastSent, TuyaRow,
 } from './tuya_parse';
 
@@ -99,10 +99,18 @@ export function discoverCatalog(cb: () => void): void {
     devices = (resp.result && resp.result.devices) || [];
     let chain: Promise<any> = Promise.resolve();
     devices.forEach((d: any) => {
-      chain = chain.then(() =>
-        c.request('GET', '/v1.0/iot-03/devices/' + d.id + '/specification').then((spec: any) => {
-          codesById[d.id] = parseSpecCodes(spec.result);
-        }).catch(() => { codesById[d.id] = []; }));
+      chain = chain.then(() => {
+        // /specification gives scale+unit (standard codes only); shadow/properties gives
+        // the FULL code list + current values (incl. custom DPs). Merge so every reported
+        // datapoint is selectable, with a sample value shown in the config dropdown.
+        let specCodes: any[] = [];
+        return c.request('GET', '/v1.0/iot-03/devices/' + d.id + '/specification')
+          .then((spec: any) => { specCodes = parseSpecCodes(spec.result); })
+          .catch(() => { specCodes = []; })
+          .then(() => c.request('GET', buildPropertiesPath(d.id)))
+          .then((props: any) => { codesById[d.id] = mergeCodes(specCodes, parseProperties(props.result)); })
+          .catch(() => { codesById[d.id] = specCodes; });
+      });
     });
     return chain;
   }).then(() => {
@@ -134,8 +142,8 @@ export function updateTuya(forceUpdate?: boolean): void {
   let chain: Promise<any> = Promise.resolve();
   devices.forEach((id) => {
     chain = chain.then(() =>
-      c.request('GET', buildStatusPath(id)).then((stat: any) => {
-        const arr = (stat && stat.result) || [];
+      c.request('GET', buildPropertiesPath(id)).then((stat: any) => {
+        const arr = (stat && stat.result && stat.result.properties) || [];
         const m: Record<string, any> = {};
         for (let i = 0; i < arr.length; i++) { m[arr[i].code] = arr[i].value; }
         valuesById[id] = m;

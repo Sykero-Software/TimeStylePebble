@@ -51,8 +51,11 @@ export function distinctDevices(rows: TuyaRow[]): string[] {
   return out;
 }
 
-export function buildStatusPath(deviceId: string): string {
-  return '/v1.0/iot-03/devices/' + deviceId + '/status';
+// The v2.0 "thing shadow" endpoint returns ALL datapoints (incl. manufacturer-custom
+// DPs like a soil sensor's real moisture `humidity1`) with fresh values — unlike
+// iot-03/status, which only exposes the standard instruction set (and can be stale).
+export function buildPropertiesPath(deviceId: string): string {
+  return '/v2.0/cloud/thing/' + deviceId + '/shadow/properties';
 }
 
 function rawFor(valuesById: any, deviceId: string, code: string): any {

@@ -45,9 +45,12 @@ function tuyaListInitialize(this: any, _minified: any, clayConfig: any): void {
     let found = false;
     for (let i = 0; i < codes.length; i++) {
       const c = codes[i];
-      const unit = (c.unit ? ' (' + c.unit + ')' : '');
+      const unit = (c.unit ? ' ' + c.unit : '');
+      // Show the current reading so the right datapoint is obvious (e.g. a soil
+      // sensor's real moisture 'humidity1 = 96' vs a stale 'humidity = 0').
+      const sample = (c.sample !== undefined && c.sample !== null) ? (' = ' + c.sample + unit) : '';
       if (c.code === selCode) { found = true; }
-      html += '<option value="' + escAttr(c.code) + '"' + (c.code === selCode ? ' selected' : '') + '>' + escAttr(c.code + unit) + '</option>';
+      html += '<option value="' + escAttr(c.code) + '"' + (c.code === selCode ? ' selected' : '') + '>' + escAttr(c.code + sample) + '</option>';
     }
     if (!found && selCode) { html = '<option value="' + escAttr(selCode) + '" selected>' + escAttr(selCode) + '</option>' + html; }
     return html;

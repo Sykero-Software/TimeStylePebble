@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const {
-  parseSpecCodes, shortUnit, buildCatalog, catalogScaleMap,
+  parseSpecCodes, parseProperties, mergeCodes, shortUnit, buildCatalog, catalogScaleMap,
 } = require('../src/pkjs/tuya_spec');
 
 const SPEC = { status: [
@@ -28,6 +28,44 @@ test('parseSpecCodes reads scale/unit from the values JSON', () => {
 test('parseSpecCodes tolerates missing/garbage spec', () => {
   assert.deepStrictEqual(parseSpecCodes(null), []);
   assert.deepStrictEqual(parseSpecCodes({}), []);
+});
+
+test('parseProperties reads code/type/value from a shadow/properties result', () => {
+  const props = parseProperties({ properties: [
+    { code: 'humidity', dp_id: 3, type: 'value', value: 0 },
+    { code: 'humidity1', dp_id: 111, type: 'value', value: 96 },
+    { code: 'temp_current', dp_id: 5, type: 'value', value: 152 },
+    { bad: 'no code' },
+  ]});
+  assert.strictEqual(props.length, 3);
+  assert.deepStrictEqual(props[1], { code: 'humidity1', type: 'value', value: 96 });
+  assert.deepStrictEqual(parseProperties(null), []);
+});
+
+test('mergeCodes: every property is selectable, scale/unit from spec, sample from value', () => {
+  const spec = parseSpecCodes({ status: [
+    { code: 'humidity', type: 'Integer', values: '{"unit":"%","scale":0}' },
+    { code: 'temp_current', type: 'Integer', values: '{"unit":"℃","scale":1}' },
+  ]});
+  const props = parseProperties({ properties: [
+    { code: 'humidity', type: 'value', value: 0 },       // stale standard DP
+    { code: 'temp_current', type: 'value', value: 152 },
+    { code: 'humidity1', type: 'value', value: 96 },      // custom DP absent from spec
+    { code: 'plants_1', type: 'string', value: 'Green Rose,25,70,150,300,0|Lantern,...' }, // huge string
+  ]});
+  const merged = mergeCodes(spec, props);
+  assert.strictEqual(merged.length, 4);
+  // custom humidity1 is included, scale defaults to 0, sample carries the fresh value
+  const h1 = merged.find((c) => c.code === 'humidity1');
+  assert.deepStrictEqual(h1, { code: 'humidity1', type: 'value', scale: 0, unit: '', sample: 96 });
+  // a big string DP is still selectable but carries NO sample (avoids catalog bloat)
+  const pl = merged.find((c) => c.code === 'plants_1');
+  assert.strictEqual(pl.sample, undefined);
+  // standard temp_current keeps its spec scale/unit + current sample
+  const tc = merged.find((c) => c.code === 'temp_current');
+  assert.strictEqual(tc.scale, 1);
+  assert.strictEqual(tc.unit, '℃');
+  assert.strictEqual(tc.sample, 152);
 });
 
 test('shortUnit maps temperature to ° and keeps %', () => {
