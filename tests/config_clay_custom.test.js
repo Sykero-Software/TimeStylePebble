@@ -35,23 +35,41 @@ function makeElement() {
   };
 }
 
+// Custom Clay components (config_widget_list.ts etc.) declare a plain {get,set}
+// manipulator — Clay attaches ONLY those methods, so these items have NO
+// hide()/show(). Standard components' string manipulator resolves to
+// manipulators.js, which DOES include hide/show. Model that faithfully so the mock
+// reproduces the "it.hide() throws on a custom component" bug rather than masking
+// it: give hide/show only to non-custom items, and derive `.shown` from the `hide`
+// class on $element (the real visibility mechanism), not a separate flag.
+const CUSTOM_TYPES = {
+  widgetList: 1, cryptoList: 1, currencyList: 1, tuyaCatalog: 1, tuyaList: 1
+};
+
 function makeItem(cfg) {
   const el = makeElement();
-  return {
+  const item = {
     config: cfg,
     id: cfg.id || null,
     messageKey: cfg.messageKey || null,
     value: cfg.defaultValue,
-    shown: true,
     changeHandlers: [],
     $element: el,
     $manipulatorTarget: el,
     get() { return this.value; },
-    show() { this.shown = true; },
-    hide() { this.shown = false; },
     // Production uses item.on only for 'change'; heading clicks go via $element.on.
     on(ev, fn) { if (ev === 'click') { this.$element.clickHandlers.push(fn); } else { this.changeHandlers.push(fn); } }
   };
+  // `.shown` reflects the actual `hide` class (what Clay's CSS keys visibility on).
+  Object.defineProperty(item, 'shown', {
+    enumerable: true,
+    get() { return !el.classes.hide; }
+  });
+  if (!CUSTOM_TYPES[cfg.type]) {
+    item.show = function() { el.set('-hide'); };
+    item.hide = function() { el.set('+hide'); };
+  }
+  return item;
 }
 
 function makeDocument() {
@@ -513,4 +531,22 @@ test('accordion: removing an open section\'s gating widget closes it; re-adding 
   c.byKey['WidgetList'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byId['heading-weather'].shown, true, 'heading shown again');
   assert.strictEqual(c.byKey['SettingUseMetric'].shown, false, 'came back collapsed, not auto-opened');
+});
+
+test('accordion: custom-component sections collapse (widgetList/cryptoList/... have no hide/show manipulator)', () => {
+  const c = render([]);
+  // Sidebar widgets contains widgetList — a custom component whose manipulator is a
+  // bare {get,set} with no hide/show. The old code called it.hide() and threw here,
+  // aborting applyVisibility so every section after Sidebar widgets stayed visible.
+  openSectionFor(c, 'SettingClockStyle');   // open Clock -> all other sections collapsed
+  assert.strictEqual(c.byKey['WidgetList'].shown, false, 'widgetList hidden when collapsed');
+  assert.strictEqual(c.byKey['WidgetListRight'].shown, false);
+  assert.strictEqual(c.byKey['CryptoList'].shown, false);
+  assert.strictEqual(c.byKey['CurrencyList'].shown, false);
+  assert.strictEqual(c.byKey['TuyaList'].shown, false);
+  // Sections AFTER the first custom component must also collapse (the abort left
+  // Weather..Data Refresh stuck visible).
+  assert.strictEqual(c.byKey['weather_datasource'].shown, false, 'Weather collapses (after widgetList)');
+  assert.strictEqual(c.byKey['SettingMidiVibe'].shown, false, 'MIDI collapses');
+  assert.strictEqual(c.byKey['SettingPollIntervalMin'].shown, false, 'Data Refresh collapses');
 });

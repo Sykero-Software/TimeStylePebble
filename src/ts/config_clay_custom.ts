@@ -29,8 +29,6 @@ interface ClayItem {
   $element: ClayElement;
   $manipulatorTarget: ClayElement;
   get(): any;
-  show(): void;
-  hide(): void;
   on(event: string, cb: () => void): void;
 }
 
@@ -124,8 +122,16 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     if (it.id && g.gi.hasOwnProperty(it.id)) { return g.gi[it.id]; }
     return true;
   }
+  // Toggle Clay's `hide` class on the item's root element directly, NOT the
+  // manipulator's it.show()/it.hide(): those methods only exist on standard
+  // components (whose string manipulator resolves to manipulators.js). Custom
+  // components (widgetList/cryptoList/currencyList/tuyaCatalog/tuyaList) declare a
+  // plain {get,set} manipulator with NO hide/show, so it.hide() would throw and
+  // abort the whole applyVisibility pass at the first custom component (leaving
+  // every later section stuck visible). $element + the `hide` class is exactly
+  // what manipulators.js hide()/show() do, and every ClayItem has $element.
   function setShown(it: ClayItem, on: boolean): void {
-    if (on) { it.show(); } else { it.hide(); }
+    if (on) { it.$element.set('-hide'); } else { it.$element.set('+hide'); }
   }
 
   // ---- Accordion: group items by heading, wire clicks, render chevrons
@@ -173,7 +179,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
       const open = headOk && (gi === openIndex);
       for (let j = 0; j < grp.items.length; j++) {
         const it = grp.items[j];
-        if (it.config.type === 'submit') { it.show(); continue; }
+        if (it.config.type === 'submit') { it.$element.set('-hide'); continue; }
         setShown(it, gateVisible(it, g) && open);
       }
     }
