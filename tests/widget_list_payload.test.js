@@ -13,9 +13,9 @@ test('drops non-numeric and out-of-range ids', () => {
   assert.deepStrictEqual(widgetListToPayload([12, 'x', 99, 17]), [12, 17]);
 });
 
-test('truncates to the 16-entry cap', () => {
-  const long = Array.from({ length: 20 }, () => 5);
-  assert.strictEqual(widgetListToPayload(long).length, 16);
+test('truncates to the 32-entry cap', () => {
+  const long = Array.from({ length: 40 }, () => 5);
+  assert.strictEqual(widgetListToPayload(long).length, 32);
 });
 
 test('non-array input yields an empty payload', () => {
@@ -69,10 +69,11 @@ test('clamps group count to 6 members', () => {
     [255, 6, 1, 200, 201, 202, 203, 204, 205]);
 });
 
-test('packs whole groups only within the 16-byte cap', () => {
-  // two 6-member groups would be 9+9=18 bytes; only the first whole group fits
+test('packs whole groups only within the 32-byte cap', () => {
+  // each 6-member group is 9 bytes; three fit (27), a fourth (->36) is dropped whole
   const g = [255, 6, 1, 200, 201, 202, 203, 204, 205];
-  assert.deepStrictEqual(widgetListToPayload(g.concat(g)), g);
+  assert.deepStrictEqual(widgetListToPayload(g.concat(g).concat(g).concat(g)),
+                         g.concat(g).concat(g));
 });
 
 test('drops Empty(0) from a plain list (was a no-op widget)', () => {

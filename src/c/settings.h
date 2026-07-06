@@ -4,6 +4,12 @@
 
 #define CURRENT_SETTINGS_VERSION 7
 
+// Legacy widget-list capacity. Older blobs stored the lists as 16-byte arrays
+// (widgetListV1/rightWidgetListV1) in the middle of the struct; they are now
+// carried once into the larger MAX_WIDGET_LIST arrays appended at the end. Keep
+// this value fixed so the persisted layout of the V1 fields never changes.
+#define MAX_WIDGET_LIST_V1 16
+
 // persistent storage keys
 #define SETTINGS_PERSIST_KEY 100
 #define SETTINGS_VERSION_PERSIST_KEY 4
@@ -115,8 +121,8 @@ typedef struct {
   // space-between when it fits, top-anchored + clipped when it overflows. The
   // legacy widgets[]/widgets2[] arrays above are retained only for the one-time
   // migration and for round-board mirroring (settings.widgets[0]/[2]).
-  uint8_t widgetList[MAX_WIDGET_LIST];
-  uint8_t widgetCount;
+  uint8_t widgetListV1[MAX_WIDGET_LIST_V1];   // legacy 16-byte list (kept for layout + one-time migration)
+  uint8_t widgetCountV1;
 
   // Status strip layout: false (default) = side columns stay full height and the
   // strip is inset between them; true = columns shorten to the strip top and the
@@ -125,8 +131,8 @@ typedef struct {
 
   // RIGHT sidebar widget list (ordered), independent of the left list. Appended
   // fields, zero-default on load of an older blob.
-  uint8_t rightWidgetList[MAX_WIDGET_LIST];
-  uint8_t rightWidgetCount;
+  uint8_t rightWidgetListV1[MAX_WIDGET_LIST_V1];   // legacy 16-byte list (kept for layout + one-time migration)
+  uint8_t rightWidgetCountV1;
 
   // One-time dual-list migration sentinel. false on a pre-dual-list blob; on the
   // first load we split the single widgetList onto left/right per the legacy
@@ -179,6 +185,17 @@ typedef struct {
   // BigDateFontId in date_header_calc.h. Appended field, zero-default (=Bitham,
   // the current look) on load of an older blob; no settings-version bump.
   uint8_t bigDateFontId;
+
+  // Widget lists, enlarged from 16 to MAX_WIDGET_LIST bytes so a column with
+  // several rotating groups fits (each group costs 3 + members bytes). Appended at
+  // the END so the persisted layout of every older field is unchanged; on the first
+  // load after upgrade the one-time migration copies widgetListV1/rightWidgetListV1
+  // into these. widgetListV2Init gates that copy (zero-default = not yet migrated).
+  uint8_t widgetList[MAX_WIDGET_LIST];
+  uint8_t widgetCount;
+  uint8_t rightWidgetList[MAX_WIDGET_LIST];
+  uint8_t rightWidgetCount;
+  bool    widgetListV2Init;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

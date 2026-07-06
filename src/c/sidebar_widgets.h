@@ -58,7 +58,7 @@ typedef enum {
 
 // Maximum length of the configurable widget priority list (storage + protocol
 // buffer). The watch shows as many as fit by height; this only bounds the buffer.
-#define MAX_WIDGET_LIST 16
+#define MAX_WIDGET_LIST 32
 
 typedef struct {
   /*
