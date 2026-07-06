@@ -10,6 +10,7 @@
 #include "electricity.h"
 #include "crypto.h"
 #include "currency.h"
+#include "tuya.h"
 #include "battery_days.h"
 
 int SidebarWidgets_xOffset;
@@ -599,7 +600,7 @@ void SidebarWidgets_updateTime(struct tm *timeInfo) {
 
 /* Sidebar Widget Selection */
 SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
-  if (Crypto_isWid((uint8_t)type) || Currency_isWid((uint8_t)type)) { return cryptoWidget; }
+  if (Crypto_isWid((uint8_t)type) || Currency_isWid((uint8_t)type) || Tuya_isWid((uint8_t)type)) { return cryptoWidget; }
   switch (type) {
   case BATTERY_METER:
     return batteryMeterWidget;
@@ -1536,7 +1537,9 @@ void CryptoSlot_draw(GContext *ctx, int yPosition) {
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
 
   uint8_t wid = SidebarWidgets_currentWidgetType;
-  CryptoSlot *s = Crypto_isWid(wid) ? Crypto_find(wid) : Currency_find(wid);
+  CryptoSlot *s = Crypto_isWid(wid) ? Crypto_find(wid)
+                : Currency_isWid(wid) ? Currency_find(wid)
+                : Tuya_find(wid);
   const char *label = (s && s->label[0]) ? s->label : "--";
   const char *value = (s && s->valid) ? s->value : "--";
 

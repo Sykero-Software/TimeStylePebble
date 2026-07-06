@@ -8,6 +8,7 @@
 #include "electricity.h"
 #include "crypto.h"
 #include "currency.h"
+#include "tuya.h"
 #include "languages.h"
 #include "date_header_calc.h"
 #include "widget_list.h"
@@ -139,6 +140,13 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if (currency_tuple != NULL && currency_tuple->type == TUPLE_CSTRING) {
     Currency_parse(currency_tuple->value->cstring);
     persist_write_string(CURRENCY_PERSIST_KEY_DATA, currency_tuple->value->cstring);
+  }
+
+  // Tuya sensors: same packed wid/label/value format as crypto, own message key.
+  Tuple *tuya_tuple = dict_find(iterator, MESSAGE_KEY_TuyaData);
+  if (tuya_tuple) {
+    Tuya_parse(tuya_tuple->value->cstring);
+    persist_write_string(TUYA_PERSIST_KEY_DATA, tuya_tuple->value->cstring);
   }
 
   // does this message contain new config information?

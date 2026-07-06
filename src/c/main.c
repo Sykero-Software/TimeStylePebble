@@ -11,6 +11,7 @@
 #include "electricity.h"
 #include "crypto.h"
 #include "currency.h"
+#include "tuya.h"
 #include "sidebar_widgets.h"
 #include "widget_list.h"
 #include "battery_days.h"
@@ -274,7 +275,7 @@ static void main_window_unload(Window *window) {
 // every coin wid (legacy 15/16/17 and the configurable 200+ range).
 static bool isPhoneDataWidget(SidebarWidgetType w) {
   return w == ELECTRICITY || w == NEXT_CHEAP_ELEC || w == CHEAPEST_ELEC_HOUR
-      || Crypto_isWid((uint8_t)w) || Currency_isWid((uint8_t)w);
+      || Crypto_isWid((uint8_t)w) || Currency_isWid((uint8_t)w) || Tuya_isWid((uint8_t)w);
 }
 
 static void phone_data_scan_cb(uint8_t w, void *ctx) {
@@ -440,6 +441,7 @@ static void init() {
   Electricity_init();
   Crypto_init();
   Currency_init();
+  Tuya_init();
 
   // init the messaging thing
   messaging_init(redrawScreen);
