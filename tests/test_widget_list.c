@@ -23,6 +23,10 @@ int main(void) {
   assert(WidgetList_isDrawableId(216));     // currency base
   assert(WidgetList_isDrawableId(222));     // currency last (7 slots: 216-222)
   assert(!WidgetList_isDrawableId(223));    // 223 excluded: 223|0x20 == 0xFF (rotating marker)
+  assert(WidgetList_isDrawableId(128));     // tuya base
+  assert(WidgetList_isDrawableId(143));     // tuya last (16 slots: 128-143)
+  assert(!WidgetList_isDrawableId(144));    // first id past the tuya range
+  assert(WidgetList_isDrawableId(128 | 0x20)); // hide flag stripped -> still drawable
   assert(!WidgetList_isDrawableId(255));    // marker is not an id
 
   // --- hide flag helpers (0x20) ---

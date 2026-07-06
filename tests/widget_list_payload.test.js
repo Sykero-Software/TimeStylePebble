@@ -36,6 +36,10 @@ test('keeps the new Battery Days widget (id 22, current MAX_WIDGET_TYPE); drops 
   assert.deepStrictEqual(widgetListToPayload([22, 23]), [22]);
 });
 
+test('widgetListToPayload keeps Tuya wids (128..143)', () => {
+  assert.deepStrictEqual(widgetListToPayload([128, 143, 144, 2]), [128, 143, 2]); // 144 dropped
+});
+
 test('passes a valid rotating group through unchanged', () => {
   // battery, group{interval=10s(code1), BTC, XMR}, altTZ
   assert.deepStrictEqual(

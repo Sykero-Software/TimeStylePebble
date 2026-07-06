@@ -14,12 +14,15 @@
    See docs/superpowers/specs/2026-06-24-timestyle-rotating-widget-design.md */
 
 // Numeric mirrors — keep in sync with src/c/sidebar_widgets.h (MAX_WIDGET_TYPE),
-// src/c/crypto.h (CRYPTO_WID_BASE / MAX_CRYPTO), src/ts/widget_list_payload.ts.
+// src/c/crypto.h (CRYPTO_WID_BASE / MAX_CRYPTO), src/c/tuya.h, src/ts/widget_list_payload.ts,
+// src/ts/config_tuya_list.ts.
 #define WL_MAX_WIDGET_TYPE   22    // BATTERY_DAYS
 #define WL_CRYPTO_WID_BASE   200
 #define WL_MAX_CRYPTO        16
 #define WL_CURRENCY_WID_BASE 216
 #define WL_MAX_CURRENCY      7
+#define WL_TUYA_WID_BASE     128
+#define WL_MAX_TUYA          16
 
 #define WIDGET_ROTATING_MARKER 0xFF
 #define MAX_GROUP_MEMBERS      6

@@ -13,6 +13,8 @@ const CRYPTO_WID_BASE = 200;
 const MAX_CRYPTO = 16;
 const CURRENCY_WID_BASE = 216;
 const MAX_CURRENCY = 7;
+const TUYA_WID_BASE = 128;
+const MAX_TUYA = 16;
 const ROTATING_MARKER = 255;
 const MAX_GROUP_MEMBERS = 6;
 const WIDGET_HIDE_FLAG = 0x20;   // KEEP IN SYNC with src/c/widget_list.h
@@ -23,6 +25,7 @@ function isDrawableId(id: number): boolean {
   if (base >= 1 && base <= MAX_WIDGET_TYPE) { return true; }
   if (base >= CRYPTO_WID_BASE && base < CRYPTO_WID_BASE + MAX_CRYPTO) { return true; }
   if (base >= CURRENCY_WID_BASE && base < CURRENCY_WID_BASE + MAX_CURRENCY) { return true; }
+  if (base >= TUYA_WID_BASE && base < TUYA_WID_BASE + MAX_TUYA) { return true; }
   return false;
 }
 
