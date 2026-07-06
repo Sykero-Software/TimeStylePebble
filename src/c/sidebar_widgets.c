@@ -1008,10 +1008,12 @@ static void draw_basic_widget(GContext *ctx, int yPosition, const char *label,
                               const char *value, int valueYOffset) {
   int hs = SidebarWidgets_hideIdentifier ? layout.basicWidgetY : 0;
   int trim = SidebarWidgets_hideIdentifier ? 0 : WIDGET_PAD_TRIM;  // value-only case is already tight
+  // Shift the WHOLE label+value block up by `trim` so the reserved height shrinks from
+  // the bottom while the label-to-value spacing stays exactly as before.
   if (!SidebarWidgets_hideIdentifier) {
     graphics_draw_text(ctx, label, smSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
-                             yPosition + layout.basicWidgetLabelY,
+                             yPosition + layout.basicWidgetLabelY - trim,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   }
