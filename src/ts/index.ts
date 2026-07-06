@@ -5,6 +5,7 @@ import * as weather from './weather';
 import * as electricity from './electricity';
 import * as crypto from './crypto';
 import * as currency from './currency';
+import * as tuya from './tuya';
 import cryptoListComponent from './config_crypto_list';
 import currencyListComponent from './config_currency_list';
 import { migrateCryptoList } from './crypto_migrate';
@@ -72,6 +73,16 @@ Pebble.addEventListener('ready', () => {
   if (window.localStorage.getItem('disable_currency') !== 'yes') {
     currency.updateCurrency(true);
   }
+
+  // tuya: disabled until a widget selects a sensor (set in webviewclosed). Force a
+  // send on (re)launch for the same reason as crypto/currency (persisted TuyaData is
+  // wiped by a reinstall/reboot, but tuya_last_sent survives in phone localStorage).
+  if (window.localStorage.getItem('disable_tuya') === null) {
+    window.localStorage.setItem('disable_tuya', 'yes');
+  }
+  if (window.localStorage.getItem('disable_tuya') !== 'yes') {
+    tuya.updateTuya(true);
+  }
 });
 
 // Listen for incoming messages
@@ -94,6 +105,7 @@ Pebble.addEventListener('appmessage', (msg) => {
   electricity.updateElectricity();
   crypto.updateCrypto();
   currency.updateCurrency();
+  tuya.updateTuya();
 });
 
 // One-time migration: the old config saved 6 separate SettingWidget*ID keys to
@@ -123,10 +135,25 @@ function migrateWidgetListSettings() {
   window.localStorage.setItem('clay-settings', JSON.stringify(stored));
 }
 
+// Bake the discovered Tuya catalog + a default (empty) sensor list into clay-settings
+// so the config page's custom components can read them (the config webview has no
+// localStorage). Mirrors PebbleTuyaControl's seedConfigData.
+function seedTuyaCatalog() {
+  let stored: Record<string, any>;
+  try { stored = JSON.parse(window.localStorage.getItem('clay-settings') || '{}') || {}; }
+  catch (e) { return; }
+  stored.TuyaCatalog = window.localStorage.getItem('tuya-catalog') || '{"v":1,"devices":[]}';
+  if (stored.TuyaList === undefined) { stored.TuyaList = []; }
+  window.localStorage.setItem('clay-settings', JSON.stringify(stored));
+}
+
 Pebble.addEventListener('showConfiguration', () => {
   migrateWidgetListSettings();
   migrateCryptoList();
-  Pebble.openURL(clay.generateUrl());
+  tuya.discoverCatalog(() => {
+    seedTuyaCatalog();
+    Pebble.openURL(clay.generateUrl());
+  });
 });
 
 Pebble.addEventListener('webviewclosed', (e) => {
@@ -218,6 +245,9 @@ Pebble.addEventListener('webviewclosed', (e) => {
   // currency: enabled iff any placed widget id is in the currency range [216, 223)
   const anyCurrency = widgetIDs.some((id) => id >= 216 && id < 223);
   window.localStorage.setItem('disable_currency', anyCurrency ? 'no' : 'yes');
+  // tuya: enabled iff any placed widget id is in the tuya range [128, 144)
+  const anyTuya = widgetIDs.some((id) => id >= 128 && id < 144);
+  window.localStorage.setItem('disable_tuya', anyTuya ? 'no' : 'yes');
 
   console.log('Preparing message: ' + JSON.stringify(dict));
   Pebble.sendAppMessage(dict, () => {
@@ -225,5 +255,6 @@ Pebble.addEventListener('webviewclosed', (e) => {
     electricity.updateElectricity(true);
     crypto.updateCrypto(true);
     currency.updateCurrency(true);
+    tuya.updateTuya(true);
   }, () => { console.log('Failed to send config data!'); });
 });
