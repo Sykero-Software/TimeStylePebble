@@ -1535,7 +1535,14 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
 // tighter than a basic widget (only trailing padding is removed — the value keeps
 // its normal font) so a label+number data widget stays <= battery/battery_days
 // height and no longer inflates a rotating group that mixes it with them.
+// Padding trimmed off the basic widget height. Bigger on the tall-font boards
+// (emery/gabbro use GOTHIC_24/28 values with more slack) than on the 144px boards
+// (GOTHIC_18 values, less room), so the value never clips.
+#if defined(PBL_PLATFORM_EMERY) || defined(PBL_PLATFORM_GABBRO)
+#define DATA_WIDGET_TRIM 9
+#else
 #define DATA_WIDGET_TRIM 5
+#endif
 static int data_widget_height(void) {
   return SidebarWidgets_hideIdentifier ? (layout.basicWidgetHeight - layout.basicWidgetY)
                                        : (layout.basicWidgetHeight - DATA_WIDGET_TRIM);
