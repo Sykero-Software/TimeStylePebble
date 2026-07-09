@@ -83,9 +83,6 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     const fallbackManual = parseInt(key('SettingFallbackColumn').get(), 10) !== 0;
     const analog = parseInt(key('SettingClockStyle').get(), 10) === 1;
     const bigDate = parseInt(key('SettingBigDate').get(), 10) === 1;
-    const anyCrypto = ids.some((id) =>
-      id === 15 || id === 16 || id === 17 || (id >= 200 && id < 216));
-    const anyCurrency = ids.some((id) => id >= 216 && id < 223);
     const altClock = has(ids, [3]);
     const gk: { [k: string]: boolean } = {};
     const gi: { [k: string]: boolean } = {};
@@ -112,8 +109,9 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     gi['analog-credit'] = analog;
     gi['heading-weather'] = weather;
     gi['heading-electricity'] = cheapHour;
-    gi['heading-crypto'] = anyCrypto;
-    gi['heading-currency'] = anyCurrency;
+    // NOTE: heading-crypto / heading-currency are deliberately NOT gated — each
+    // section is the only place to create its widget type, so gating it on
+    // placement deadlocks adding the first coin/pair (fb27e08 / 5553520 bug).
     return { gk: gk, gi: gi };
   }
 
