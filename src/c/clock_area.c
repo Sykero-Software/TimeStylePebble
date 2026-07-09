@@ -52,6 +52,25 @@ static int widest_digit_adv(FFont* font) {
   return m;
 }
 
+// Map the Bitham size ladder (clock_area_calc) to the system-font key. Bitham is
+// a GFont, drawn with graphics_draw_text (FCTX can't render a system font).
+static const char* bitham_font_key(int avail_px) {
+  return ClockArea_bithamSize(avail_px) == CLOCK_BITHAM_42
+      ? FONT_KEY_BITHAM_42_BOLD
+      : FONT_KEY_BITHAM_30_BLACK;
+}
+
+// Draw `text` horizontally centred and vertically centred within `box`, using a
+// system GFont. graphics_draw_text top-aligns, so offset by the measured height.
+static void bitham_draw_line(GContext* ctx, const char* text, GFont font, GRect box) {
+  GSize sz = graphics_text_layout_get_content_size(text, font, box,
+      GTextOverflowModeFill, GTextAlignmentCenter);
+  int y = box.origin.y + (box.size.h - sz.h) / 2;
+  graphics_draw_text(ctx, text, font,
+      GRect(box.origin.x, y, box.size.w, sz.h + 4),
+      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+}
+
 // "private" functions
 void update_fonts() {
   switch(settings.clockFontId) {
@@ -75,6 +94,13 @@ void update_fonts() {
         hours_font = leco;
         minutes_font = leco;
       break;
+    case FONT_SETTING_BITHAM:
+        // Bitham applies only to the below-analog HH:MM line (drawn via
+        // graphics_draw_text). The large stacked digital clock falls back to
+        // LECO, so point the FFonts at leco (used by the FCTX large-clock path).
+        hours_font = leco;
+        minutes_font = leco;
+      break;
   }
 }
 
@@ -87,6 +113,15 @@ static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_t
   while (*h == ' ') { h++; }
   char buf[8];
   snprintf(buf, sizeof(buf), "%s:%s", h, time_minutes);
+
+  if (settings.clockFontId == FONT_SETTING_BITHAM) {
+    // graphics_draw_text uses layer-local coords, so NO frame-origin adjust here.
+    GFont font = fonts_get_system_font(bitham_font_key(band_h));
+    graphics_context_set_text_color(ctx, settings.timeColor);
+    bitham_draw_line(ctx, buf, font,
+        GRect(bounds.origin.x, band_top, bounds.size.w, band_h));
+    return;
+  }
 
   FContext fctx;
   fctx_init_context(&fctx, ctx);
@@ -156,6 +191,13 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   }
   #endif
 
+  // Bitham (a fixed-size system GFont) can't scale to fill the large stacked
+  // clock — it looks lost on a big screen — so the FONT_SETTING_BITHAM choice
+  // applies ONLY to the single HH:MM line below the analog dial (draw_digital_below,
+  // where it matches the date header). Here in the large digital clock it falls
+  // back to LECO: update_fonts() points the FFonts at leco, and the LECO metric
+  // branch below also fires for BITHAM.
+
   // initialize FCTX, the fancy 3rd party drawing library that all the cool kids use
   FContext fctx;
 
@@ -172,8 +214,8 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   int h_adjust = 0;
   int v_adjust = 0;
 
-  // alternate metrics for LECO
-  if(settings.clockFontId == FONT_SETTING_LECO) {
+  // alternate metrics for LECO (BITHAM falls back to LECO for the large clock)
+  if(settings.clockFontId == FONT_SETTING_LECO || settings.clockFontId == FONT_SETTING_BITHAM) {
     font_size = 4 * bounds.size.h / 7 + 6;
     v_padding = bounds.size.h / 20;
     h_adjust = -4;

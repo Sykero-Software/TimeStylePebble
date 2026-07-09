@@ -118,6 +118,7 @@ const config = [
           { label: 'Bold', value: '2' },
           { label: 'Bold Hour', value: '3' },
           { label: 'Bold Minute', value: '4' },
+          { label: 'Bitham', value: '5' },
         ] },
       { type: 'radiogroup', messageKey: 'SettingBigDate', label: 'Large date above clock',
         defaultValue: '1', options: [{ label: 'None', value: '0' }, { label: 'Show', value: '1' }] },
