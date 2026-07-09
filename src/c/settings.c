@@ -207,7 +207,7 @@ void Settings_loadFromStorage() {
   bool clamped = false;
 
   if (settings.languageId > LANGUAGE_IW) { settings.languageId = LANGUAGE_EN; clamped = true; }
-  if (settings.clockFontId > FONT_SETTING_BOLD_M) { settings.clockFontId = FONT_SETTING_DEFAULT; clamped = true; }
+  if (settings.clockFontId > FONT_SETTING_BITHAM) { settings.clockFontId = FONT_SETTING_DEFAULT; clamped = true; }
   if (settings.bigDateFontId > BIG_DATE_FONT_SERIF) { settings.bigDateFontId = BIG_DATE_FONT_BITHAM; clamped = true; }
   if (settings.hourlyVibe > VIBE_EVERY_HALF_HOUR) { settings.hourlyVibe = NO_VIBE; clamped = true; }
   for (int i = 0; i < 3; i++) {

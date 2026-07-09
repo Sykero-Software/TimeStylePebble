@@ -332,7 +332,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   }
 
   if(clockFont_tuple != NULL && clockFont_tuple->value->int8 >= FONT_SETTING_DEFAULT
-     && clockFont_tuple->value->int8 <= FONT_SETTING_BOLD_M) {
+     && clockFont_tuple->value->int8 <= FONT_SETTING_BITHAM) {
     settings.clockFontId = clockFont_tuple->value->int8;
   }
 
