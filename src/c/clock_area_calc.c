@@ -29,3 +29,7 @@ int ClockArea_fitFontSize(int height_em, int avail_px,
   if (em_m < em) { em = em_m; }
   return em;
 }
+
+ClockBithamSize ClockArea_bithamSize(int avail_px) {
+  return avail_px >= 42 ? CLOCK_BITHAM_42 : CLOCK_BITHAM_30;
+}

@@ -21,3 +21,11 @@
 int ClockArea_fitFontSize(int height_em, int avail_px,
                           int hours_digit_adv, int hours_upem,
                           int minutes_digit_adv, int minutes_upem);
+
+// System-Bitham (GFont) size ladder for the FONT_SETTING_BITHAM clock. Bitham
+// exists only at fixed sizes and cannot scale like the vector fonts, so pick the
+// largest heavy cut that fits the available per-line height: 42px (BITHAM_42_BOLD,
+// the heaviest 42 cut) when it fits, else 30px (BITHAM_30_BLACK, the date-header
+// size). Pure logic here; clock_area.c maps the result to the FONT_KEY_* string.
+typedef enum { CLOCK_BITHAM_30 = 0, CLOCK_BITHAM_42 = 1 } ClockBithamSize;
+ClockBithamSize ClockArea_bithamSize(int avail_px);

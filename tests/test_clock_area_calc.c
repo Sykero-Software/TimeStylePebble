@@ -42,6 +42,15 @@ int main(void) {
   assert(ClockArea_fitFontSize(96, 84,  ADV, 0,    ADV, UPEM) == 75);   // zero hours upem -> minutes govern
   assert(ClockArea_fitFontSize(96, -5,  ADV, UPEM, ADV, UPEM) == 96);   // negative avail -> no cap
 
+  // --- Bitham system-font size ladder (largest heavy cut that fits avail_px).
+  //     >=42 -> 42_BOLD; below -> 30_BLACK (the date-header size). ---
+  assert(ClockArea_bithamSize(100) == CLOCK_BITHAM_42);  // large clock half on emery
+  assert(ClockArea_bithamSize(60)  == CLOCK_BITHAM_42);  // large clock half on diorite
+  assert(ClockArea_bithamSize(42)  == CLOCK_BITHAM_42);  // exact boundary fits
+  assert(ClockArea_bithamSize(41)  == CLOCK_BITHAM_30);  // just below -> 30
+  assert(ClockArea_bithamSize(28)  == CLOCK_BITHAM_30);  // small below-analog band
+  assert(ClockArea_bithamSize(0)   == CLOCK_BITHAM_30);  // degenerate -> smallest
+
   printf("All clock_area_calc tests passed\n");
   return 0;
 }
