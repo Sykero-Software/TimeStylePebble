@@ -394,25 +394,20 @@ test('big date none: month toggle hidden', () => {
   assert.strictEqual(c.byKey['SettingBigDateMonth'].shown, false);
 });
 
-test('currency pair widget (216): currency heading shown', () => {
-  const c = render([216]);
-  assert.strictEqual(c.byId['heading-currency'].shown, true);
+// Regression guard: the Crypto and Currency section headings must ALWAYS be
+// visible, because each section is the ONLY place to create its widget type.
+// Gating them on placement (fb27e08 / 5553520) deadlocked adding the first
+// coin/pair — the widget only appears in the picker after a row exists, but a
+// row can only be added inside the (then-hidden) section.
+test('currency heading always shown (only place to add a pair)', () => {
+  assert.strictEqual(render([]).byId['heading-currency'].shown, true);
+  assert.strictEqual(render([7]).byId['heading-currency'].shown, true);   // weather only
+  assert.strictEqual(render([216]).byId['heading-currency'].shown, true); // pair placed
 });
 
-test('no currency widget (weather only): currency heading hidden', () => {
-  const c = render([7]);
-  assert.strictEqual(c.byId['heading-currency'].shown, false);
-});
-
-test('currency wid boundary: 222 is currency, 223 is not', () => {
-  assert.strictEqual(render([222]).byId['heading-currency'].shown, true);
-  // 223 is excluded from the currency range (223|0x20 == 0xFF, the rotating marker).
-  assert.strictEqual(render([223]).byId['heading-currency'].shown, false);
-});
-
-test('right-list currency widget reveals the currency heading', () => {
-  const c = render([], { rightVals: [216] });
-  assert.strictEqual(c.byId['heading-currency'].shown, true);
+test('crypto heading always shown (only place to add a coin)', () => {
+  assert.strictEqual(render([]).byId['heading-crypto'].shown, true);
+  assert.strictEqual(render([7]).byId['heading-crypto'].shown, true);
 });
 
 test('live change: turning the big date off hides the month toggle', () => {
