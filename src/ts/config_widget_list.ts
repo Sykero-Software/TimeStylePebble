@@ -354,10 +354,10 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
     for (let i = 0; i < rows.length; i++) {
       (rows[i].querySelector('.wl-up') as HTMLButtonElement).disabled = (i === 0);
       (rows[i].querySelector('.wl-down') as HTMLButtonElement).disabled = (i === rows.length - 1);
-      // member delete disabled when only 2 members remain (a group needs >= 2)
+      // Member delete is never disabled: deleting the 2nd-to-last member collapses the
+      // whole group to a plain widget (a rotating group with 1 member == a plain widget),
+      // so a group in the DOM always has >= 2 members. See the wl-mdel handler.
       const mdels = rows[i].querySelectorAll('.wl-mems .wl-mdel');
-      const disableMdel = (mdels.length <= 2);
-      for (let m = 0; m < mdels.length; m++) { (mdels[m] as HTMLButtonElement).disabled = disableMdel; }
       const madd = rows[i].querySelector('.wl-madd') as HTMLButtonElement;
       if (madd) { madd.style.display = (mdels.length >= MAX_MEMBERS) ? 'none' : ''; }
     }
@@ -423,14 +423,24 @@ function widgetListInitialize(this: any, _minified: any, clayConfig: any): void 
       }
     } else if (target.classList.contains('wl-mdel')) {
       const s = slots[idx];
-      if (s && s.rotating && s.members.length > 2) {
+      if (s && s.rotating && s.members.length >= 2) {
         // which member?
         const memEl = target.parentNode as HTMLElement;       // .wl-mem
         const memsWrap = memEl.parentNode as HTMLElement;      // .wl-mems
         const mems = memsWrap.querySelectorAll('.wl-mem');
         let mi = -1;
         for (let k = 0; k < mems.length; k++) { if (mems[k] === memEl) { mi = k; break; } }
-        if (mi !== -1) { s.members.splice(mi, 1); renderSlots(slots); self.trigger('change'); }
+        if (mi !== -1) {
+          s.members.splice(mi, 1);
+          // A rotating group with a single member is identical to a plain widget, so
+          // collapse the row to a plain slot (mirrors slotsToValue / the C sanitizer)
+          // rather than leaving a lone member with a disabled delete button.
+          if (s.members.length === 1) {
+            const raw = parseInt(s.members[0], 10) || 0;
+            slots[idx] = { id: raw & 0xdf, hide: (raw & HIDE_FLAG) !== 0 };
+          }
+          renderSlots(slots); self.trigger('change');
+        }
       }
     }
   });
