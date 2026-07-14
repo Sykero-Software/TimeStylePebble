@@ -128,7 +128,8 @@
       "SettingBigDateMonth",
       "SettingBigDateFont",
       "CurrencyData",
-      "TuyaData"
+      "TuyaData",
+      "SettingStatusClockDigital"
     ],
     "resources": {
       "media": [
