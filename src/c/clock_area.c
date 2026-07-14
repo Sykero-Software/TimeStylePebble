@@ -29,6 +29,8 @@ FFont* minutes_font;
 static int s_clock_hours;
 static int s_clock_minutes;
 
+static bool s_status_visible = false;
+
 // just allocate all the fonts at startup because i don't feel like
 // dealing with allocating and deallocating things
 FFont* avenir;
@@ -159,7 +161,9 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   #endif
 
   #ifndef PBL_ROUND
-  if (settings.clockStyle == CLOCK_STYLE_ANALOG) {
+  bool status_digital_swap = settings.analogDigitalClock
+      && settings.statusClockDigital && s_status_visible;
+  if (settings.clockStyle == CLOCK_STYLE_ANALOG && !status_digital_swap) {
     // Optional single-line digital time below the dial. When on (and there is
     // vertical slack), TOP-ALIGN the dial so all the slack collects below it for
     // a large digital line; otherwise draw the dial centred (the default look).
@@ -320,6 +324,10 @@ void ClockArea_redraw() {
   update_fonts();
 
   layer_mark_dirty(clock_area_layer);
+}
+
+void ClockArea_setStatusVisible(bool visible) {
+  s_status_visible = visible;
 }
 
 void ClockArea_update_time(struct tm* time_info) {

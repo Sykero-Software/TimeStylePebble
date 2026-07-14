@@ -169,6 +169,7 @@ static void apply_twt_layout() {
     MidiStatus_setHidden(true);
   }
 
+  ClockArea_setStatusVisible(statusVisible);
   layer_mark_dirty(clock_area_layer);
 }
 
