@@ -213,6 +213,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *clockStyle_tuple = dict_find(iterator, MESSAGE_KEY_SettingClockStyle);
   Tuple *analogTicks_tuple = dict_find(iterator, MESSAGE_KEY_SettingAnalogTicks);
   Tuple *analogDigital_tuple = dict_find(iterator, MESSAGE_KEY_SettingAnalogDigitalClock);
+  Tuple *statusClockDigital_tuple = dict_find(iterator, MESSAGE_KEY_SettingStatusClockDigital);
 
   if(timeColor_tuple != NULL) {
     settings.timeColor = GColorFromHEX(timeColor_tuple->value->int32);
@@ -466,6 +467,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   }
   if(analogDigital_tuple != NULL) {
     settings.analogDigitalClock = (analogDigital_tuple->value->int32 != 0) ? 1 : 0;
+  }
+  if(statusClockDigital_tuple != NULL) {
+    settings.statusClockDigital = (statusClockDigital_tuple->value->int32 != 0) ? 1 : 0;
   }
 
   // save the new settings to persistent storage
