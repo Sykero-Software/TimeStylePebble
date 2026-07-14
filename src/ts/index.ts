@@ -20,6 +20,7 @@ import { widgetListToPayload } from './widget_list_payload';
 import { slotsToList, splitListByPosition } from './widget_slots';
 import { isWatchPollRequest } from './poll_request';
 import { toAppMessageValue } from './app_message_value';
+import { STRAIGHT_THROUGH_KEYS } from './config_send_keys';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
@@ -208,16 +209,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
   // strings (DOM values), so coerce every numeric watch key to int; only genuine
   // string settings (alt-clock name, decimal separator char) stay as-is.
   const STRING_KEYS: Record<string, boolean> = { SettingAltClockName: true, SettingDecimalSep: true };
-  ['SettingLanguageID', 'SettingShowLeadingZero', 'SettingClockFontId', 'SettingDisconnectIcon',
-    'SettingBluetoothVibe', 'SettingMidiVibe', 'SettingMidiSecondPrecision', 'SettingBigDate', 'SettingBigDateMonth', 'SettingBigDateFont', 'SettingTwtShowRemaining',
-    'SettingTwtTargetVibe', 'SettingTwtBudgetVibe', 'SettingHourlyVibe',
-    'SettingStatusStripFullWidth', 'SettingUseLargeFonts', 'SettingUseMetric',
-    'SettingShowBatteryPct', 'SettingDisableAutobattery', 'SettingAltClockName', 'SettingAltClockOffset',
-    'SettingDecimalSep',
-    'SettingPollIntervalMin', 'SettingElecQuietStart', 'SettingElecQuietEnd',
-    'SettingElecCheapFactorPct',
-    'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
-    'SettingClockStyle', 'SettingAnalogTicks', 'SettingAnalogDigitalClock'].forEach((k) => {
+  STRAIGHT_THROUGH_KEYS.forEach((k) => {
     if (s[k] === undefined || s[k] === null || s[k] === '') { return; }
     dict[k] = toAppMessageValue(s[k], !!STRING_KEYS[k]);
   });
