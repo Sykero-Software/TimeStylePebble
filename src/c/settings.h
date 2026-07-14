@@ -177,12 +177,6 @@ typedef struct {
   // no settings-version bump. Only consulted when clockStyle == CLOCK_STYLE_ANALOG.
   uint8_t analogDigitalClock;
 
-  // When on (and clockStyle==ANALOG && analogDigitalClock), show the big stacked
-  // digital clock instead of the analog dial WHILE a status strip is visible (the
-  // strip otherwise hides the below-analog digital line). Appended field,
-  // zero-default (off) on load of an older blob; no settings-version bump.
-  uint8_t statusClockDigital;
-
   // Show the month in the large date header ("Su 31.12" vs "Su 31"). Appended
   // field, defaulted to true in Settings_loadFromStorage BEFORE the persist read
   // so upgrading users (shorter blob) keep the month on. No settings-version bump.
@@ -203,6 +197,12 @@ typedef struct {
   uint8_t rightWidgetList[MAX_WIDGET_LIST];
   uint8_t rightWidgetCount;
   bool    widgetListV2Init;
+
+  // When on (and clockStyle==ANALOG && analogDigitalClock), show the big stacked
+  // digital clock instead of the analog dial WHILE a status strip is visible (the
+  // strip otherwise hides the below-analog digital line). Appended field,
+  // zero-default (off) on load of an older blob; no settings-version bump.
+  uint8_t statusClockDigital;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
