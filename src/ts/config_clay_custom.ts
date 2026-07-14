@@ -82,6 +82,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     const autoBattery = parseInt(key('SettingDisableAutobattery').get(), 10) === 0;
     const fallbackManual = parseInt(key('SettingFallbackColumn').get(), 10) !== 0;
     const analog = parseInt(key('SettingClockStyle').get(), 10) === 1;
+    const belowDigi = key('SettingAnalogDigitalClock').get() === true;
     const bigDate = parseInt(key('SettingBigDate').get(), 10) === 1;
     const altClock = has(ids, [3]);
     const gk: { [k: string]: boolean } = {};
@@ -104,6 +105,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     gk.SettingFallbackPosition = fallbackManual;
     gk.SettingAnalogTicks = analog;
     gk.SettingAnalogDigitalClock = analog;
+    gk.SettingStatusClockDigital = analog && belowDigi;
     gk.SettingBigDateMonth = bigDate;
     gk.SettingBigDateFont = bigDate;
     gi['analog-credit'] = analog;
@@ -223,7 +225,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     wireHeadings();
     applyVisibility();
     ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery',
-     'SettingFallbackColumn', 'SettingClockStyle', 'SettingBigDate']
+     'SettingFallbackColumn', 'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingBigDate']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', applyVisibility); });
   });
 }

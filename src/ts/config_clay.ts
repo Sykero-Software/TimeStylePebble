@@ -105,6 +105,8 @@ const config = [
         ] },
       { type: 'toggle', messageKey: 'SettingAnalogDigitalClock',
         label: 'Digital time below clock', defaultValue: false },
+      { type: 'toggle', messageKey: 'SettingStatusClockDigital',
+        label: 'Digital clock when status strip covers the time', defaultValue: false },
       { type: 'text', id: 'analog-credit', defaultValue:
         'The <b>Analog</b> clock face is ported from the <b>Nyquist</b> watchface ' +
         'by truhanen, used under the GPL-3.0 license.<br>' +

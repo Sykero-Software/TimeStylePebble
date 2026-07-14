@@ -104,6 +104,7 @@ function makeClay(widgetVals, opts) {
   byKey['SettingFallbackColumn'].value = String(opts.fallbackColumn !== undefined ? opts.fallbackColumn : 0);
   byKey['SettingClockStyle'].value = String(opts.clockStyle !== undefined ? opts.clockStyle : 0);
   byKey['SettingBigDate'].value = String(opts.bigDate !== undefined ? opts.bigDate : 1);
+  byKey['SettingAnalogDigitalClock'].value = opts.analogDigital !== undefined ? opts.analogDigital : false;
   return {
     // Mirror Clay 1.0.4's real event set. There is NO AFTER_RENDER — a missing
     // constant passes undefined to on(), which Clay's _transformEventNames
@@ -380,6 +381,33 @@ test('live change: switching to analog reveals the analog rows', () => {
   c.byKey['SettingClockStyle'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byKey['SettingAnalogDigitalClock'].shown, true);
   assert.strictEqual(c.byKey['SettingAnalogTicks'].shown, true);
+});
+
+test('status digital toggle hidden in digital clock mode', () => {
+  const c = render([], { clockStyle: 0, analogDigital: true });
+  openSectionFor(c, 'SettingStatusClockDigital');
+  assert.strictEqual(c.byKey['SettingStatusClockDigital'].shown, false);
+});
+
+test('status digital toggle hidden in analog mode when below-digi is off', () => {
+  const c = render([], { clockStyle: 1, analogDigital: false });
+  openSectionFor(c, 'SettingStatusClockDigital');
+  assert.strictEqual(c.byKey['SettingStatusClockDigital'].shown, false);
+});
+
+test('status digital toggle shown in analog mode when below-digi is on', () => {
+  const c = render([], { clockStyle: 1, analogDigital: true });
+  openSectionFor(c, 'SettingStatusClockDigital');
+  assert.strictEqual(c.byKey['SettingStatusClockDigital'].shown, true);
+});
+
+test('live change: turning below-digi on reveals the status digital toggle', () => {
+  const c = render([], { clockStyle: 1, analogDigital: false });
+  openSectionFor(c, 'SettingStatusClockDigital');
+  assert.strictEqual(c.byKey['SettingStatusClockDigital'].shown, false);
+  c.byKey['SettingAnalogDigitalClock'].value = true;
+  c.byKey['SettingAnalogDigitalClock'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingStatusClockDigital'].shown, true);
 });
 
 test('big date shown: month toggle visible', () => {
