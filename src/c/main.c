@@ -371,6 +371,10 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     }
 
     if (cold || lastDataRequest == 0 || (now - lastDataRequest) >= intervalSec) {
+      // Kept deliberately: this is the one line that makes the relaunch-silence
+      // behaviour observable in `pebble logs` on a real watch. Fires at most once
+      // per poll interval (>= 5 min), so it is not log spam.
+      APP_LOG(APP_LOG_LEVEL_INFO, "poll: requesting data (cold=%d)", cold ? 1 : 0);
       messaging_requestNewWeatherData(cold);
       lastDataRequest = now;
       if (cold) { lastColdRequest = now; }
