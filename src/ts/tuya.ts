@@ -15,6 +15,9 @@ import {
   normalizeRows, distinctDevices, buildPropertiesPath, packTuyaData,
   countValidValues, parseLastSent, TuyaRow,
 } from './tuya_parse';
+import {
+  normalizeLedRows, ledDeviceIds, packLedStates, countKnownStates, TuyaLedRow,
+} from './tuya_leds';
 
 const REGION_HOST: Record<string, string> = {
   eu: 'https://openapi.tuyaeu.com', us: 'https://openapi.tuyaus.com',
@@ -22,6 +25,7 @@ const REGION_HOST: Record<string, string> = {
 };
 
 const LAST_SENT_KEY = 'tuya_last_sent';
+const LEDS_LAST_SENT_KEY = 'tuya_leds_last_sent';
 const LAST_FETCH_KEY = 'tuya_last_fetch';
 const CATALOG_KEY = 'tuya-catalog';
 const TOKEN_KEY = 'tuya-token';
@@ -41,6 +45,12 @@ function readCfg(): any {
 
 function readTuyaRows(): TuyaRow[] {
   return normalizeRows(readSettings().TuyaList);
+}
+
+// Switch rows drawn by the Tuya LED-row widget (id 23). Separate Clay list from the
+// sensor rows: no label/precision, and their state is sent as a compact string.
+function readLedRows(): TuyaLedRow[] {
+  return normalizeLedRows(readSettings().TuyaLedList);
 }
 
 function loadCatalog(): any {
@@ -142,7 +152,8 @@ export function discoverCatalog(cb: () => void): void {
 export function updateTuya(forceUpdate?: boolean): void {
   if (window.localStorage.getItem('disable_tuya') === 'yes') { return; }
   const rows = readTuyaRows();
-  if (rows.length === 0) { return; }
+  const ledRows = readLedRows();
+  if (rows.length === 0 && ledRows.length === 0) { return; }
 
   const last = parseInt(window.localStorage.getItem(LAST_FETCH_KEY) || '0', 10);
   const now = Math.floor(Date.now() / 1000);
@@ -156,7 +167,13 @@ export function updateTuya(forceUpdate?: boolean): void {
   if (!c) { console.log('tuya: no credentials'); return; }
   const scaleMap = catalogScaleMap(loadCatalog());
   const prev = parseLastSent(window.localStorage.getItem(LAST_SENT_KEY) || '');
+  // Union of the sensor devices and the LED devices: a device used by both is
+  // fetched exactly once per poll.
   const devices = distinctDevices(rows);
+  const ledDevices = ledDeviceIds(ledRows);
+  for (let i = 0; i < ledDevices.length; i++) {
+    if (devices.indexOf(ledDevices[i]) === -1) { devices.push(ledDevices[i]); }
+  }
   const valuesById: Record<string, any> = {};
 
   let chain: Promise<any> = Promise.resolve();
@@ -170,12 +187,47 @@ export function updateTuya(forceUpdate?: boolean): void {
       }).catch(() => { /* leave this device out -> prev/-- fallback */ }));
   });
   chain.then(() => {
-    if (countValidValues(rows, valuesById) === 0) { console.log('tuya: no valid readings, keeping last'); return; }
-    const packed = packTuyaData(rows, valuesById, scaleMap, prev);
-    const lastSent = window.localStorage.getItem(LAST_SENT_KEY);
-    if (!forceUpdate && lastSent === packed) { console.log('tuya: nothing changed'); return; }
-    Pebble.sendAppMessage({ TuyaData: packed },
-      () => { window.localStorage.setItem(LAST_SENT_KEY, packed); console.log('tuya: sent ' + packed); },
+    const dict: Record<string, string> = {};
+
+    // Sensors: unchanged semantics -- skip entirely when nothing valid came back.
+    if (rows.length > 0) {
+      if (countValidValues(rows, valuesById) === 0) {
+        console.log('tuya: no valid readings, keeping last');
+      } else {
+        const packed = packTuyaData(rows, valuesById, scaleMap, prev);
+        if (forceUpdate || window.localStorage.getItem(LAST_SENT_KEY) !== packed) {
+          dict.TuyaData = packed;
+        } else {
+          console.log('tuya: sensors unchanged');
+        }
+      }
+    }
+
+    // LEDs: a PARTIAL answer IS sent (missing rows show as '?'), but an answer with
+    // no known state at all (network down / every device offline) is suppressed so
+    // the watch keeps its persisted last-good states.
+    let ledPacked: string | null = null;
+    if (ledRows.length > 0) {
+      if (countKnownStates(ledRows, valuesById) === 0) {
+        console.log('tuya: no known led states, keeping last');
+      } else {
+        const packedLeds = packLedStates(ledRows, valuesById);
+        if (forceUpdate || window.localStorage.getItem(LEDS_LAST_SENT_KEY) !== packedLeds) {
+          dict.TuyaLeds = packedLeds;
+          ledPacked = packedLeds;
+        } else {
+          console.log('tuya: leds unchanged');
+        }
+      }
+    }
+
+    if (Object.keys(dict).length === 0) { return; }
+    Pebble.sendAppMessage(dict,
+      () => {
+        if (dict.TuyaData !== undefined) { window.localStorage.setItem(LAST_SENT_KEY, dict.TuyaData); }
+        if (ledPacked !== null) { window.localStorage.setItem(LEDS_LAST_SENT_KEY, ledPacked); }
+        console.log('tuya: sent ' + JSON.stringify(dict));
+      },
       () => { console.log('tuya: failed to send to Pebble'); });
   });
 }

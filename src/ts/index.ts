@@ -259,8 +259,9 @@ Pebble.addEventListener('webviewclosed', (e) => {
   // currency: enabled iff any placed widget id is in the currency range [216, 223)
   const anyCurrency = widgetIDs.some((id) => id >= 216 && id < 223);
   window.localStorage.setItem('disable_currency', anyCurrency ? 'no' : 'yes');
-  // tuya: enabled iff any placed widget id is in the tuya range [128, 144)
-  const anyTuya = widgetIDs.some((id) => id >= 128 && id < 144);
+  // tuya: enabled iff a placed widget id is in the tuya sensor range [128, 144)
+  // or is the LED-row widget (23)
+  const anyTuya = widgetIDs.some((id) => (id >= 128 && id < 144) || id === 23);
   window.localStorage.setItem('disable_tuya', anyTuya ? 'no' : 'yes');
 
   console.log('Preparing message: ' + JSON.stringify(dict));
