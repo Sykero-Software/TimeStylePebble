@@ -16,7 +16,7 @@
 // Numeric mirrors — keep in sync with src/c/sidebar_widgets.h (MAX_WIDGET_TYPE),
 // src/c/crypto.h (CRYPTO_WID_BASE / MAX_CRYPTO), src/c/tuya.h, src/ts/widget_list_payload.ts,
 // src/ts/config_tuya_list.ts.
-#define WL_MAX_WIDGET_TYPE   22    // BATTERY_DAYS
+#define WL_MAX_WIDGET_TYPE   23    // TUYA_LEDS
 #define WL_CRYPTO_WID_BASE   200
 #define WL_MAX_CRYPTO        16
 #define WL_CURRENCY_WID_BASE 216
