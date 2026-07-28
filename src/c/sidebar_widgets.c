@@ -12,6 +12,7 @@
 #include "currency.h"
 #include "tuya.h"
 #include "tuya_leds.h"
+#include "sidebar.h"   // sidebarWidth, for fitting the LED row
 #include "battery_days.h"
 
 int SidebarWidgets_xOffset;
@@ -1602,21 +1603,40 @@ static uint8_t tuya_led_rows() {
   return (n + TUYA_LED_COLS - 1) / TUYA_LED_COLS;
 }
 
+// The preferred diameter/gap can overflow the sidebar (30px on the 144px boards,
+// 34/39 on emery), which clipped the rightmost blob. Shrink the gap first (keeps the
+// blobs as large as possible), then the diameter, until a full row fits inside the
+// sidebar. Board-agnostic, so no per-platform tuning can get it wrong.
+static int tuya_led_fit(int *gapOut) {
+  int gap = layout.tuyaLedGap;
+  int d = layout.tuyaLedDiameter;
+  while (d > 3) {
+    int r = d / 2;
+    int rowW = TUYA_LED_COLS * d + (TUYA_LED_COLS - 1) * gap;
+    int x0 = 15 + SidebarWidgets_xOffset - rowW / 2 + r;
+    if ((x0 - r) >= 0 && (x0 + (TUYA_LED_COLS - 1) * (d + gap) + r) <= (sidebarWidth - 1)) { break; }
+    if (gap > 1) { gap--; } else { d--; }
+  }
+  *gapOut = gap;
+  return d;
+}
+
 int TuyaLeds_getHeight() {
-  int d = layout.tuyaLedDiameter, gap = layout.tuyaLedGap;
+  int gap;
+  int d = tuya_led_fit(&gap);
   int rows = tuya_led_rows();
   return rows * d + (rows - 1) * gap + 2 * TUYA_LED_PAD;
 }
 
 void TuyaLeds_drawWidget(GContext *ctx, int yPosition) {
-  const int d = layout.tuyaLedDiameter;
-  const int gap = layout.tuyaLedGap;
+  int gap;
+  const int d = tuya_led_fit(&gap);
   const int r = d / 2;
   const uint8_t n = tuya_led_drawn_count();
   const bool noData = (TuyaLeds_count == 0);
 
-  // The sidebar is 30px wide on the 144px boards (34/39 on emery);
-  // SidebarWidgets_xOffset centres content the same way the other widgets use it.
+  // SidebarWidgets_xOffset centres content the same way the other widgets use it
+  // (it is (sidebarWidth - 30) / 2, so 15 + it is the sidebar's centre column).
   const int centreX = 15 + SidebarWidgets_xOffset;
 
   int y = yPosition + TUYA_LED_PAD;
