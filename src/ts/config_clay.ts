@@ -311,7 +311,7 @@ const config = [
   {
     type: 'section',
     items: [
-      { type: 'heading', id: 'heading-tuya', defaultValue: 'Tuya sensors' },
+      { type: 'heading', id: 'heading-tuya', defaultValue: 'Tuya sensors & switches' },
       { type: 'text', defaultValue:
         'Show live readings from your Tuya cloud sensors (soil moisture, temperature, ' +
         'humidity, battery, …) in a sidebar widget. This talks to Tuya&#39;s cloud, so it ' +
@@ -346,6 +346,10 @@ const config = [
         'Leave the label empty to use the datapoint code.' },
       { type: 'tuyaCatalog', messageKey: 'TuyaCatalog', defaultValue: '' },
       { type: 'tuyaList', messageKey: 'TuyaList', defaultValue: [] },
+      { type: 'text', defaultValue:
+        'Switches can also be shown as a compact row of coloured LEDs — add them below, ' +
+        'then place the <b>Tuya LEDs</b> widget in a sidebar slot.' },
+      { type: 'tuyaLedList', messageKey: 'TuyaLedList', defaultValue: [] },
     ],
   },
 

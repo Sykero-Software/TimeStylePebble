@@ -10,6 +10,7 @@ import cryptoListComponent from './config_crypto_list';
 import currencyListComponent from './config_currency_list';
 import tuyaListComponent from './config_tuya_list';
 import tuyaCatalogComponent from './config_tuya_catalog';
+import tuyaLedListComponent from './config_tuya_led_list';
 import { migrateCryptoList } from './crypto_migrate';
 
 import Clay from 'pebble-clay';
@@ -28,6 +29,7 @@ clay.registerComponent(cryptoListComponent);
 clay.registerComponent(currencyListComponent);
 clay.registerComponent(tuyaCatalogComponent);
 clay.registerComponent(tuyaListComponent);
+clay.registerComponent(tuyaLedListComponent);
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', () => {
@@ -149,6 +151,7 @@ function seedTuyaCatalog() {
   catch (e) { return; }
   stored.TuyaCatalog = window.localStorage.getItem('tuya-catalog') || '{"v":1,"devices":[]}';
   if (stored.TuyaList === undefined) { stored.TuyaList = []; }
+  if (stored.TuyaLedList === undefined) { stored.TuyaLedList = []; }
   window.localStorage.setItem('clay-settings', JSON.stringify(stored));
 }
 
