@@ -25,3 +25,13 @@ export function isWatchPollRequest(payload: any): boolean {
   }
   return true;
 }
+
+// The watch flags a request as "cold" (value 1 in the dummy key) when a placed
+// phone-data widget has no persisted data on the watch -- e.g. after a watchface
+// reinstall, which wipes the watch's persist while the phone's *_last_sent stamps
+// survive and would otherwise suppress a re-send as "unchanged". A cold request is
+// the only one that bypasses the per-source throttles.
+export function isColdPollRequest(payload: any): boolean {
+  if (!isWatchPollRequest(payload)) { return false; }
+  return parseInt(payload['0'], 10) === 1;
+}
