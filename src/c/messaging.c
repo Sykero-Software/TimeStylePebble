@@ -9,6 +9,7 @@
 #include "crypto.h"
 #include "currency.h"
 #include "tuya.h"
+#include "tuya_leds.h"
 #include "languages.h"
 #include "date_header_calc.h"
 #include "widget_list.h"
@@ -147,6 +148,14 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if (tuya_tuple != NULL && tuya_tuple->type == TUPLE_CSTRING) {
     Tuya_parse(tuya_tuple->value->cstring);
     persist_write_string(TUYA_PERSIST_KEY_DATA, tuya_tuple->value->cstring);
+  }
+
+  // Tuya LED row: compact per-switch state string ('1'/'0'/'?'), own message key.
+  Tuple *tuya_leds_tuple = dict_find(iterator, MESSAGE_KEY_TuyaLeds);
+  if (tuya_leds_tuple != NULL && tuya_leds_tuple->type == TUPLE_CSTRING) {
+    TuyaLeds_parse(tuya_leds_tuple->value->cstring);
+    persist_write_string(TUYA_LEDS_PERSIST_KEY_DATA, tuya_leds_tuple->value->cstring);
+    APP_LOG(APP_LOG_LEVEL_INFO, "tuya leds: %s", tuya_leds_tuple->value->cstring);
   }
 
   // does this message contain new config information?
