@@ -19,7 +19,7 @@ import clayConfigCustom from './config_clay_custom';
 import widgetListComponent from './config_widget_list';
 import { widgetListToPayload } from './widget_list_payload';
 import { slotsToList, splitListByPosition } from './widget_slots';
-import { isWatchPollRequest } from './poll_request';
+import { isWatchPollRequest, isColdPollRequest } from './poll_request';
 import { toAppMessageValue } from './app_message_value';
 import { STRAIGHT_THROUGH_KEYS } from './config_send_keys';
 
@@ -31,64 +31,33 @@ clay.registerComponent(tuyaCatalogComponent);
 clay.registerComponent(tuyaListComponent);
 clay.registerComponent(tuyaLedListComponent);
 
-// Listen for when the watchface is opened
+// Listen for when the watchface is opened.
+//
+// NOTE: this fires on EVERY watchface relaunch -- PebbleOS runs one app at a time, so
+// opening any watchapp kills the watchface and exiting it starts this JS again. It
+// therefore must NOT fetch: the watch persists every source's data and restores it at
+// launch, so a relaunch needs no phone traffic at all. When the watch's persist really
+// is empty (reinstall / wipe), the watch itself asks for a forced round via a COLD
+// poll request -- see poll_request.ts and main.c's cold_scan_cb.
 Pebble.addEventListener('ready', () => {
   console.log('JS component is now READY');
 
-  // if it has never been started, set the weather to enabled
+  // Seed the per-source enable flags on first ever run; webviewclosed re-derives them
+  // from the placed widget ids after that.
   if (window.localStorage.getItem('disable_weather') === null) {
     window.localStorage.setItem('disable_weather', 'no');
   }
-
-  console.log('the wdisabled value is: "' + window.localStorage.getItem('disable_weather') + '"');
-  // if applicable, get the weather data
-  if (window.localStorage.getItem('disable_weather') !== 'yes') {
-    weather.updateWeather();
-  }
-
-  // electricity: default disabled until a widget selects it (set in webviewclosed)
   if (window.localStorage.getItem('disable_electricity') === null) {
     window.localStorage.setItem('disable_electricity', 'yes');
   }
-  if (window.localStorage.getItem('disable_electricity') !== 'yes') {
-    // Force a fetch on (re)launch: the watch's persisted price table is wiped
-    // by a watchface reinstall/reboot, but electricity_last_fetch lives in
-    // phone localStorage and survives, so a throttled call would skip and the
-    // widget would stay empty for up to MIN_FETCH_INTERVAL_S. (weather has no
-    // throttle, so it self-heals; electricity needs this explicit force.)
-    electricity.updateElectricity(true);
-  }
-
-  // crypto: disabled until a widget selects a coin (set in webviewclosed).
-  // Force a send on (re)launch for the same reason as electricity above (the
-  // watch's persisted CryptoData is wiped by a reinstall/reboot, but
-  // crypto_last_sent survives in phone localStorage, so a non-forced call would
-  // suppress the send as "unchanged"). Periodic refresh is watch-driven.
   if (window.localStorage.getItem('disable_crypto') === null) {
     window.localStorage.setItem('disable_crypto', 'yes');
   }
-  if (window.localStorage.getItem('disable_crypto') !== 'yes') {
-    crypto.updateCrypto(true);
-  }
-
-  // currency: disabled until a widget selects a pair (set in webviewclosed). Force
-  // a send on (re)launch for the same reason as crypto (the watch's persisted
-  // CurrencyData is wiped by a reinstall/reboot, but currency_last_sent survives).
   if (window.localStorage.getItem('disable_currency') === null) {
     window.localStorage.setItem('disable_currency', 'yes');
   }
-  if (window.localStorage.getItem('disable_currency') !== 'yes') {
-    currency.updateCurrency(true);
-  }
-
-  // tuya: disabled until a widget selects a sensor (set in webviewclosed). Force a
-  // send on (re)launch for the same reason as crypto/currency (persisted TuyaData is
-  // wiped by a reinstall/reboot, but tuya_last_sent survives in phone localStorage).
   if (window.localStorage.getItem('disable_tuya') === null) {
     window.localStorage.setItem('disable_tuya', 'yes');
-  }
-  if (window.localStorage.getItem('disable_tuya') !== 'yes') {
-    tuya.updateTuya(true);
   }
 });
 
@@ -106,13 +75,18 @@ Pebble.addEventListener('appmessage', (msg) => {
     return;
   }
 
+  // A cold request means the watch has no data for a placed widget (its persist was
+  // wiped); it bypasses every per-source throttle AND the "unchanged" suppression,
+  // which is the only way to repopulate a wiped watch from the phone's cache.
+  const cold = isColdPollRequest(msg.payload);
+
   // in the case of recieving this, we assume the watch does, in fact, need weather data
   window.localStorage.setItem('disable_weather', 'no');
-  weather.updateWeather();
-  electricity.updateElectricity();
-  crypto.updateCrypto();
-  currency.updateCurrency();
-  tuya.updateTuya();
+  weather.updateWeather(cold);
+  electricity.updateElectricity(cold);
+  crypto.updateCrypto(cold);
+  currency.updateCurrency(cold);
+  tuya.updateTuya(cold);
 });
 
 // One-time migration: the old config saved 6 separate SettingWidget*ID keys to
