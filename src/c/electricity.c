@@ -7,6 +7,8 @@
 
 ElectricityInfo Electricity_info;
 
+bool Electricity_hasData(void) { return Electricity_info.count > 0; }
+
 void Electricity_init() {
   Electricity_info.startEpoch = 0;
   Electricity_info.count = 0;

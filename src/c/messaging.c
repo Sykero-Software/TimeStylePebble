@@ -20,11 +20,13 @@ void (*message_processed_callback)(void);
 // launch, so we don't buzz merely because we learned recording was already active.
 static bool s_midiSeen = false;
 
-void messaging_requestNewWeatherData() {
-  // just send an empty message for now
+void messaging_requestNewWeatherData(bool cold) {
+  // The request carries a single dummy key; its VALUE is the cold flag. Keeping the
+  // key set unchanged means poll_request.ts's key-name filter still rejects the
+  // companion-app status pushes that arrive on this same UUID.
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
-  dict_write_uint32(iter, 0, 0);
+  dict_write_uint32(iter, 0, cold ? 1 : 0);
   app_message_outbox_send();
 }
 

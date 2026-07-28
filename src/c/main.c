@@ -16,6 +16,7 @@
 #include "sidebar_widgets.h"
 #include "widget_list.h"
 #include "battery_days.h"
+#include "poll_state_calc.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -30,6 +31,34 @@ static bool updatingEverySecond;
 static AppTimer *rotationTimer = NULL;   // repaints the sidebar at sub-minute rotation boundaries
 
 static time_t lastDataRequest = 0;   // epoch of the last watch->phone data request
+static time_t lastColdRequest = 0;   // epoch of the last COLD (forced) request
+
+// Persisted so the poll clock is NOT restarted by a relaunch. A watchface is killed
+// whenever any watchapp runs, so re-stamping "now" in init() meant a user who
+// returned to the watchface more often than pollIntervalMin never polled at all
+// (previously masked by the phone-side fetch on every PKJS 'ready').
+#define POLL_STATE_PERSIST_KEY 319
+#define COLD_MIN_INTERVAL_S 600      // at most one cold request per 10 min
+
+typedef struct {
+  int32_t lastDataRequest;
+  int32_t lastColdRequest;
+} PollStateBlob;
+
+static void poll_state_load(void) {
+  PollStateBlob b = { 0, 0 };
+  if (persist_exists(POLL_STATE_PERSIST_KEY)) {
+    persist_read_data(POLL_STATE_PERSIST_KEY, &b, sizeof(b));
+  }
+  int32_t now = (int32_t)time(NULL);
+  lastDataRequest = (time_t)poll_stamp_sanitize(b.lastDataRequest, now);
+  lastColdRequest = (time_t)poll_stamp_sanitize(b.lastColdRequest, now);
+}
+
+static void poll_state_save(void) {
+  PollStateBlob b = { (int32_t)lastDataRequest, (int32_t)lastColdRequest };
+  persist_write_data(POLL_STATE_PERSIST_KEY, &b, sizeof(b));
+}
 static bool twtTargetAlerted = false;   // already vibrated for the current daily-target crossing
 static bool twtTargetInit = false;      // have we seeded twtTargetAlerted since launch?
 static bool twtBudgetAlerted = false;   // already vibrated for the current task's budget crossing
@@ -286,6 +315,33 @@ static void phone_data_scan_cb(uint8_t w, void *ctx) {
   if (isPhoneDataWidget((SidebarWidgetType)w)) { *needs = true; }
 }
 
+// A placed widget whose data the watch does NOT have. Per-wid for the phone-data
+// slots, so a newly configured coin/sensor also counts as missing.
+static bool widget_source_missing(uint8_t w) {
+  switch (w) {
+    case ELECTRICITY:
+    case NEXT_CHEAP_ELEC:
+    case CHEAPEST_ELEC_HOUR:
+      return !Electricity_hasData();
+    case WEATHER_CURRENT:
+    case WEATHER_FORECAST_TODAY:
+    case WEATHER_UV_INDEX:
+      return !Weather_hasData();
+    case TUYA_LEDS:
+      return TuyaLeds_count == 0;
+    default:
+      if (Crypto_isWid(w))   { return Crypto_find(w) == NULL; }
+      if (Currency_isWid(w)) { return Currency_find(w) == NULL; }
+      if (Tuya_isWid(w))     { return Tuya_find(w) == NULL; }
+      return false;
+  }
+}
+
+static void cold_scan_cb(uint8_t w, void *ctx) {
+  bool *missing = (bool *)ctx;
+  if (widget_source_missing(w)) { *missing = true; }
+}
+
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // One watch-driven request per configured interval serves ALL phone-fetched
   // data (weather, electricity, crypto). This is the documented Pebble pattern:
@@ -301,9 +357,24 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     int intervalSec = (int)settings.pollIntervalMin * 60;
     if (intervalSec < 300) { intervalSec = 300; }   // floor 5 min
     time_t now = time(NULL);
-    if (lastDataRequest == 0 || (now - lastDataRequest) >= intervalSec) {
-      messaging_requestNewWeatherData();
+
+    // The watch is the only party that knows its persist was wiped (reinstall /
+    // firmware wipe): the phone's *_last_sent stamps survive and would suppress a
+    // re-send as "unchanged". Ask for a FORCED round in that case, rate limited so a
+    // permanently failing source (bad Tuya keys) can't fetch on every relaunch.
+    bool cold = false;
+    if (poll_cold_allowed((int32_t)lastColdRequest, (int32_t)now, COLD_MIN_INTERVAL_S)) {
+      bool missing = false;
+      WidgetList_forEachId(settings.widgetList, settings.widgetCount, cold_scan_cb, &missing);
+      WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, cold_scan_cb, &missing);
+      cold = missing;
+    }
+
+    if (cold || lastDataRequest == 0 || (now - lastDataRequest) >= intervalSec) {
+      messaging_requestNewWeatherData(cold);
       lastDataRequest = now;
+      if (cold) { lastColdRequest = now; }
+      poll_state_save();
     }
   }
 
@@ -394,7 +465,7 @@ void bluetoothStateChanged(bool newConnectionState) {
 
   // if the phone was disconnected and isn't anymore, update the data
   if(!isPhoneConnected && newConnectionState) {
-    messaging_requestNewWeatherData();
+    messaging_requestNewWeatherData(false);
   }
 
   isPhoneConnected = newConnectionState;
@@ -430,10 +501,11 @@ static void init() {
 
   srand(time(NULL));
 
-  lastDataRequest = time(NULL);   // first periodic request fires one interval after launch
-
   // init settings
   Settings_init();
+
+  // Restore the poll clock (see poll_state_load): a relaunch must NOT restart it.
+  poll_state_load();
 
   TwtStatus_load();
   MidiStatus_load();
