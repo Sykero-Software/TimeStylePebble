@@ -80,8 +80,10 @@ Pebble.addEventListener('appmessage', (msg) => {
   // which is the only way to repopulate a wiped watch from the phone's cache.
   const cold = isColdPollRequest(msg.payload);
 
-  // in the case of recieving this, we assume the watch does, in fact, need weather data
-  window.localStorage.setItem('disable_weather', 'no');
+  // NOTE: do NOT force disable_weather = 'no' here. It used to be set on every poll, which
+  // permanently overwrote the value webviewclosed derives from the placed widget ids -- so
+  // a watchface with no weather widget still fetched weather and sent a 6-7 key message
+  // every single poll. The weather module already self-heals an empty/garbage flag.
   weather.updateWeather(cold);
   electricity.updateElectricity(cold);
   crypto.updateCrypto(cold);

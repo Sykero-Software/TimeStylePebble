@@ -34,6 +34,20 @@ int main(void) {
   // a future stamp must not block polls forever (same clock-jump reason as above)
   assert(poll_due(now + 5000, now, 900) == true);
 
+  // ---- cold-request backoff interval: doubles per level, capped
+  // A source that never resolves would otherwise force a full fetch every 10 min
+  // forever, bypassing every phone-side throttle.
+  assert(poll_cold_interval(0, 600, 21600) == 600);
+  assert(poll_cold_interval(1, 600, 21600) == 1200);
+  assert(poll_cold_interval(2, 600, 21600) == 2400);
+  assert(poll_cold_interval(5, 600, 21600) == 19200);
+  // capped, and stays capped for any higher level (no overflow, no wrap)
+  assert(poll_cold_interval(6, 600, 21600) == 21600);
+  assert(poll_cold_interval(30, 600, 21600) == 21600);
+  assert(poll_cold_interval(100, 600, 21600) == 21600);
+  // a negative/garbled level behaves as level 0 rather than shifting by a negative
+  assert(poll_cold_interval(-1, 600, 21600) == 600);
+
   printf("PASS\n");
   return 0;
 }

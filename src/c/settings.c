@@ -321,7 +321,12 @@ static void dyn_scan_cb(uint8_t w, void *ctx) {
 }
 
 void Settings_updateDynamicSettings() {
-  dynamicSettings.disableWeather = false;
+  // Seed to "disabled" and let dyn_scan_cb clear it when a weather widget is actually
+  // placed -- the same clear-on-match pattern as enableAutoBatteryWidget below. This was
+  // `false`, i.e. the SAME value the scan sets, so the flag could never be true and
+  // needs_phone_data() (main.c) always returned true: a watchface with a purely local
+  // sidebar still woke the phone every poll interval, forever.
+  dynamicSettings.disableWeather = true;
   dynamicSettings.updateScreenEverySecond = false;
   dynamicSettings.enableAutoBatteryWidget = true;
   dynamicSettings.enableBeats = false;

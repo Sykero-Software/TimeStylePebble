@@ -214,6 +214,19 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   // back to LECO: update_fonts() points the FFonts at leco, and the LECO metric
   // branch below also fires for BITHAM.
 
+  // Antialiasing must be chosen BEFORE the context is initialised: fctx_enable_aa()
+  // swaps the fctx_init_context / fctx_plot_edge / fctx_end_fill function POINTERS, so
+  // calling it afterwards (as this used to) left the context initialised with the
+  // PREVIOUS mode's flag-buffer format while end_fill ran the NEW mode's routine. Steady
+  // state was consistent, so the symptom was only a one-frame artefact right after a
+  // clock-font change -- but the choice depends solely on clockFontId, which is already
+  // known here, so ordering it correctly costs nothing.
+  #ifdef PBL_COLOR
+    // leco looks awful with antialiasing (BITHAM falls back to LECO for the large clock)
+    fctx_enable_aa(!(settings.clockFontId == FONT_SETTING_LECO
+                     || settings.clockFontId == FONT_SETTING_BITHAM));
+  #endif
+
   // initialize FCTX, the fancy 3rd party drawing library that all the cool kids use
   FContext fctx;
 
@@ -236,15 +249,8 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
     v_padding = bounds.size.h / 20;
     h_adjust = -4;
     v_adjust = 0;
-
-    // leco looks awful with antialiasing
-    #ifdef PBL_COLOR
-      fctx_enable_aa(false);
-    #endif
-  } else {
-    #ifdef PBL_COLOR
-      fctx_enable_aa(true);
-    #endif
+    // (antialiasing for this font choice was already selected above, before
+    // fctx_init_context -- see the comment there)
   }
 
   // The font size above is derived from the clock area HEIGHT only. When both

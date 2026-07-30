@@ -44,25 +44,38 @@ static int nightRotationLast = -1;
 // returned to the watchface more often than pollIntervalMin never polled at all
 // (previously masked by the phone-side fetch on every PKJS 'ready').
 #define POLL_STATE_PERSIST_KEY 319
-#define COLD_MIN_INTERVAL_S 600      // at most one cold request per 10 min
+#define COLD_MIN_INTERVAL_S 600      // at most one cold request per 10 min at level 0
+#define COLD_MAX_INTERVAL_S 21600    // ...backing off to at most one per 6 h
+#define COLD_BACKOFF_MAX_LEVEL 6
+
+// How many cold rounds in a row have failed to resolve the missing source. Persisted
+// with the poll clock so a relaunch cannot restart the backoff (a watchface is killed
+// whenever any watchapp runs, which is exactly how the flat rate limit got defeated).
+static int32_t coldBackoffLevel = 0;
 
 typedef struct {
   int32_t lastDataRequest;
   int32_t lastColdRequest;
+  int32_t coldBackoffLevel;   // appended; an older 8-byte blob leaves this at 0
 } PollStateBlob;
 
 static void poll_state_load(void) {
-  PollStateBlob b = { 0, 0 };
+  // Zero-init matters: persist_read_data on an older, SHORTER blob fills only what was
+  // stored and leaves the tail untouched, so the appended field must already be 0.
+  PollStateBlob b = { 0, 0, 0 };
   if (persist_exists(POLL_STATE_PERSIST_KEY)) {
     persist_read_data(POLL_STATE_PERSIST_KEY, &b, sizeof(b));
   }
   int32_t now = (int32_t)time(NULL);
   lastDataRequest = (time_t)poll_stamp_sanitize(b.lastDataRequest, now);
   lastColdRequest = (time_t)poll_stamp_sanitize(b.lastColdRequest, now);
+  coldBackoffLevel = b.coldBackoffLevel;
+  if (coldBackoffLevel < 0) { coldBackoffLevel = 0; }
+  if (coldBackoffLevel > COLD_BACKOFF_MAX_LEVEL) { coldBackoffLevel = COLD_BACKOFF_MAX_LEVEL; }
 }
 
 static void poll_state_save(void) {
-  PollStateBlob b = { (int32_t)lastDataRequest, (int32_t)lastColdRequest };
+  PollStateBlob b = { (int32_t)lastDataRequest, (int32_t)lastColdRequest, coldBackoffLevel };
   persist_write_data(POLL_STATE_PERSIST_KEY, &b, sizeof(b));
 }
 static bool twtTargetAlerted = false;   // already vibrated for the current daily-target crossing
@@ -383,11 +396,6 @@ static void cold_scan_cb(uint8_t w, void *ctx) {
 }
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  // One watch-driven request per configured interval serves ALL phone-fetched
-  // data (weather, electricity, crypto). This is the documented Pebble pattern:
-  // the tick service is always running and the AppMessage wakes the phone JS out
-  // of power-save. The JS side throttles per source (electricity ~2/day; crypto
-  // sends only on change), so a short interval does not over-fetch slow sources.
   // Night-rotation boundary. schedule_rotation_timer() is otherwise reachable only from
   // redrawScreen() and from the rotation timer's own callback -- so once the night window
   // suppresses the timer, the callback stops firing and nothing would re-arm it in the
@@ -400,6 +408,12 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     }
   }
 
+  // One watch-driven request per configured interval serves ALL phone-fetched
+  // data (weather, electricity, crypto). This is the documented Pebble pattern:
+  // the tick service is always running and the AppMessage wakes the phone JS out
+  // of power-save. The JS side throttles per source (electricity ~2/day; crypto
+  // sends only on change), so a short interval does not over-fetch slow sources.
+  //
   // tm_sec first: in seconds mode this runs every tick, and the widget-list scan
   // inside needs_phone_data() is only worth doing on the minute boundary.
   if (tick_time->tm_sec == 0 && needs_phone_data()) {
@@ -410,22 +424,42 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     // firmware wipe): the phone's *_last_sent stamps survive and would suppress a
     // re-send as "unchanged". Ask for a FORCED round in that case, rate limited so a
     // permanently failing source (bad Tuya keys) can't fetch on every relaunch.
+    //
+    // The rate limit BACKS OFF, because a source can be permanently missing (wrong Tuya
+    // credentials, a coin the phone cannot price, denied location). At a flat 10 min that
+    // meant 144 forced rounds a day instead of 48 -- and a cold request bypasses every
+    // phone-side throttle, including electricity's 11 h one and its ~400 B message, the
+    // largest in the system. So: double the spacing after each cold round that fails to
+    // resolve the gap (10 min -> ... -> 6 h), and reset the moment nothing is missing.
+    bool missing = false;
+    WidgetList_forEachId(settings.widgetList, settings.widgetCount, cold_scan_cb, &missing);
+    WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, cold_scan_cb, &missing);
     bool cold = false;
-    if (poll_cold_allowed((int32_t)lastColdRequest, (int32_t)now, COLD_MIN_INTERVAL_S)) {
-      bool missing = false;
-      WidgetList_forEachId(settings.widgetList, settings.widgetCount, cold_scan_cb, &missing);
-      WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, cold_scan_cb, &missing);
-      cold = missing;
+    if (!missing) {
+      // everything resolved -> the next genuine gap gets the fast 10-minute response
+      if (coldBackoffLevel != 0) { coldBackoffLevel = 0; poll_state_save(); }
+    } else if (poll_cold_allowed((int32_t)lastColdRequest, (int32_t)now,
+                                 poll_cold_interval((int)coldBackoffLevel,
+                                                    COLD_MIN_INTERVAL_S,
+                                                    COLD_MAX_INTERVAL_S))) {
+      cold = true;
     }
 
     if (cold || poll_due((int32_t)lastDataRequest, (int32_t)now, (int32_t)intervalSec)) {
       // Kept deliberately: this is the one line that makes the relaunch-silence
       // behaviour observable in `pebble logs` on a real watch. Fires at most once
       // per poll interval (>= 5 min), so it is not log spam.
-      APP_LOG(APP_LOG_LEVEL_INFO, "poll: requesting data (cold=%d)", cold ? 1 : 0);
+      APP_LOG(APP_LOG_LEVEL_INFO, "poll: requesting data (cold=%d backoff=%d)",
+              cold ? 1 : 0, (int)coldBackoffLevel);
       messaging_requestNewWeatherData(cold);
       lastDataRequest = now;
-      if (cold) { lastColdRequest = now; }
+      if (cold) {
+        lastColdRequest = now;
+        // Assume it will fail again; the !missing branch above resets this to 0 as soon
+        // as the data actually arrives, so a successful cold round costs one extra level
+        // that is immediately cleared on the next tick.
+        if (coldBackoffLevel < COLD_BACKOFF_MAX_LEVEL) { coldBackoffLevel++; }
+      }
       poll_state_save();
     }
   }
