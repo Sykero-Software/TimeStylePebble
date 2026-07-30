@@ -45,11 +45,23 @@ GRect screen_rect;
 
 // Widest digit ('0'..'9') horizontal advance in font units — the stable
 // worst-case width source for a 2-digit line (see ClockArea_fitFontSize).
+// Memoized per font: the value is a property of the FFont, but this used to re-scan 10
+// glyph lookups on every call and it is called twice per frame from the digital path.
+// Only three FFonts exist (avenir / avenir_bold / leco), so a 3-entry table covers them
+// all; a miss just recomputes.
 static int widest_digit_adv(FFont* font) {
+  static FFont* cachedFont[3];
+  static int cachedAdv[3];
+  for (int i = 0; i < 3; i++) {
+    if (cachedFont[i] == font) { return cachedAdv[i]; }
+  }
   int m = 0;
   for (char c = '0'; c <= '9'; c++) {
     FGlyph* g = ffont_glyph_info(font, (uint16_t)c);
     if (g && g->horiz_adv_x > m) { m = g->horiz_adv_x; }
+  }
+  for (int i = 0; i < 3; i++) {
+    if (cachedFont[i] == NULL) { cachedFont[i] = font; cachedAdv[i] = m; break; }
   }
   return m;
 }
