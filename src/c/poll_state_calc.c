@@ -14,3 +14,9 @@ bool poll_cold_allowed(int32_t lastCold, int32_t now, int32_t minIntervalS) {
   if (lastCold > now) { return true; }
   return (now - lastCold) >= minIntervalS;
 }
+
+bool poll_due(int32_t lastRequest, int32_t now, int32_t intervalS) {
+  if (lastRequest <= 0) { return true; }
+  if (lastRequest > now) { return true; }
+  return (now - lastRequest) >= intervalS;
+}

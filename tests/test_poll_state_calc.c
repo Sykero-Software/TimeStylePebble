@@ -25,6 +25,15 @@ int main(void) {
   // a future cold stamp must not lock cold requests out forever
   assert(poll_cold_allowed(now + 5000, now, 600) == true);
 
+  // interval gate, shared by the tick poll and the BT-reconnect refresh: never
+  // requested polls immediately, inside the interval does not, at/after it does
+  assert(poll_due(0, now, 900) == true);
+  assert(poll_due(now - 899, now, 900) == false);
+  assert(poll_due(now - 900, now, 900) == true);
+  assert(poll_due(now - 5000, now, 900) == true);
+  // a future stamp must not block polls forever (same clock-jump reason as above)
+  assert(poll_due(now + 5000, now, 900) == true);
+
   printf("PASS\n");
   return 0;
 }

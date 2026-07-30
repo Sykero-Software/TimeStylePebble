@@ -315,6 +315,23 @@ static void phone_data_scan_cb(uint8_t w, void *ctx) {
   if (isPhoneDataWidget((SidebarWidgetType)w)) { *needs = true; }
 }
 
+// True when ANY phone-fetched source is in use: weather is gated by the setting,
+// every other source by a placed widget id in either rendered column (not the
+// legacy 3-slot widgets[] mirror). Shared by the tick poll and the BT-reconnect
+// refresh so both agree on "is a phone round-trip worth anything at all".
+static bool needs_phone_data(void) {
+  bool needs = !dynamicSettings.disableWeather;
+  WidgetList_forEachId(settings.widgetList, settings.widgetCount, phone_data_scan_cb, &needs);
+  WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, phone_data_scan_cb, &needs);
+  return needs;
+}
+
+// The effective poll interval in seconds, floored at 5 min.
+static int poll_interval_sec(void) {
+  int s = (int)settings.pollIntervalMin * 60;
+  return (s < 300) ? 300 : s;
+}
+
 // A placed widget whose data the watch does NOT have. Per-wid for the phone-data
 // slots, so a newly configured coin/sensor also counts as missing.
 static bool widget_source_missing(uint8_t w) {
@@ -348,14 +365,10 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // the tick service is always running and the AppMessage wakes the phone JS out
   // of power-save. The JS side throttles per source (electricity ~2/day; crypto
   // sends only on change), so a short interval does not over-fetch slow sources.
-  bool needsPhoneData = !dynamicSettings.disableWeather;
-  // Scan the actual rendered lists (not the legacy 3-slot widgets[] mirror), so a
-  // phone-data widget in ANY slot of either column triggers the poll.
-  WidgetList_forEachId(settings.widgetList, settings.widgetCount, phone_data_scan_cb, &needsPhoneData);
-  WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, phone_data_scan_cb, &needsPhoneData);
-  if (needsPhoneData && tick_time->tm_sec == 0) {
-    int intervalSec = (int)settings.pollIntervalMin * 60;
-    if (intervalSec < 300) { intervalSec = 300; }   // floor 5 min
+  // tm_sec first: in seconds mode this runs every tick, and the widget-list scan
+  // inside needs_phone_data() is only worth doing on the minute boundary.
+  if (tick_time->tm_sec == 0 && needs_phone_data()) {
+    int intervalSec = poll_interval_sec();
     time_t now = time(NULL);
 
     // The watch is the only party that knows its persist was wiped (reinstall /
@@ -370,7 +383,7 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
       cold = missing;
     }
 
-    if (cold || lastDataRequest == 0 || (now - lastDataRequest) >= intervalSec) {
+    if (cold || poll_due((int32_t)lastDataRequest, (int32_t)now, (int32_t)intervalSec)) {
       // Kept deliberately: this is the one line that makes the relaunch-silence
       // behaviour observable in `pebble logs` on a real watch. Fires at most once
       // per poll interval (>= 5 min), so it is not log spam.
@@ -467,9 +480,24 @@ void bluetoothStateChanged(bool newConnectionState) {
     light_enable_interaction();   // briefly light the backlight, per the user's watch light settings
   }
 
-  // if the phone was disconnected and isn't anymore, update the data
-  if(!isPhoneConnected && newConnectionState) {
-    messaging_requestNewWeatherData(false);
+  // A genuine disconnect->connect transition can have left the data stale, so refresh
+  // it -- but gated exactly like the tick poll (a phone source is actually in use AND
+  // the interval has elapsed), sharing the same persisted clock. Without the gate a
+  // flapping BT link turned every reconnect into a phone round-trip, and a watchface
+  // with no phone-data widget asked anyway.
+  //
+  // NOTE this handler is NEVER called synthetically at launch anymore (see init()):
+  // isPhoneConnected is zero-initialised on every launch, so a launch-time call looked
+  // like a reconnect and sent a request on EVERY relaunch -- the exact phone traffic
+  // the persisted poll clock exists to avoid.
+  if(!isPhoneConnected && newConnectionState && needs_phone_data()) {
+    time_t now = time(NULL);
+    if (poll_due((int32_t)lastDataRequest, (int32_t)now, (int32_t)poll_interval_sec())) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "poll: requesting data (bt reconnect)");
+      messaging_requestNewWeatherData(false);
+      lastDataRequest = now;
+      poll_state_save();
+    }
   }
 
   isPhoneConnected = newConnectionState;
@@ -549,8 +577,15 @@ static void init() {
     updatingEverySecond = false;
   }
 
-  bool connected = bluetooth_connection_service_peek();
-  bluetoothStateChanged(connected);
+  // SEED the connection state directly instead of calling bluetoothStateChanged():
+  // isPhoneConnected is zero-initialised at every launch, so the synthetic first call
+  // read as a disconnect->connect transition and sent a data request on EVERY relaunch
+  // (a watchface is killed whenever any watchapp runs). The redraw/layout that call
+  // also did is replicated here; the disconnect vibe could never fire at launch anyway
+  // (it requires the previous state to be connected).
+  isPhoneConnected = bluetooth_connection_service_peek();
+  Sidebar_redraw();
+  if (TwtStatus_isSupported()) { apply_twt_layout(); }
   bluetooth_connection_service_subscribe(bluetoothStateChanged);
 
   // register with battery service
