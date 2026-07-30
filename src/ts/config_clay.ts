@@ -333,7 +333,15 @@ const config = [
       { type: 'input', messageKey: 'TuyaAccessSecret', label: 'Access Secret', attributes: { placeholder: 'from your Cloud Project' } },
       { type: 'select', messageKey: 'TuyaRegion', label: 'Data center', defaultValue: 'eu', options: [
         { label: 'Central Europe', value: 'eu' }, { label: 'Western America', value: 'us' },
-        { label: 'China', value: 'cn' }, { label: 'India', value: 'in' } ] },
+        { label: 'China', value: 'cn' }, { label: 'India', value: 'in' },
+        { label: 'Western Europe', value: 'eu-w' }, { label: 'Eastern America', value: 'us-e' } ] },
+      { type: 'text', defaultValue:
+        'Tip: this is Tuya&#39;s <b>data center</b> &mdash; not your country. Your country maps to ' +
+        'one of these six, and it must match your Cloud Project&#39;s data center or no sensors ' +
+        'will appear.<br><b>Western America</b> = all of the Americas (Argentina, Brazil, Chile, ' +
+        'Mexico, US, …), Japan/Korea/South-East Asia, and any country Tuya doesn&#39;t list. ' +
+        '<b>Central Europe</b> = Europe, most of Africa, Australia, the Middle East. ' +
+        '<b>China</b> and <b>India</b> = those two countries only.' },
       { type: 'text', defaultValue:
         'Save your credentials, then <b>close and reopen this page</b> so your devices can load. ' +
         '(The first load talks to the Tuya cloud and can take a few seconds; after that the list ' +

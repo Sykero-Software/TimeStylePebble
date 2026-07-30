@@ -16,9 +16,12 @@ import {
   countValidValues, parseLastSent, TuyaRow,
 } from './tuya_parse';
 
+// All six Tuya data centers. Argentina/Latin America (and anything not in Tuya's
+// country table) lives in Western America — 'us'; see the config page's tip text.
 const REGION_HOST: Record<string, string> = {
   eu: 'https://openapi.tuyaeu.com', us: 'https://openapi.tuyaus.com',
   cn: 'https://openapi.tuyacn.com', in: 'https://openapi.tuyain.com',
+  'eu-w': 'https://openapi-weaz.tuyaeu.com', 'us-e': 'https://openapi-ueaz.tuyaus.com',
 };
 
 const LAST_SENT_KEY = 'tuya_last_sent';
