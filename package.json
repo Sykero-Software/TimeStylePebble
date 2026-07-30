@@ -130,7 +130,10 @@
       "CurrencyData",
       "TuyaData",
       "SettingStatusClockDigital",
-      "TuyaLeds"
+      "TuyaLeds",
+      "SettingNightRotationMode",
+      "SettingNightRotationStart",
+      "SettingNightRotationEnd"
     ],
     "resources": {
       "media": [

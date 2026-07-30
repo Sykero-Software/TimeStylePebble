@@ -85,6 +85,9 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     const belowDigi = key('SettingAnalogDigitalClock').get() === true;
     const bigDate = parseInt(key('SettingBigDate').get(), 10) === 1;
     const altClock = has(ids, [3]);
+    // 2 == NIGHT_ROTATION_CUSTOM: only that mode uses the two hour fields (Off and
+    // Follow Quiet Time need no schedule of their own).
+    const nightCustom = parseInt(key('SettingNightRotationMode').get(), 10) === 2;
     const gk: { [k: string]: boolean } = {};
     const gi: { [k: string]: boolean } = {};
     gk.SettingUseMetric = temp;
@@ -108,6 +111,8 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     gk.SettingStatusClockDigital = analog && belowDigi;
     gk.SettingBigDateMonth = bigDate;
     gk.SettingBigDateFont = bigDate;
+    gk.SettingNightRotationStart = nightCustom;
+    gk.SettingNightRotationEnd = nightCustom;
     gi['analog-credit'] = analog;
     gi['heading-weather'] = weather;
     gi['heading-electricity'] = cheapHour;
@@ -225,7 +230,8 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     wireHeadings();
     applyVisibility();
     ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery',
-     'SettingFallbackColumn', 'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingBigDate']
+     'SettingFallbackColumn', 'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingBigDate',
+     'SettingNightRotationMode']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', applyVisibility); });
   });
 }

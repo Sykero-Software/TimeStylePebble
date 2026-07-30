@@ -200,6 +200,23 @@ const config = [
       { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
       { type: 'text', defaultValue: '<b>Right sidebar widgets</b>' },
       { type: 'widgetList', messageKey: 'WidgetListRight', defaultValue: [] },
+      { type: 'select', messageKey: 'SettingNightRotationMode', label: 'Slow rotation at night',
+        defaultValue: '0', options: [
+          { label: 'Off', value: '0' },
+          { label: 'Follow Quiet Time', value: '1' },
+          { label: 'Custom hours', value: '2' },
+        ] },
+      { type: 'input', messageKey: 'SettingNightRotationStart', label: 'Night starts (hour)',
+        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '23' }, defaultValue: '23' },
+      { type: 'input', messageKey: 'SettingNightRotationEnd', label: 'Night ends (hour)',
+        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '7' }, defaultValue: '7' },
+      { type: 'text', id: 'night-rotation-help', defaultValue:
+        'During the night window, groups set to 5 / 10 / 30 s drop to one change per ' +
+        'minute. Rotation keeps going and every widget is still shown — only the extra ' +
+        'wakeups go away, which is where the battery saving comes from. Has no effect ' +
+        'if all your groups are already 1 min or slower.<br>' +
+        'The window runs from the start hour up to (not including) the end hour, and may ' +
+        'cross midnight. Setting both to the same hour disables it.' },
       { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
         defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',

@@ -20,4 +20,5 @@ export const STRAIGHT_THROUGH_KEYS: string[] = [
   'SettingElecCheapFactorPct',
   'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
   'SettingClockStyle', 'SettingAnalogTicks', 'SettingAnalogDigitalClock', 'SettingStatusClockDigital',
+  'SettingNightRotationMode', 'SettingNightRotationStart', 'SettingNightRotationEnd',
 ];

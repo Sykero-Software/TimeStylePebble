@@ -38,6 +38,35 @@ test('every config toggle setting is wired into the straight-through send path',
     + missing.join(', '));
 });
 
+// The toggle-only test above left a real gap: a `select` / `radiogroup` / numeric
+// `input` is just as much a straight-through scalar, and just as silently broken when
+// missing from the send path — it renders and gates perfectly in the webview while the
+// watch keeps its C default. Verified at the time of writing that no existing Setting*
+// item of these types is absent, so this starts green and only catches new mistakes.
+// (Colours, widget lists and the crypto/currency/tuya custom components are deliberately
+// NOT covered: they are not scalars and index.ts handles them on their own paths.)
+test('every scalar config setting is wired into the straight-through send path', () => {
+  const set = new Set(STRAIGHT_THROUGH_KEYS);
+  const SCALAR_TYPES = ['toggle', 'select', 'radiogroup', 'input'];
+  const scalars = flattenConfig(configArr)
+    .filter((it) => it && SCALAR_TYPES.indexOf(it.type) !== -1
+      && typeof it.messageKey === 'string' && it.messageKey.indexOf('Setting') === 0)
+    .map((it) => it.messageKey);
+  assert.ok(scalars.length > 0, 'expected at least one scalar Setting* item in the config');
+  const missing = scalars.filter((k) => !set.has(k));
+  assert.deepStrictEqual(missing, [],
+    'scalar settings missing from STRAIGHT_THROUGH_KEYS (their config value never reaches the watch): '
+    + missing.join(', '));
+});
+
+test('the night-rotation settings reach the watch', () => {
+  ['SettingNightRotationMode', 'SettingNightRotationStart', 'SettingNightRotationEnd']
+    .forEach((k) => {
+      assert.ok(STRAIGHT_THROUGH_KEYS.indexOf(k) !== -1,
+        k + ' must be sent, or night rotation silently stays at the C default (off)');
+    });
+});
+
 test('SettingStatusClockDigital reaches the watch', () => {
   assert.ok(STRAIGHT_THROUGH_KEYS.indexOf('SettingStatusClockDigital') !== -1,
     'SettingStatusClockDigital must be sent so the status-strip digital-clock swap works on a real watch');

@@ -12,6 +12,7 @@
 #include "tuya_leds.h"
 #include "languages.h"
 #include "date_header_calc.h"
+#include "night_rotation_calc.h"
 #include "widget_list.h"
 
 void (*message_processed_callback)(void);
@@ -194,6 +195,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *twtTargetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtTargetVibe);
   Tuple *twtBudgetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtBudgetVibe);
   Tuple *pollInterval_tuple = dict_find(iterator, MESSAGE_KEY_SettingPollIntervalMin);
+  Tuple *nightRotMode_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationMode);
+  Tuple *nightRotStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationStart);
+  Tuple *nightRotEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationEnd);
   Tuple *elecQuietStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietStart);
   Tuple *elecQuietEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietEnd);
   Tuple *elecFactor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFactorPct);
@@ -328,6 +332,24 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(pollInterval_tuple != NULL) {
     int v = pollInterval_tuple->value->int32;
     if (v >= 5 && v <= 240) { settings.pollIntervalMin = (uint8_t)v; }
+  }
+
+  // Night rotation: apply only in-range values, like the electricity quiet hours. An
+  // out-of-range mode is dropped rather than defaulted, so a garbled dict cannot silently
+  // freeze the sidebar.
+  if(nightRotMode_tuple != NULL) {
+    int v = nightRotMode_tuple->value->int32;
+    if (v >= NIGHT_ROTATION_OFF && v <= NIGHT_ROTATION_CUSTOM) {
+      settings.nightRotationMode = (uint8_t)v;
+    }
+  }
+  if(nightRotStart_tuple != NULL) {
+    int v = nightRotStart_tuple->value->int32;
+    if (v >= 0 && v <= 23) { settings.nightRotationStart = (uint8_t)v; }
+  }
+  if(nightRotEnd_tuple != NULL) {
+    int v = nightRotEnd_tuple->value->int32;
+    if (v >= 0 && v <= 23) { settings.nightRotationEnd = (uint8_t)v; }
   }
 
   if(elecQuietStart_tuple != NULL) {

@@ -17,6 +17,7 @@
 #include "widget_list.h"
 #include "battery_days.h"
 #include "poll_state_calc.h"
+#include "night_rotation_calc.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -32,6 +33,11 @@ static AppTimer *rotationTimer = NULL;   // repaints the sidebar at sub-minute r
 
 static time_t lastDataRequest = 0;   // epoch of the last watch->phone data request
 static time_t lastColdRequest = 0;   // epoch of the last COLD (forced) request
+
+// Last sampled night-rotation state (-1 = not sampled yet). See the boundary check in
+// tick_handler: without it, a night window that suppressed the rotation timer would
+// never be undone, because nothing else re-arms it.
+static int nightRotationLast = -1;
 
 // Persisted so the poll clock is NOT restarted by a relaunch. A watchface is killed
 // whenever any watchapp runs, so re-stamping "now" in init() meant a user who
@@ -221,12 +227,29 @@ static void rotation_timer_cb(void *data) {
 // sub-minute rotating group exists. >=1min rotations need no timer (the minute tick
 // already repaints the sidebar). Skipped while already second-ticking (the tick
 // handler repaints every second).
+// Is the night-rotation window in effect right now? Reads the local hour and the watch's
+// Quiet Time state and hands both to the pure predicate.
+static bool night_rotation_now(void) {
+  if (settings.nightRotationMode == NIGHT_ROTATION_OFF) { return false; }   // cheap path
+  time_t now = time(NULL);
+  struct tm *lt = localtime(&now);
+  return night_rotation_active(settings.nightRotationMode, lt->tm_hour,
+                               settings.nightRotationStart, settings.nightRotationEnd,
+                               quiet_time_is_active());
+}
+
 static void schedule_rotation_timer(void) {
   if (rotationTimer) { app_timer_cancel(rotationTimer); rotationTimer = NULL; }
   if (updatingEverySecond) { return; }
   int p = WidgetList_minSubMinuteIntervalSec(settings.widgetList, settings.widgetCount);
   int pr = WidgetList_minSubMinuteIntervalSec(settings.rightWidgetList, settings.rightWidgetCount);
   if (pr > 0 && (p == 0 || pr < p)) { p = pr; }
+  // During the night window, suppress the sub-minute timer entirely. Rotation does NOT
+  // stop: the displayed member is derived from the wall clock on every draw, and the
+  // minute tick still repaints the sidebar -- so the group keeps cycling at 1/min while
+  // costing zero extra wakeups. (Freezing it outright would need a change in sidebar.c
+  // and would hide half a rotating pair all night.)
+  p = night_rotation_interval(p, night_rotation_now());
   if (p <= 0) { return; }
   time_t now = time(NULL);
   struct tm *lt = localtime(&now);
@@ -365,6 +388,18 @@ void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   // the tick service is always running and the AppMessage wakes the phone JS out
   // of power-save. The JS side throttles per source (electricity ~2/day; crypto
   // sends only on change), so a short interval does not over-fetch slow sources.
+  // Night-rotation boundary. schedule_rotation_timer() is otherwise reachable only from
+  // redrawScreen() and from the rotation timer's own callback -- so once the night window
+  // suppresses the timer, the callback stops firing and nothing would re-arm it in the
+  // morning. Sample the window once a minute and reschedule when it flips (both ways).
+  if (tick_time->tm_sec == 0) {
+    int nightNow = night_rotation_now() ? 1 : 0;
+    if (nightNow != nightRotationLast) {
+      nightRotationLast = nightNow;
+      schedule_rotation_timer();
+    }
+  }
+
   // tm_sec first: in seconds mode this runs every tick, and the widget-list scan
   // inside needs_phone_data() is only worth doing on the minute boundary.
   if (tick_time->tm_sec == 0 && needs_phone_data()) {

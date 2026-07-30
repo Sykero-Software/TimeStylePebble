@@ -203,6 +203,16 @@ typedef struct {
   // strip otherwise hides the below-analog digital line). Appended field,
   // zero-default (off) on load of an older blob; no settings-version bump.
   uint8_t statusClockDigital;
+
+  // Night rotation: slow sub-minute sidebar rotation down to the minute tick during a
+  // night window, to stop it repainting the whole watchface 2-12x/min while nobody is
+  // looking. mode is a NightRotationMode (0 = off, 1 = follow Quiet Time, 2 = custom
+  // hours); the two hours are a half-open [start, end) window that may wrap midnight,
+  // used only in mode 2. Appended fields, zero-default (mode 0 = off, i.e. today's
+  // behaviour) on load of an older blob; no settings-version bump.
+  uint8_t nightRotationMode;
+  uint8_t nightRotationStart;
+  uint8_t nightRotationEnd;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
