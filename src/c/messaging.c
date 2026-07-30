@@ -50,6 +50,24 @@ void messaging_init(void (*processed_callback)(void)) {
 }
 
 void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+  // Snapshot the three persisted structs so each save below can be gated on an ACTUAL
+  // change. This callback runs for every inbound message -- including pure data replies
+  // (weather / electricity / crypto / currency / tuya) and the companion apps' status
+  // pushes, which trackworktime sends every minute whether anything changed or not.
+  // Previously each of those wrote settings (2 keys) + the status blob (2 keys) to
+  // flash unconditionally, i.e. thousands of identical writes per day.
+  //
+  // `static` because the Pebble app stack is only ~2 KB and Settings alone is ~172 B;
+  // the event loop is single-threaded so a non-reentrant handler is safe. memcpy (not
+  // struct assignment) so padding bytes are copied too and memcmp cannot see phantom
+  // differences.
+  static Settings prevSettings;
+  static TwtStatus prevTwt;
+  static MidiStatus prevMidi;
+  memcpy(&prevSettings, &settings, sizeof(Settings));
+  memcpy(&prevTwt, &twt_status, sizeof(TwtStatus));
+  memcpy(&prevMidi, &midi_status, sizeof(MidiStatus));
+
   bool weatherDataUpdated = false;
 
   // does this message contain current weather conditions?
@@ -483,8 +501,15 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     settings.statusClockDigital = (statusClockDigital_tuple->value->int32 != 0) ? 1 : 0;
   }
 
-  // save the new settings to persistent storage
-  Settings_saveToStorage();
+  // Save the new settings to persistent storage -- but only if a Setting* key actually
+  // changed the struct. Settings_saveToStorage() also re-derives dynamicSettings, which
+  // is a pure function of `settings` (settings.c Settings_updateDynamicSettings reads
+  // only settings.*, writes only dynamicSettings.*, and nothing outside settings.c ever
+  // writes dynamicSettings) -- so skipping the whole call on an unchanged struct cannot
+  // stale the tick mode or the icon colours.
+  if (memcmp(&prevSettings, &settings, sizeof(Settings)) != 0) {
+    Settings_saveToStorage();
+  }
 
   // does this message contain TrackWorkTime status?
   bool twtUpdated = false;
@@ -556,7 +581,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     twt_status.dayGrossBeforeMin = g;
     twtUpdated = true;
   }
-  if (twtUpdated) {
+  // twtUpdated only means "a TWT key was present", and trackworktime pushes all 10 keys
+  // every minute regardless of change -- so compare the struct before touching flash.
+  if (twtUpdated && memcmp(&prevTwt, &twt_status, sizeof(TwtStatus)) != 0) {
     TwtStatus_save();
     // the redraw + layout happen via message_processed_callback() (redrawScreen -> apply_twt_layout)
   }
@@ -591,7 +618,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     midi_status.recStartEpoch = midiStart_tuple->value->int32;
     midiUpdated = true;
   }
-  if (midiUpdated) {
+  // same as the TWT block: presence of a key is not a change
+  if (midiUpdated && memcmp(&prevMidi, &midi_status, sizeof(MidiStatus)) != 0) {
     MidiStatus_save();
     // redraw + relayout happen via message_processed_callback() -> redrawScreen -> apply_twt_layout
   }

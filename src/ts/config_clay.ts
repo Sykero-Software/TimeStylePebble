@@ -186,6 +186,16 @@ const config = [
         'column.<br>' +
         '(Widgets with no separate identifier — Empty, Today’s Date, Seconds, ' +
         'Bluetooth disconnect — have no such button.)' },
+      { type: 'text', id: 'widgets-power-warning', defaultValue:
+        '<b>⚡ Battery note.</b> The watchface redraws <i>everything</i> at once — ' +
+        'there is no partial refresh — so anything that forces a faster refresh ' +
+        'costs battery across the whole face, not just its own widget.<br><br>' +
+        '<b>Seconds</b> is by far the most expensive widget: it redraws the entire ' +
+        'watchface <b>60× per minute</b> instead of once, all day and all night. ' +
+        'Expect a large drop in battery life if you place it.<br>' +
+        'A rotating group set to <b>5 / 10 / 30 s</b> is the same effect on a smaller ' +
+        'scale (12 / 6 / 2 extra full redraws per minute). Intervals of <b>1 min or ' +
+        'longer are free</b> — they ride the refresh the watchface does anyway.' },
       { type: 'text', defaultValue: '<b>Left sidebar widgets</b>' },
       { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
       { type: 'text', defaultValue: '<b>Right sidebar widgets</b>' },
