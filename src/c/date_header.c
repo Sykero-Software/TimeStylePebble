@@ -111,14 +111,36 @@ void DateHeader_updateTime(struct tm* timeInfo) {
 #endif
 }
 
+// Memoized pick_date_font: the ladder does up to 5
+// graphics_text_layout_get_content_size() measurements against a 1000x1000 box, and the
+// answer depends only on the string, the available width and the configured font.
+static GFont pick_date_font_cached(const char *text, int16_t width) {
+  static char cachedText[sizeof(s_date_buffer)] = { 1, 0 };  // impossible first value
+  static int16_t cachedWidth = -1;
+  static uint8_t cachedFontId = 0xFF;
+  static GFont cachedFont;
+  if (cachedWidth != width || cachedFontId != settings.bigDateFontId
+      || strncmp(cachedText, text, sizeof(cachedText)) != 0) {
+    cachedFont = pick_date_font(text, width);
+    strncpy(cachedText, text, sizeof(cachedText) - 1);
+    cachedText[sizeof(cachedText) - 1] = '\0';
+    cachedWidth = width;
+    cachedFontId = settings.bigDateFontId;
+  }
+  return cachedFont;
+}
+
 void DateHeader_redraw(void) {
   if (!s_date_layer) return;
+  // Nothing to do while the header is hidden (no big date, or no room for the top strip):
+  // the layer stays allocated but is excluded from the render pass, so every measurement
+  // below would be work for pixels nobody draws -- on every tick. The un-hide path
+  // (apply_twt_layout) calls DateHeader_redraw() right after DateHeader_setHidden(false),
+  // so becoming visible still refreshes immediately.
+  if (layer_get_hidden(text_layer_get_layer(s_date_layer))) return;
   text_layer_set_text_color(s_date_layer, settings.timeColor); // track color setting changes
   text_layer_set_background_color(s_date_layer, settings.dateBgColor); // track color setting changes
-  // Re-measured every redraw: the string/width only change on a date rollover,
-  // setting, or layout change, but ≤4 measurements of a short static string are
-  // cheap enough to not bother caching, even on the per-second tick path.
-  text_layer_set_font(s_date_layer, pick_date_font(s_date_buffer, s_frame.size.w));
+  text_layer_set_font(s_date_layer, pick_date_font_cached(s_date_buffer, s_frame.size.w));
   text_layer_set_text(s_date_layer, s_date_buffer);
   layer_mark_dirty(text_layer_get_layer(s_date_layer));
 }

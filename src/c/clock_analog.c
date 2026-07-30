@@ -110,17 +110,25 @@ static void draw_hand_border(GContext *ctx, GPoint center, int32_t angle,
 // filled pentagon body of a hand
 static void draw_hand_fill(GContext *ctx, GPoint center, int32_t angle,
                            int length, int width, int tail, GColor color) {
+  // A file-static path instead of gpath_create/gpath_destroy per call: this runs twice
+  // per frame (hour + minute) and the watchface redraws constantly, so it was two heap
+  // alloc/free pairs every frame. GPath is a public 4-field struct and gpath_create only
+  // copies the points POINTER (per the SDK docs), so a static instance whose points are
+  // rewritten before each draw is equivalent. gpath_rotate_to/gpath_move_to just set
+  // fields, and the Pebble event loop is single-threaded, so sharing one is safe.
+  static GPoint s_pts[5];
+  static GPath s_path = { .num_points = 5, .points = s_pts, .rotation = 0,
+                          .offset = { 0, 0 } };
   int hw = width / 2;
-  GPoint pts[5] = {
-    {-hw, tail}, {hw, tail}, {hw, -length}, {0, -(length + hw)}, {-hw, -length}
-  };
-  GPathInfo info = { .num_points = 5, .points = pts };
-  GPath *path = gpath_create(&info);
-  gpath_rotate_to(path, angle);
-  gpath_move_to(path, center);
+  s_pts[0] = (GPoint){ -hw, tail };
+  s_pts[1] = (GPoint){ hw, tail };
+  s_pts[2] = (GPoint){ hw, -length };
+  s_pts[3] = (GPoint){ 0, -(length + hw) };
+  s_pts[4] = (GPoint){ -hw, -length };
+  gpath_rotate_to(&s_path, angle);
+  gpath_move_to(&s_path, center);
   graphics_context_set_fill_color(ctx, color);
-  gpath_draw_filled(ctx, path);
-  gpath_destroy(path);
+  gpath_draw_filled(ctx, &s_path);
 }
 
 // Scale an emery-reference dimension (a percent of a 100px half-screen) to this

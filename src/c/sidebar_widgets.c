@@ -1223,8 +1223,10 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
       }
     }
   } else {
-    int steps = (int)health_service_sum_today(HealthMetricStepCount);
-
+    // One syscall, not two: the unconditional call here used to be overwritten by the
+    // guarded one on the very next line, so it was pure waste on every frame. When the
+    // metric is inaccessible health_service_sum_today returns 0, which is what 0 seeds.
+    int steps = 0;
     if (is_health_metric_accessible(HealthMetricStepCount)) {
       steps = (int)health_service_sum_today(HealthMetricStepCount);
     }
