@@ -3,6 +3,7 @@
 #include "crypto.h"
 #include "widget_list.h"
 #include "date_header_calc.h"
+#include "night_rotation_calc.h"
 #include <pebble.h>
 
 Settings settings;
@@ -85,6 +86,12 @@ void Settings_loadFromStorage() {
   settings.elecCheapFactorPct = 70;
   settings.elecCheapFloorCenti = 200;  // 2.0 snt/kWh
   settings.elecCheapCeilingCenti = 800;// 8.0 snt/kWh
+  // Night rotation OFF by default: it only ever helps a user who explicitly chose a
+  // 5/10/30 s rotation interval, and silently changing rotation behaviour for everyone
+  // else would be a surprise. Appended fields, no settings-version bump.
+  settings.nightRotationMode = NIGHT_ROTATION_OFF;
+  settings.nightRotationStart = 23;
+  settings.nightRotationEnd = 7;
 #ifdef PBL_COLOR
   settings.twtStatusBgColor = GColorMintGreen;    // light-green panels by default
   settings.twtFlashColor = GColorRed;             // bright flash; appended field, no settings-version bump
@@ -232,6 +239,12 @@ void Settings_loadFromStorage() {
   }
   if (settings.elecQuietStart > 23) { settings.elecQuietStart = 23; clamped = true; }
   if (settings.elecQuietEnd > 23) { settings.elecQuietEnd = 7; clamped = true; }
+  // Fail safe on a garbled mode: OFF keeps rotation running rather than freezing it.
+  if (settings.nightRotationMode > NIGHT_ROTATION_CUSTOM) {
+    settings.nightRotationMode = NIGHT_ROTATION_OFF; clamped = true;
+  }
+  if (settings.nightRotationStart > 23) { settings.nightRotationStart = 23; clamped = true; }
+  if (settings.nightRotationEnd > 23) { settings.nightRotationEnd = 7; clamped = true; }
   if (settings.elecCheapFactorPct < 1 || settings.elecCheapFactorPct > 100) {
     settings.elecCheapFactorPct = 70; clamped = true;
   }
@@ -308,7 +321,12 @@ static void dyn_scan_cb(uint8_t w, void *ctx) {
 }
 
 void Settings_updateDynamicSettings() {
-  dynamicSettings.disableWeather = false;
+  // Seed to "disabled" and let dyn_scan_cb clear it when a weather widget is actually
+  // placed -- the same clear-on-match pattern as enableAutoBatteryWidget below. This was
+  // `false`, i.e. the SAME value the scan sets, so the flag could never be true and
+  // needs_phone_data() (main.c) always returned true: a watchface with a purely local
+  // sidebar still woke the phone every poll interval, forever.
+  dynamicSettings.disableWeather = true;
   dynamicSettings.updateScreenEverySecond = false;
   dynamicSettings.enableAutoBatteryWidget = true;
   dynamicSettings.enableBeats = false;

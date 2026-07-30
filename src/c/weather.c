@@ -1,6 +1,11 @@
 #include <pebble.h>
 #include "weather.h"
 
+// Has any weather ever reached this watch? (persist restore or a phone push)
+static bool s_hasData = false;
+
+bool Weather_hasData(void) { return s_hasData; }
+
 WeatherInfo Weather_weatherInfo;
 
 GDrawCommandImage* Weather_currentWeatherIcon;
@@ -83,6 +88,7 @@ void Weather_init() {
     WeatherInfo storedWeather;
     persist_read_data(WEATHER_PERSIST_KEY, &storedWeather, sizeof(storedWeather));
     memcpy(&Weather_weatherInfo, &storedWeather, sizeof(storedWeather));
+    s_hasData = true;
   }
 
   // stationName is not relied on from persistence (older blobs lack it; it is
@@ -113,6 +119,7 @@ void Weather_init() {
 }
 
 void Weather_saveData() {
+  s_hasData = true;
   persist_write_data(WEATHER_PERSIST_KEY, &Weather_weatherInfo, sizeof(WeatherInfo));
 }
 

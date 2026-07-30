@@ -83,6 +83,43 @@ int32_t TwtStatus_taskTotalMin(void) {
   return twt_status.taskTotalBeforeMin + running;
 }
 
+// Memoized graphics_text_layout_get_content_size. Text measurement is one of the more
+// expensive graphics calls, and the strip does three of them on EVERY frame -- while a
+// sub-minute rotating group repaints the whole window several times a minute -- for
+// strings that change at most once a minute (they are whole minutes and a percent).
+//
+// `slot` is the CALL SITE, not a hash: each of the three measurements keeps its own
+// entry, so the once-a-minute string change refreshes that entry in place instead of
+// evicting the others (a shared table would thrash, since every string changes together).
+static GSize twt_measure_cached(int slot, const char *text, GFont font, int w, int h) {
+  enum { TWT_MEASURE_SLOTS = 3 };
+  static char keyText[TWT_MEASURE_SLOTS][12];   // matches the caller buffers
+  static GFont keyFont[TWT_MEASURE_SLOTS];
+  static int16_t keyW[TWT_MEASURE_SLOTS], keyH[TWT_MEASURE_SLOTS];
+  static GSize value[TWT_MEASURE_SLOTS];
+  static bool valid[TWT_MEASURE_SLOTS];
+
+  if (slot < 0 || slot >= TWT_MEASURE_SLOTS) {   // defensive: never cache an unknown slot
+    return graphics_text_layout_get_content_size(text, font, GRect(0, 0, w, h),
+                                                 GTextOverflowModeFill, GTextAlignmentLeft);
+  }
+  if (valid[slot] && keyFont[slot] == font && keyW[slot] == (int16_t)w
+      && keyH[slot] == (int16_t)h
+      && strncmp(keyText[slot], text, sizeof(keyText[slot])) == 0) {
+    return value[slot];
+  }
+  value[slot] = graphics_text_layout_get_content_size(text, font, GRect(0, 0, w, h),
+                                                      GTextOverflowModeFill,
+                                                      GTextAlignmentLeft);
+  strncpy(keyText[slot], text, sizeof(keyText[slot]) - 1);
+  keyText[slot][sizeof(keyText[slot]) - 1] = '\0';
+  keyFont[slot] = font;
+  keyW[slot] = (int16_t)w;
+  keyH[slot] = (int16_t)h;
+  valid[slot] = true;
+  return value[slot];
+}
+
 static void status_update_proc(Layer* layer, GContext* ctx) {
   GRect b = layer_get_bounds(layer);
 
@@ -130,12 +167,10 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   // --- Line 1: day total (big) + day percent (small) after it, centred together on the strip. ---
   // The day percent (worked / daily target) is the headline metric and gets line 1 to itself;
   // the task time + percent move to line 2 so a legible font fits without clipping on 144 px.
-  GSize tot_sz = graphics_text_layout_get_content_size(total_buf, big,
-      GRect(0, 0, b.size.w, 30), GTextOverflowModeFill, GTextAlignmentLeft);
+  GSize tot_sz = twt_measure_cached(0, total_buf, big, b.size.w, 30);
   int pct_gap_w = 0;
   if (day_pct_buf[0]) {
-    GSize pct_sz = graphics_text_layout_get_content_size(day_pct_buf, small,
-        GRect(0, 0, b.size.w, 22), GTextOverflowModeFill, GTextAlignmentLeft);
+    GSize pct_sz = twt_measure_cached(1, day_pct_buf, small, b.size.w, 22);
     pct_gap_w = 4 + pct_sz.w;
   }
   int line1_x = (b.size.w - (tot_sz.w + pct_gap_w)) / 2;
@@ -161,8 +196,7 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   }
 
   // --- Line 2: task name (left, truncated) + task time (right-aligned). ---
-  GSize tl = graphics_text_layout_get_content_size(task_buf, small,
-      GRect(0, 0, b.size.w, 22), GTextOverflowModeFill, GTextAlignmentLeft);
+  GSize tl = twt_measure_cached(2, task_buf, small, b.size.w, 22);
   int task_x = b.size.w - tl.w;
   if (task_x < 0) task_x = 0;
   graphics_draw_text(ctx, task_buf, small,

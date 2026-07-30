@@ -36,6 +36,11 @@ typedef enum {
 
 extern WeatherInfo Weather_weatherInfo;
 
+// True once weather has been received at least once (restored from persist at
+// launch, or applied from an incoming weather message). Used by the cold-request
+// check in main.c.
+bool Weather_hasData(void);
+
 extern GDrawCommandImage* Weather_currentWeatherIcon;
 extern GDrawCommandImage* Weather_forecastWeatherIcon;
 

@@ -7,6 +7,12 @@
 
 ElectricityInfo Electricity_info;
 
+// Bumped whenever the price table is replaced. Every cache below is keyed on it, so a
+// new table invalidates all of them without any explicit teardown.
+static uint32_t s_dataVersion = 1;
+
+bool Electricity_hasData(void) { return Electricity_info.count > 0; }
+
 void Electricity_init() {
   Electricity_info.startEpoch = 0;
   Electricity_info.count = 0;
@@ -47,6 +53,7 @@ void Electricity_init() {
 }
 
 void Electricity_saveData() {
+  s_dataVersion++;   // the table just changed -> invalidate every memoized result
   ElectricityMeta meta = { .startEpoch = Electricity_info.startEpoch,
                            .count = Electricity_info.count };
   persist_write_data(ELEC_PERSIST_KEY_META, &meta, sizeof(meta));
@@ -71,7 +78,32 @@ bool Electricity_getCurrentPrice(int16_t *out) {
   return true;
 }
 
+// Index of the quarter containing `now`, or -1 when now is outside the table. Pure
+// arithmetic (no localtime), so it is cheap enough to call on every frame -- and it is
+// the cache key every memoized result below is keyed on, because none of them can change
+// within a quarter unless the table itself is replaced.
+static int elec_current_quarter(void) {
+  int idx;
+  if (!elec_current_index(Electricity_info.startEpoch, Electricity_info.count,
+                          (int64_t)time(NULL), &idx)) {
+    return -1;
+  }
+  return idx;
+}
+
 bool Electricity_getTodayAverage(int16_t *out) {
+  // Memoized: 2 localtime + 2 mktime + a scan of up to 192 quarters, for a value that can
+  // only change at a quarter boundary (midnight is one) or when the table is replaced.
+  static uint32_t cachedVersion = 0;
+  static int cachedIdx = -2;
+  static int16_t cachedAvg;
+  static bool cachedOk;
+  int idx = elec_current_quarter();
+  if (cachedVersion == s_dataVersion && cachedIdx == idx) {
+    if (cachedOk) { *out = cachedAvg; }
+    return cachedOk;
+  }
+
   time_t now = time(NULL);
 
   struct tm start_tm = *localtime(&now);
@@ -87,27 +119,42 @@ bool Electricity_getTodayAverage(int16_t *out) {
   end_tm.tm_mday += 1;            // mktime normalises month/day rollover
   time_t dayEnd = mktime(&end_tm);
 
-  return elec_today_average(Electricity_info.prices, Electricity_info.count,
-                            Electricity_info.startEpoch,
-                            (int64_t)dayStart, (int64_t)dayEnd, out);
+  cachedOk = elec_today_average(Electricity_info.prices, Electricity_info.count,
+                                Electricity_info.startEpoch,
+                                (int64_t)dayStart, (int64_t)dayEnd, &cachedAvg);
+  cachedVersion = s_dataVersion;
+  cachedIdx = idx;
+  if (cachedOk) { *out = cachedAvg; }
+  return cachedOk;
 }
 
 #define ELEC_WIN_QUARTERS 4   // 1 hour = four 15-min quarters
 
-// Fills eligible[] for all valid quarters (true = NOT in quiet hours) and
-// returns the current quarter index, or -1 if now is outside the table.
-static int elec_build_eligible(bool *eligible, int quietStartHour, int quietEndHour) {
-  for (int i = 0; i < (int)Electricity_info.count; i++) {
-    time_t qstart = (time_t)(Electricity_info.startEpoch + (uint32_t)i * 900);
-    struct tm lt = *localtime(&qstart);
-    eligible[i] = !elec_hour_in_quiet(lt.tm_hour, quietStartHour, quietEndHour);
+// Eligibility per quarter (true = NOT in quiet hours). Shared by both query functions so
+// there is exactly one buffer to keep in sync with the cache key below.
+static bool s_eligible[ELEC_MAX_QUARTERS];
+
+// Fills s_eligible[] for all valid quarters.
+//
+// The eligibility of a quarter depends ONLY on the price table and the quiet-hour window
+// -- not on the current time -- so it is recomputed only when one of those changes. This
+// matters: the loop does one localtime() per quarter (up to 192), it used to run on EVERY
+// frame, and a sub-minute rotating group repaints the whole window several times a minute.
+static void elec_build_eligible(int quietStartHour, int quietEndHour) {
+  static uint32_t cachedVersion = 0;
+  static int cachedQuietStart = -1;
+  static int cachedQuietEnd = -1;
+  if (cachedVersion != s_dataVersion
+      || cachedQuietStart != quietStartHour || cachedQuietEnd != quietEndHour) {
+    for (int i = 0; i < (int)Electricity_info.count; i++) {
+      time_t qstart = (time_t)(Electricity_info.startEpoch + (uint32_t)i * 900);
+      struct tm lt = *localtime(&qstart);
+      s_eligible[i] = !elec_hour_in_quiet(lt.tm_hour, quietStartHour, quietEndHour);
+    }
+    cachedVersion = s_dataVersion;
+    cachedQuietStart = quietStartHour;
+    cachedQuietEnd = quietEndHour;
   }
-  int idx;
-  if (!elec_current_index(Electricity_info.startEpoch, Electricity_info.count,
-                          (int64_t)time(NULL), &idx)) {
-    return -1;
-  }
-  return idx;
 }
 
 static void elec_fill_display(const ElecWindow *w, int currentIdx, ElecDisplay *out) {
@@ -125,34 +172,81 @@ static void elec_fill_display(const ElecWindow *w, int currentIdx, ElecDisplay *
 bool Electricity_getNextCheap(int quietStartHour, int quietEndHour, int factorPct,
                               int16_t floorCenti, int16_t ceilingCenti,
                               ElecDisplay *out) {
-  static bool eligible[ELEC_MAX_QUARTERS];
-  int currentIdx = elec_build_eligible(eligible, quietStartHour, quietEndHour);
+  // Memoized on everything the answer depends on. Within a quarter, and with an unchanged
+  // table and unchanged settings, the result is by definition identical -- so the whole
+  // scan runs at most 4x/hour instead of once per frame.
+  static uint32_t cachedVersion = 0;
+  static int cachedIdx = -2, cachedQs = -1, cachedQe = -1, cachedFactor = -1;
+  static int16_t cachedFloor = 0, cachedCeiling = 0;
+  static ElecDisplay cachedOut;
+  static bool cachedOk;
+
+  int currentIdx = elec_current_quarter();
   if (currentIdx < 0) { return false; }
+  if (cachedVersion == s_dataVersion && cachedIdx == currentIdx
+      && cachedQs == quietStartHour && cachedQe == quietEndHour
+      && cachedFactor == factorPct
+      && cachedFloor == floorCenti && cachedCeiling == ceilingCenti) {
+    if (cachedOk) { *out = cachedOut; }
+    return cachedOk;
+  }
+  cachedVersion = s_dataVersion;
+  cachedIdx = currentIdx;
+  cachedQs = quietStartHour;
+  cachedQe = quietEndHour;
+  cachedFactor = factorPct;
+  cachedFloor = floorCenti;
+  cachedCeiling = ceilingCenti;
+  cachedOk = false;
+
+  elec_build_eligible(quietStartHour, quietEndHour);
   int16_t mean;
-  if (!elec_eligible_mean(Electricity_info.prices, eligible,
+  if (!elec_eligible_mean(Electricity_info.prices, s_eligible,
                           Electricity_info.count, currentIdx, &mean)) {
     return false;
   }
   int16_t bar = elec_cheap_bar(mean, factorPct, floorCenti, ceilingCenti);
   // Earliest hour below the cheap threshold; if none qualifies, fall back to
   // the cheapest upcoming hour so the widget shows that rather than "--".
-  ElecWindow w = elec_find_next_cheap_or_cheapest(Electricity_info.prices, eligible,
+  ElecWindow w = elec_find_next_cheap_or_cheapest(Electricity_info.prices, s_eligible,
                                                   Electricity_info.count, currentIdx,
                                                   bar, ELEC_WIN_QUARTERS);
   if (!w.found) { return false; }
-  elec_fill_display(&w, currentIdx, out);
+  elec_fill_display(&w, currentIdx, &cachedOut);
+  cachedOk = true;
+  *out = cachedOut;
   return true;
 }
 
 bool Electricity_getCheapestHour(int quietStartHour, int quietEndHour,
                                  ElecDisplay *out) {
-  static bool eligible[ELEC_MAX_QUARTERS];
-  int currentIdx = elec_build_eligible(eligible, quietStartHour, quietEndHour);
+  // Memoized exactly like Electricity_getNextCheap (own cache: different search, and the
+  // two widgets can be placed together).
+  static uint32_t cachedVersion = 0;
+  static int cachedIdx = -2, cachedQs = -1, cachedQe = -1;
+  static ElecDisplay cachedOut;
+  static bool cachedOk;
+
+  int currentIdx = elec_current_quarter();
   if (currentIdx < 0) { return false; }
-  ElecWindow w = elec_find_cheapest(Electricity_info.prices, eligible,
+  if (cachedVersion == s_dataVersion && cachedIdx == currentIdx
+      && cachedQs == quietStartHour && cachedQe == quietEndHour) {
+    if (cachedOk) { *out = cachedOut; }
+    return cachedOk;
+  }
+  cachedVersion = s_dataVersion;
+  cachedIdx = currentIdx;
+  cachedQs = quietStartHour;
+  cachedQe = quietEndHour;
+  cachedOk = false;
+
+  elec_build_eligible(quietStartHour, quietEndHour);
+  ElecWindow w = elec_find_cheapest(Electricity_info.prices, s_eligible,
                                     Electricity_info.count, currentIdx,
                                     ELEC_WIN_QUARTERS);
   if (!w.found) { return false; }
-  elec_fill_display(&w, currentIdx, out);
+  elec_fill_display(&w, currentIdx, &cachedOut);
+  cachedOk = true;
+  *out = cachedOut;
   return true;
 }

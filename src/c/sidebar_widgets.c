@@ -11,6 +11,8 @@
 #include "crypto.h"
 #include "currency.h"
 #include "tuya.h"
+#include "tuya_leds.h"
+#include "sidebar.h"   // sidebarWidth, for fitting the LED row
 #include "battery_days.h"
 
 int SidebarWidgets_xOffset;
@@ -79,6 +81,8 @@ typedef struct {
   int sleepTextY;
   // seconds
   int secondsHeight, secondsY;
+  // tuya LED row
+  int tuyaLedDiameter, tuyaLedGap;
 } SidebarWidgetLayout;
 
 static SidebarWidgetLayout layout;
@@ -152,6 +156,10 @@ void CheapestHour_draw(GContext *ctx, int yPosition);
 SidebarWidget cryptoWidget;
 int  CryptoSlot_getHeight();
 void CryptoSlot_draw(GContext *ctx, int yPosition);
+
+SidebarWidget tuyaLedsWidget;
+int TuyaLeds_getHeight();
+void TuyaLeds_drawWidget(GContext *ctx, int yPosition);
 
 SidebarWidget uvIndexWidget;
 int UVIndex_getHeight();
@@ -331,6 +339,9 @@ void SidebarWidgets_init() {
   cryptoWidget.getHeight = CryptoSlot_getHeight;
   cryptoWidget.draw      = CryptoSlot_draw;
 
+  tuyaLedsWidget.getHeight = TuyaLeds_getHeight;
+  tuyaLedsWidget.draw      = TuyaLeds_drawWidget;
+
   electricityBoltPath = gpath_create(&ELEC_BOLT_PATH_INFO);
 }
 
@@ -403,6 +414,8 @@ void SidebarWidgets_updateFonts() {
         .sleepTextY = 13,
         .secondsHeight = 14,
         .secondsY = -10,
+        .tuyaLedDiameter = 9,
+        .tuyaLedGap = 2,
     };
   } else {
     layout = (SidebarWidgetLayout){
@@ -444,6 +457,8 @@ void SidebarWidgets_updateFonts() {
         .sleepTextY = 13,
         .secondsHeight = 14,
         .secondsY = -10,
+        .tuyaLedDiameter = 9,
+        .tuyaLedGap = 2,
     };
   }
 
@@ -489,6 +504,8 @@ void SidebarWidgets_updateFonts() {
     layout.sleepTextY = 10;
     layout.secondsHeight = 18;
     layout.secondsY = -10;
+    layout.tuyaLedDiameter = 11;
+    layout.tuyaLedGap = 3;
   } else {
     layout.batteryWithPctHeight = 30;
     layout.batteryTextY = 17;
@@ -527,6 +544,8 @@ void SidebarWidgets_updateFonts() {
     layout.sleepTextY = 11;
     layout.secondsHeight = 18;
     layout.secondsY = -10;
+    layout.tuyaLedDiameter = 11;
+    layout.tuyaLedGap = 3;
   }
 #endif
 }
@@ -636,6 +655,8 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return nextCheapWidget;
   case CHEAPEST_ELEC_HOUR:
     return cheapestHourWidget;
+  case TUYA_LEDS:
+    return tuyaLedsWidget;
 #ifdef PBL_HEALTH
   case STEP_COUNTER:
     return stepCounterWidget;
@@ -1202,8 +1223,10 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
       }
     }
   } else {
-    int steps = (int)health_service_sum_today(HealthMetricStepCount);
-
+    // One syscall, not two: the unconditional call here used to be overwritten by the
+    // guarded one on the very next line, so it was pure waste on every frame. When the
+    // metric is inaccessible health_service_sum_today returns 0, which is what 0 seeds.
+    int steps = 0;
     if (is_health_metric_accessible(HealthMetricStepCount)) {
       steps = (int)health_service_sum_today(HealthMetricStepCount);
     }
@@ -1563,5 +1586,93 @@ void CryptoSlot_draw(GContext *ctx, int yPosition) {
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   } else {
     draw_basic_widget(ctx, yPosition, label, value, layout.basicWidgetY);
+  }
+}
+
+/***** Tuya LED row *****/
+
+#define TUYA_LED_COLS 3
+#define TUYA_LED_PAD  2
+
+// Number of LEDs actually drawn: zero configured/received states still draws one
+// hollow ring, so a placed widget is visibly present but declares it knows nothing.
+static uint8_t tuya_led_drawn_count() {
+  return (TuyaLeds_count == 0) ? 1 : TuyaLeds_count;
+}
+
+static uint8_t tuya_led_rows() {
+  uint8_t n = tuya_led_drawn_count();
+  return (n + TUYA_LED_COLS - 1) / TUYA_LED_COLS;
+}
+
+// The preferred diameter/gap can overflow the sidebar (30px on the 144px boards,
+// 34/39 on emery), which clipped the rightmost blob. Shrink the gap first (keeps the
+// blobs as large as possible), then the diameter, until a full row fits inside the
+// sidebar. Board-agnostic, so no per-platform tuning can get it wrong.
+static int tuya_led_fit(int *gapOut) {
+  int gap = layout.tuyaLedGap;
+  int d = layout.tuyaLedDiameter;
+  while (d > 3) {
+    int r = d / 2;
+    int rowW = TUYA_LED_COLS * d + (TUYA_LED_COLS - 1) * gap;
+    int x0 = 15 + SidebarWidgets_xOffset - rowW / 2 + r;
+    if ((x0 - r) >= 0 && (x0 + (TUYA_LED_COLS - 1) * (d + gap) + r) <= (sidebarWidth - 1)) { break; }
+    if (gap > 1) { gap--; } else { d--; }
+  }
+  *gapOut = gap;
+  return d;
+}
+
+int TuyaLeds_getHeight() {
+  int gap;
+  int d = tuya_led_fit(&gap);
+  int rows = tuya_led_rows();
+  return rows * d + (rows - 1) * gap + 2 * TUYA_LED_PAD;
+}
+
+void TuyaLeds_drawWidget(GContext *ctx, int yPosition) {
+  int gap;
+  const int d = tuya_led_fit(&gap);
+  const int r = d / 2;
+  const uint8_t n = tuya_led_drawn_count();
+  const bool noData = (TuyaLeds_count == 0);
+
+  // SidebarWidgets_xOffset centres content the same way the other widgets use it
+  // (it is (sidebarWidth - 30) / 2, so 15 + it is the sidebar's centre column).
+  const int centreX = 15 + SidebarWidgets_xOffset;
+
+  int y = yPosition + TUYA_LED_PAD;
+  uint8_t i = 0;
+  while (i < n) {
+    uint8_t cols = n - i;
+    if (cols > TUYA_LED_COLS) { cols = TUYA_LED_COLS; }
+    const int rowW = cols * d + (cols - 1) * gap;
+    int x = centreX - rowW / 2 + r;
+    for (uint8_t c = 0; c < cols; c++, i++) {
+      uint8_t state = noData ? TUYA_LED_UNKNOWN : TuyaLeds_states[i];
+      GPoint p = GPoint(x, y + r);
+#ifdef PBL_COLOR
+      if (state == TUYA_LED_ON || state == TUYA_LED_OFF) {
+        graphics_context_set_fill_color(ctx, (state == TUYA_LED_ON) ? GColorGreen : GColorRed);
+        graphics_fill_circle(ctx, p, r);
+      }
+      // Outline in the sidebar text colour keeps the blob readable on any sidebar
+      // background, and IS the whole indicator for the unknown state.
+      graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
+      graphics_draw_circle(ctx, p, r);
+#else
+      // Black & white: on = filled, off = outline only, unknown = outline + centre dot.
+      graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
+      graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
+      if (state == TUYA_LED_ON) {
+        graphics_fill_circle(ctx, p, r);
+      } else if (state == TUYA_LED_UNKNOWN) {
+        graphics_fill_circle(ctx, p, 1);
+      }
+      graphics_draw_circle(ctx, p, r);
+#endif
+      x += d + gap;
+    }
+    y += d + gap;
   }
 }

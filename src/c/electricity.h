@@ -26,6 +26,9 @@ typedef struct {
 extern ElectricityInfo Electricity_info;
 
 void Electricity_init();
+
+// True once a price table has been received (restored from persist or pushed).
+bool Electricity_hasData(void);
 void Electricity_deinit();
 void Electricity_saveData();
 // out in 0.01 snt; false if now is outside the table / no data.

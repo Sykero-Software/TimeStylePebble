@@ -65,7 +65,13 @@ function getCurrentWeatherProvider(): WeatherProvider {
   return weatherProviders[DEFAULT_WEATHER_PROVIDER];
 }
 
+// Set by a FORCED update (a cold request, or webviewclosed after a config change) and
+// consumed by the next sendWeatherToPebble. The providers fetch asynchronously and do not
+// carry the flag, so it is parked here rather than threaded through both provider modules.
+let pendingForceSend = false;
+
 export function updateWeather(forceUpdate?: boolean): void {
+  if (forceUpdate) { pendingForceSend = true; }
   const weatherDisabled = window.localStorage.getItem('disable_weather');
 
   console.log("Get weather function called! DisableWeather is '" + weatherDisabled + "'");
@@ -128,10 +134,28 @@ function locationSuccess(pos: GeolocationPosition): void {
   getCurrentWeatherProvider().getWeatherFromCoords(pos as unknown as GeoPosition);
 }
 
+const WEATHER_LAST_SENT_KEY = 'weather_last_sent';
+
 export function sendWeatherToPebble(dictionary: WeatherDict): void {
+  // Weather was the ONLY source with no unchanged-suppression (crypto, currency and tuya
+  // all have one), so every poll cost a Bluetooth round-trip and woke the watch even when
+  // the temperature, condition, forecast and UV were all identical. Skip the send when the
+  // payload is byte-identical to the last one the watch acknowledged.
+  //
+  // A forced update always sends: a cold request means the watch has NO data (its persist
+  // was wiped), so "unchanged since we last sent" says nothing about what it holds.
+  const packed = JSON.stringify(dictionary);
+  const force = pendingForceSend;
+  pendingForceSend = false;
+  if (!force && window.localStorage.getItem(WEATHER_LAST_SENT_KEY) === packed) {
+    console.log('weather: nothing changed, not sending');
+    return;
+  }
   Pebble.sendAppMessage(
     dictionary,
     () => {
+      // only remember it once the watch has actually acknowledged it
+      window.localStorage.setItem(WEATHER_LAST_SENT_KEY, packed);
       console.log('Weather info sent to Pebble successfully!');
     },
     () => {

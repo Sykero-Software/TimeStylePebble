@@ -12,9 +12,12 @@
 #include "crypto.h"
 #include "currency.h"
 #include "tuya.h"
+#include "tuya_leds.h"
 #include "sidebar_widgets.h"
 #include "widget_list.h"
 #include "battery_days.h"
+#include "poll_state_calc.h"
+#include "night_rotation_calc.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -29,6 +32,52 @@ static bool updatingEverySecond;
 static AppTimer *rotationTimer = NULL;   // repaints the sidebar at sub-minute rotation boundaries
 
 static time_t lastDataRequest = 0;   // epoch of the last watch->phone data request
+static time_t lastColdRequest = 0;   // epoch of the last COLD (forced) request
+
+// Last sampled night-rotation state (-1 = not sampled yet). See the boundary check in
+// tick_handler: without it, a night window that suppressed the rotation timer would
+// never be undone, because nothing else re-arms it.
+static int nightRotationLast = -1;
+
+// Persisted so the poll clock is NOT restarted by a relaunch. A watchface is killed
+// whenever any watchapp runs, so re-stamping "now" in init() meant a user who
+// returned to the watchface more often than pollIntervalMin never polled at all
+// (previously masked by the phone-side fetch on every PKJS 'ready').
+#define POLL_STATE_PERSIST_KEY 319
+#define COLD_MIN_INTERVAL_S 600      // at most one cold request per 10 min at level 0
+#define COLD_MAX_INTERVAL_S 21600    // ...backing off to at most one per 6 h
+#define COLD_BACKOFF_MAX_LEVEL 6
+
+// How many cold rounds in a row have failed to resolve the missing source. Persisted
+// with the poll clock so a relaunch cannot restart the backoff (a watchface is killed
+// whenever any watchapp runs, which is exactly how the flat rate limit got defeated).
+static int32_t coldBackoffLevel = 0;
+
+typedef struct {
+  int32_t lastDataRequest;
+  int32_t lastColdRequest;
+  int32_t coldBackoffLevel;   // appended; an older 8-byte blob leaves this at 0
+} PollStateBlob;
+
+static void poll_state_load(void) {
+  // Zero-init matters: persist_read_data on an older, SHORTER blob fills only what was
+  // stored and leaves the tail untouched, so the appended field must already be 0.
+  PollStateBlob b = { 0, 0, 0 };
+  if (persist_exists(POLL_STATE_PERSIST_KEY)) {
+    persist_read_data(POLL_STATE_PERSIST_KEY, &b, sizeof(b));
+  }
+  int32_t now = (int32_t)time(NULL);
+  lastDataRequest = (time_t)poll_stamp_sanitize(b.lastDataRequest, now);
+  lastColdRequest = (time_t)poll_stamp_sanitize(b.lastColdRequest, now);
+  coldBackoffLevel = b.coldBackoffLevel;
+  if (coldBackoffLevel < 0) { coldBackoffLevel = 0; }
+  if (coldBackoffLevel > COLD_BACKOFF_MAX_LEVEL) { coldBackoffLevel = COLD_BACKOFF_MAX_LEVEL; }
+}
+
+static void poll_state_save(void) {
+  PollStateBlob b = { (int32_t)lastDataRequest, (int32_t)lastColdRequest, coldBackoffLevel };
+  persist_write_data(POLL_STATE_PERSIST_KEY, &b, sizeof(b));
+}
 static bool twtTargetAlerted = false;   // already vibrated for the current daily-target crossing
 static bool twtTargetInit = false;      // have we seeded twtTargetAlerted since launch?
 static bool twtBudgetAlerted = false;   // already vibrated for the current task's budget crossing
@@ -191,12 +240,29 @@ static void rotation_timer_cb(void *data) {
 // sub-minute rotating group exists. >=1min rotations need no timer (the minute tick
 // already repaints the sidebar). Skipped while already second-ticking (the tick
 // handler repaints every second).
+// Is the night-rotation window in effect right now? Reads the local hour and the watch's
+// Quiet Time state and hands both to the pure predicate.
+static bool night_rotation_now(void) {
+  if (settings.nightRotationMode == NIGHT_ROTATION_OFF) { return false; }   // cheap path
+  time_t now = time(NULL);
+  struct tm *lt = localtime(&now);
+  return night_rotation_active(settings.nightRotationMode, lt->tm_hour,
+                               settings.nightRotationStart, settings.nightRotationEnd,
+                               quiet_time_is_active());
+}
+
 static void schedule_rotation_timer(void) {
   if (rotationTimer) { app_timer_cancel(rotationTimer); rotationTimer = NULL; }
   if (updatingEverySecond) { return; }
   int p = WidgetList_minSubMinuteIntervalSec(settings.widgetList, settings.widgetCount);
   int pr = WidgetList_minSubMinuteIntervalSec(settings.rightWidgetList, settings.rightWidgetCount);
   if (pr > 0 && (p == 0 || pr < p)) { p = pr; }
+  // During the night window, suppress the sub-minute timer entirely. Rotation does NOT
+  // stop: the displayed member is derived from the wall clock on every draw, and the
+  // minute tick still repaints the sidebar -- so the group keeps cycling at 1/min while
+  // costing zero extra wakeups. (Freezing it outright would need a change in sidebar.c
+  // and would hide half a rotating pair all night.)
+  p = night_rotation_interval(p, night_rotation_now());
   if (p <= 0) { return; }
   time_t now = time(NULL);
   struct tm *lt = localtime(&now);
@@ -276,6 +342,7 @@ static void main_window_unload(Window *window) {
 // every coin wid (legacy 15/16/17 and the configurable 200+ range).
 static bool isPhoneDataWidget(SidebarWidgetType w) {
   return w == ELECTRICITY || w == NEXT_CHEAP_ELEC || w == CHEAPEST_ELEC_HOUR
+      || w == TUYA_LEDS
       || Crypto_isWid((uint8_t)w) || Currency_isWid((uint8_t)w) || Tuya_isWid((uint8_t)w);
 }
 
@@ -284,24 +351,116 @@ static void phone_data_scan_cb(uint8_t w, void *ctx) {
   if (isPhoneDataWidget((SidebarWidgetType)w)) { *needs = true; }
 }
 
+// True when ANY phone-fetched source is in use: weather is gated by the setting,
+// every other source by a placed widget id in either rendered column (not the
+// legacy 3-slot widgets[] mirror). Shared by the tick poll and the BT-reconnect
+// refresh so both agree on "is a phone round-trip worth anything at all".
+static bool needs_phone_data(void) {
+  bool needs = !dynamicSettings.disableWeather;
+  WidgetList_forEachId(settings.widgetList, settings.widgetCount, phone_data_scan_cb, &needs);
+  WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, phone_data_scan_cb, &needs);
+  return needs;
+}
+
+// The effective poll interval in seconds, floored at 5 min.
+static int poll_interval_sec(void) {
+  int s = (int)settings.pollIntervalMin * 60;
+  return (s < 300) ? 300 : s;
+}
+
+// A placed widget whose data the watch does NOT have. Per-wid for the phone-data
+// slots, so a newly configured coin/sensor also counts as missing.
+static bool widget_source_missing(uint8_t w) {
+  switch (w) {
+    case ELECTRICITY:
+    case NEXT_CHEAP_ELEC:
+    case CHEAPEST_ELEC_HOUR:
+      return !Electricity_hasData();
+    case WEATHER_CURRENT:
+    case WEATHER_FORECAST_TODAY:
+    case WEATHER_UV_INDEX:
+      return !Weather_hasData();
+    case TUYA_LEDS:
+      return TuyaLeds_count == 0;
+    default:
+      if (Crypto_isWid(w))   { return Crypto_find(w) == NULL; }
+      if (Currency_isWid(w)) { return Currency_find(w) == NULL; }
+      if (Tuya_isWid(w))     { return Tuya_find(w) == NULL; }
+      return false;
+  }
+}
+
+static void cold_scan_cb(uint8_t w, void *ctx) {
+  bool *missing = (bool *)ctx;
+  if (widget_source_missing(w)) { *missing = true; }
+}
+
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  // Night-rotation boundary. schedule_rotation_timer() is otherwise reachable only from
+  // redrawScreen() and from the rotation timer's own callback -- so once the night window
+  // suppresses the timer, the callback stops firing and nothing would re-arm it in the
+  // morning. Sample the window once a minute and reschedule when it flips (both ways).
+  if (tick_time->tm_sec == 0) {
+    int nightNow = night_rotation_now() ? 1 : 0;
+    if (nightNow != nightRotationLast) {
+      nightRotationLast = nightNow;
+      schedule_rotation_timer();
+    }
+  }
+
   // One watch-driven request per configured interval serves ALL phone-fetched
   // data (weather, electricity, crypto). This is the documented Pebble pattern:
   // the tick service is always running and the AppMessage wakes the phone JS out
   // of power-save. The JS side throttles per source (electricity ~2/day; crypto
   // sends only on change), so a short interval does not over-fetch slow sources.
-  bool needsPhoneData = !dynamicSettings.disableWeather;
-  // Scan the actual rendered lists (not the legacy 3-slot widgets[] mirror), so a
-  // phone-data widget in ANY slot of either column triggers the poll.
-  WidgetList_forEachId(settings.widgetList, settings.widgetCount, phone_data_scan_cb, &needsPhoneData);
-  WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, phone_data_scan_cb, &needsPhoneData);
-  if (needsPhoneData && tick_time->tm_sec == 0) {
-    int intervalSec = (int)settings.pollIntervalMin * 60;
-    if (intervalSec < 300) { intervalSec = 300; }   // floor 5 min
+  //
+  // tm_sec first: in seconds mode this runs every tick, and the widget-list scan
+  // inside needs_phone_data() is only worth doing on the minute boundary.
+  if (tick_time->tm_sec == 0 && needs_phone_data()) {
+    int intervalSec = poll_interval_sec();
     time_t now = time(NULL);
-    if (lastDataRequest == 0 || (now - lastDataRequest) >= intervalSec) {
-      messaging_requestNewWeatherData();
+
+    // The watch is the only party that knows its persist was wiped (reinstall /
+    // firmware wipe): the phone's *_last_sent stamps survive and would suppress a
+    // re-send as "unchanged". Ask for a FORCED round in that case, rate limited so a
+    // permanently failing source (bad Tuya keys) can't fetch on every relaunch.
+    //
+    // The rate limit BACKS OFF, because a source can be permanently missing (wrong Tuya
+    // credentials, a coin the phone cannot price, denied location). At a flat 10 min that
+    // meant 144 forced rounds a day instead of 48 -- and a cold request bypasses every
+    // phone-side throttle, including electricity's 11 h one and its ~400 B message, the
+    // largest in the system. So: double the spacing after each cold round that fails to
+    // resolve the gap (10 min -> ... -> 6 h), and reset the moment nothing is missing.
+    bool missing = false;
+    WidgetList_forEachId(settings.widgetList, settings.widgetCount, cold_scan_cb, &missing);
+    WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, cold_scan_cb, &missing);
+    bool cold = false;
+    if (!missing) {
+      // everything resolved -> the next genuine gap gets the fast 10-minute response
+      if (coldBackoffLevel != 0) { coldBackoffLevel = 0; poll_state_save(); }
+    } else if (poll_cold_allowed((int32_t)lastColdRequest, (int32_t)now,
+                                 poll_cold_interval((int)coldBackoffLevel,
+                                                    COLD_MIN_INTERVAL_S,
+                                                    COLD_MAX_INTERVAL_S))) {
+      cold = true;
+    }
+
+    if (cold || poll_due((int32_t)lastDataRequest, (int32_t)now, (int32_t)intervalSec)) {
+      // Kept deliberately: this is the one line that makes the relaunch-silence
+      // behaviour observable in `pebble logs` on a real watch. Fires at most once
+      // per poll interval (>= 5 min), so it is not log spam.
+      APP_LOG(APP_LOG_LEVEL_INFO, "poll: requesting data (cold=%d backoff=%d)",
+              cold ? 1 : 0, (int)coldBackoffLevel);
+      messaging_requestNewWeatherData(cold);
       lastDataRequest = now;
+      if (cold) {
+        lastColdRequest = now;
+        // Assume it will fail again; the !missing branch above resets this to 0 as soon
+        // as the data actually arrives, so a successful cold round costs one extra level
+        // that is immediately cleared on the next tick.
+        if (coldBackoffLevel < COLD_BACKOFF_MAX_LEVEL) { coldBackoffLevel++; }
+      }
+      poll_state_save();
     }
   }
 
@@ -390,9 +549,24 @@ void bluetoothStateChanged(bool newConnectionState) {
     light_enable_interaction();   // briefly light the backlight, per the user's watch light settings
   }
 
-  // if the phone was disconnected and isn't anymore, update the data
-  if(!isPhoneConnected && newConnectionState) {
-    messaging_requestNewWeatherData();
+  // A genuine disconnect->connect transition can have left the data stale, so refresh
+  // it -- but gated exactly like the tick poll (a phone source is actually in use AND
+  // the interval has elapsed), sharing the same persisted clock. Without the gate a
+  // flapping BT link turned every reconnect into a phone round-trip, and a watchface
+  // with no phone-data widget asked anyway.
+  //
+  // NOTE this handler is NEVER called synthetically at launch anymore (see init()):
+  // isPhoneConnected is zero-initialised on every launch, so a launch-time call looked
+  // like a reconnect and sent a request on EVERY relaunch -- the exact phone traffic
+  // the persisted poll clock exists to avoid.
+  if(!isPhoneConnected && newConnectionState && needs_phone_data()) {
+    time_t now = time(NULL);
+    if (poll_due((int32_t)lastDataRequest, (int32_t)now, (int32_t)poll_interval_sec())) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "poll: requesting data (bt reconnect)");
+      messaging_requestNewWeatherData(false);
+      lastDataRequest = now;
+      poll_state_save();
+    }
   }
 
   isPhoneConnected = newConnectionState;
@@ -428,10 +602,11 @@ static void init() {
 
   srand(time(NULL));
 
-  lastDataRequest = time(NULL);   // first periodic request fires one interval after launch
-
   // init settings
   Settings_init();
+
+  // Restore the poll clock (see poll_state_load): a relaunch must NOT restart it.
+  poll_state_load();
 
   TwtStatus_load();
   MidiStatus_load();
@@ -443,6 +618,7 @@ static void init() {
   Crypto_init();
   Currency_init();
   Tuya_init();
+  TuyaLeds_init();
 
   // init the messaging thing
   messaging_init(redrawScreen);
@@ -470,8 +646,15 @@ static void init() {
     updatingEverySecond = false;
   }
 
-  bool connected = bluetooth_connection_service_peek();
-  bluetoothStateChanged(connected);
+  // SEED the connection state directly instead of calling bluetoothStateChanged():
+  // isPhoneConnected is zero-initialised at every launch, so the synthetic first call
+  // read as a disconnect->connect transition and sent a data request on EVERY relaunch
+  // (a watchface is killed whenever any watchapp runs). The redraw/layout that call
+  // also did is replicated here; the disconnect vibe could never fire at launch anyway
+  // (it requires the previous state to be connected).
+  isPhoneConnected = bluetooth_connection_service_peek();
+  Sidebar_redraw();
+  if (TwtStatus_isSupported()) { apply_twt_layout(); }
   bluetooth_connection_service_subscribe(bluetoothStateChanged);
 
   // register with battery service

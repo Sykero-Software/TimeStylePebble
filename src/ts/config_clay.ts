@@ -186,10 +186,37 @@ const config = [
         'column.<br>' +
         '(Widgets with no separate identifier — Empty, Today’s Date, Seconds, ' +
         'Bluetooth disconnect — have no such button.)' },
+      { type: 'text', id: 'widgets-power-warning', defaultValue:
+        '<b>⚡ Battery note.</b> The watchface redraws <i>everything</i> at once — ' +
+        'there is no partial refresh — so anything that forces a faster refresh ' +
+        'costs battery across the whole face, not just its own widget.<br><br>' +
+        '<b>Seconds</b> is by far the most expensive widget: it redraws the entire ' +
+        'watchface <b>60× per minute</b> instead of once, all day and all night. ' +
+        'Expect a large drop in battery life if you place it.<br>' +
+        'A rotating group set to <b>5 / 10 / 30 s</b> is the same effect on a smaller ' +
+        'scale (12 / 6 / 2 extra full redraws per minute). Intervals of <b>1 min or ' +
+        'longer are free</b> — they ride the refresh the watchface does anyway.' },
       { type: 'text', defaultValue: '<b>Left sidebar widgets</b>' },
       { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
       { type: 'text', defaultValue: '<b>Right sidebar widgets</b>' },
       { type: 'widgetList', messageKey: 'WidgetListRight', defaultValue: [] },
+      { type: 'select', messageKey: 'SettingNightRotationMode', label: 'Slow rotation at night',
+        defaultValue: '0', options: [
+          { label: 'Off', value: '0' },
+          { label: 'Follow Quiet Time', value: '1' },
+          { label: 'Custom hours', value: '2' },
+        ] },
+      { type: 'input', messageKey: 'SettingNightRotationStart', label: 'Night starts (hour)',
+        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '23' }, defaultValue: '23' },
+      { type: 'input', messageKey: 'SettingNightRotationEnd', label: 'Night ends (hour)',
+        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '7' }, defaultValue: '7' },
+      { type: 'text', id: 'night-rotation-help', defaultValue:
+        'During the night window, groups set to 5 / 10 / 30 s drop to one change per ' +
+        'minute. Rotation keeps going and every widget is still shown — only the extra ' +
+        'wakeups go away, which is where the battery saving comes from. Has no effect ' +
+        'if all your groups are already 1 min or slower.<br>' +
+        'The window runs from the start hour up to (not including) the end hour, and may ' +
+        'cross midnight. Setting both to the same hour disables it.' },
       { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
         defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',
@@ -311,7 +338,7 @@ const config = [
   {
     type: 'section',
     items: [
-      { type: 'heading', id: 'heading-tuya', defaultValue: 'Tuya sensors' },
+      { type: 'heading', id: 'heading-tuya', defaultValue: 'Tuya sensors & switches' },
       { type: 'text', defaultValue:
         'Show live readings from your Tuya cloud sensors (soil moisture, temperature, ' +
         'humidity, battery, …) in a sidebar widget. This talks to Tuya&#39;s cloud, so it ' +
@@ -354,6 +381,10 @@ const config = [
         'Leave the label empty to use the datapoint code.' },
       { type: 'tuyaCatalog', messageKey: 'TuyaCatalog', defaultValue: '' },
       { type: 'tuyaList', messageKey: 'TuyaList', defaultValue: [] },
+      { type: 'text', defaultValue:
+        'Switches can also be shown as a compact row of coloured LEDs — add them below, ' +
+        'then place the <b>Tuya LEDs</b> widget in a sidebar slot.' },
+      { type: 'tuyaLedList', messageKey: 'TuyaLedList', defaultValue: [] },
     ],
   },
 

@@ -9,8 +9,10 @@
 #include "crypto.h"
 #include "currency.h"
 #include "tuya.h"
+#include "tuya_leds.h"
 #include "languages.h"
 #include "date_header_calc.h"
+#include "night_rotation_calc.h"
 #include "widget_list.h"
 
 void (*message_processed_callback)(void);
@@ -19,11 +21,13 @@ void (*message_processed_callback)(void);
 // launch, so we don't buzz merely because we learned recording was already active.
 static bool s_midiSeen = false;
 
-void messaging_requestNewWeatherData() {
-  // just send an empty message for now
+void messaging_requestNewWeatherData(bool cold) {
+  // The request carries a single dummy key; its VALUE is the cold flag. Keeping the
+  // key set unchanged means poll_request.ts's key-name filter still rejects the
+  // companion-app status pushes that arrive on this same UUID.
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
-  dict_write_uint32(iter, 0, 0);
+  dict_write_uint32(iter, 0, cold ? 1 : 0);
   app_message_outbox_send();
 }
 
@@ -47,6 +51,24 @@ void messaging_init(void (*processed_callback)(void)) {
 }
 
 void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+  // Snapshot the three persisted structs so each save below can be gated on an ACTUAL
+  // change. This callback runs for every inbound message -- including pure data replies
+  // (weather / electricity / crypto / currency / tuya) and the companion apps' status
+  // pushes, which trackworktime sends every minute whether anything changed or not.
+  // Previously each of those wrote settings (2 keys) + the status blob (2 keys) to
+  // flash unconditionally, i.e. thousands of identical writes per day.
+  //
+  // `static` because the Pebble app stack is only ~2 KB and Settings alone is ~172 B;
+  // the event loop is single-threaded so a non-reentrant handler is safe. memcpy (not
+  // struct assignment) so padding bytes are copied too and memcmp cannot see phantom
+  // differences.
+  static Settings prevSettings;
+  static TwtStatus prevTwt;
+  static MidiStatus prevMidi;
+  memcpy(&prevSettings, &settings, sizeof(Settings));
+  memcpy(&prevTwt, &twt_status, sizeof(TwtStatus));
+  memcpy(&prevMidi, &midi_status, sizeof(MidiStatus));
+
   bool weatherDataUpdated = false;
 
   // does this message contain current weather conditions?
@@ -149,6 +171,14 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     persist_write_string(TUYA_PERSIST_KEY_DATA, tuya_tuple->value->cstring);
   }
 
+  // Tuya LED row: compact per-switch state string ('1'/'0'/'?'), own message key.
+  Tuple *tuya_leds_tuple = dict_find(iterator, MESSAGE_KEY_TuyaLeds);
+  if (tuya_leds_tuple != NULL && tuya_leds_tuple->type == TUPLE_CSTRING) {
+    TuyaLeds_parse(tuya_leds_tuple->value->cstring);
+    persist_write_string(TUYA_LEDS_PERSIST_KEY_DATA, tuya_leds_tuple->value->cstring);
+    APP_LOG(APP_LOG_LEVEL_INFO, "tuya leds: %s", tuya_leds_tuple->value->cstring);
+  }
+
   // does this message contain new config information?
   Tuple *timeColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingColorTime);
   Tuple *bgColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingColorBG);
@@ -165,6 +195,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *twtTargetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtTargetVibe);
   Tuple *twtBudgetVibe_tuple = dict_find(iterator, MESSAGE_KEY_SettingTwtBudgetVibe);
   Tuple *pollInterval_tuple = dict_find(iterator, MESSAGE_KEY_SettingPollIntervalMin);
+  Tuple *nightRotMode_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationMode);
+  Tuple *nightRotStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationStart);
+  Tuple *nightRotEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationEnd);
   Tuple *elecQuietStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietStart);
   Tuple *elecQuietEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietEnd);
   Tuple *elecFactor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFactorPct);
@@ -299,6 +332,24 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(pollInterval_tuple != NULL) {
     int v = pollInterval_tuple->value->int32;
     if (v >= 5 && v <= 240) { settings.pollIntervalMin = (uint8_t)v; }
+  }
+
+  // Night rotation: apply only in-range values, like the electricity quiet hours. An
+  // out-of-range mode is dropped rather than defaulted, so a garbled dict cannot silently
+  // freeze the sidebar.
+  if(nightRotMode_tuple != NULL) {
+    int v = nightRotMode_tuple->value->int32;
+    if (v >= NIGHT_ROTATION_OFF && v <= NIGHT_ROTATION_CUSTOM) {
+      settings.nightRotationMode = (uint8_t)v;
+    }
+  }
+  if(nightRotStart_tuple != NULL) {
+    int v = nightRotStart_tuple->value->int32;
+    if (v >= 0 && v <= 23) { settings.nightRotationStart = (uint8_t)v; }
+  }
+  if(nightRotEnd_tuple != NULL) {
+    int v = nightRotEnd_tuple->value->int32;
+    if (v >= 0 && v <= 23) { settings.nightRotationEnd = (uint8_t)v; }
   }
 
   if(elecQuietStart_tuple != NULL) {
@@ -472,8 +523,15 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     settings.statusClockDigital = (statusClockDigital_tuple->value->int32 != 0) ? 1 : 0;
   }
 
-  // save the new settings to persistent storage
-  Settings_saveToStorage();
+  // Save the new settings to persistent storage -- but only if a Setting* key actually
+  // changed the struct. Settings_saveToStorage() also re-derives dynamicSettings, which
+  // is a pure function of `settings` (settings.c Settings_updateDynamicSettings reads
+  // only settings.*, writes only dynamicSettings.*, and nothing outside settings.c ever
+  // writes dynamicSettings) -- so skipping the whole call on an unchanged struct cannot
+  // stale the tick mode or the icon colours.
+  if (memcmp(&prevSettings, &settings, sizeof(Settings)) != 0) {
+    Settings_saveToStorage();
+  }
 
   // does this message contain TrackWorkTime status?
   bool twtUpdated = false;
@@ -545,7 +603,9 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     twt_status.dayGrossBeforeMin = g;
     twtUpdated = true;
   }
-  if (twtUpdated) {
+  // twtUpdated only means "a TWT key was present", and trackworktime pushes all 10 keys
+  // every minute regardless of change -- so compare the struct before touching flash.
+  if (twtUpdated && memcmp(&prevTwt, &twt_status, sizeof(TwtStatus)) != 0) {
     TwtStatus_save();
     // the redraw + layout happen via message_processed_callback() (redrawScreen -> apply_twt_layout)
   }
@@ -580,7 +640,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     midi_status.recStartEpoch = midiStart_tuple->value->int32;
     midiUpdated = true;
   }
-  if (midiUpdated) {
+  // same as the TWT block: presence of a key is not a change
+  if (midiUpdated && memcmp(&prevMidi, &midi_status, sizeof(MidiStatus)) != 0) {
     MidiStatus_save();
     // redraw + relayout happen via message_processed_callback() -> redrawScreen -> apply_twt_layout
   }

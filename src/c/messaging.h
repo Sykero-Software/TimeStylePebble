@@ -1,7 +1,9 @@
 #pragma once
 #include <pebble.h>
 
-void messaging_requestNewWeatherData();
+// cold = "the watch has no data for a placed widget": tells the phone to bypass its
+// per-source throttles and re-send even unchanged values.
+void messaging_requestNewWeatherData(bool cold);
 
 void messaging_init(void (*message_processed_callback)(void));
 void inbox_received_callback(DictionaryIterator *iterator, void *context);

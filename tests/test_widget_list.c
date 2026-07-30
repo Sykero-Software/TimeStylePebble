@@ -16,8 +16,9 @@ int main(void) {
   assert(WidgetList_isDrawableId(19));      // normal type
   assert(WidgetList_isDrawableId(20));      // DEEP_SLEEP_TIMER
   assert(WidgetList_isDrawableId(21));      // DISTANCE
-  assert(WidgetList_isDrawableId(22));      // BATTERY_DAYS (current MAX_WIDGET_TYPE)
-  assert(!WidgetList_isDrawableId(23));     // first normal id past the max
+  assert(WidgetList_isDrawableId(22));      // BATTERY_DAYS
+  assert(WidgetList_isDrawableId(23));      // TUYA_LEDS (current MAX_WIDGET_TYPE)
+  assert(!WidgetList_isDrawableId(24));     // first normal id past the max
   assert(WidgetList_isDrawableId(200));     // crypto base
   assert(WidgetList_isDrawableId(215));     // crypto last
   assert(WidgetList_isDrawableId(216));     // currency base
@@ -45,7 +46,8 @@ int main(void) {
   assert(WidgetList_isDrawableId(216 | 0x20));      // hidden currency -> drawable
   assert(WidgetList_isDrawableId(21 | 0x20));      // hidden distance
   assert(WidgetList_isDrawableId(22 | 0x20));      // hidden battery days
-  assert(!WidgetList_isDrawableId(23 | 0x20));     // base 23 not drawable
+  assert(WidgetList_isDrawableId(23 | 0x20));      // base 23 (TUYA_LEDS) is drawable
+  assert(!WidgetList_isDrawableId(24 | 0x20));     // base 24 not drawable
 
   // --- intervalSeconds ---
   assert(WidgetList_intervalSeconds(0) == 5);

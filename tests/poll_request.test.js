@@ -31,3 +31,24 @@ test('null / undefined payloads are not poll requests', () => {
   assert.strictEqual(isWatchPollRequest(null), false);
   assert.strictEqual(isWatchPollRequest(undefined), false);
 });
+
+const { isColdPollRequest } = require('../src/pkjs/poll_request');
+
+test('a cold poll request is recognised', () => {
+  // messaging_requestNewWeatherData(true) sends dict_write_uint32(iter, 0, 1)
+  assert.strictEqual(isColdPollRequest({ '0': 1 }), true);
+});
+
+test('a normal poll request is not cold', () => {
+  assert.strictEqual(isColdPollRequest({ '0': 0 }), false);
+  assert.strictEqual(isColdPollRequest({}), false);
+});
+
+test('a companion-app push is never a cold poll request', () => {
+  assert.strictEqual(isColdPollRequest({ TWT_IS_TRACKING: 1 }), false);
+  assert.strictEqual(isColdPollRequest({ '0': 1, TWT_IS_TRACKING: 1 }), false);
+});
+
+test('a string-valued cold flag still counts (AppMessage type coercion)', () => {
+  assert.strictEqual(isColdPollRequest({ '0': '1' }), true);
+});
