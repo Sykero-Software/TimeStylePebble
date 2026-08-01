@@ -80,8 +80,9 @@ typedef struct {
   // sleep (single decimal line; Deep Sleep reuses these)
   int sleepTimerHeight;
   int sleepTextY;
-  // combined sleep widgets: total on the sleepTextY line, restful below it
-  int sleepComboHeight, sleepComboDividerY, sleepComboDeepY;
+  // Sleep + Deep Sleep: share bar in the identifier row, then the total, then the
+  // restful figure in smSidebarFont. No icon, so it has its own first-line y.
+  int sleepComboHeight, sleepComboBarY, sleepComboTotalY, sleepComboDeepY;
   int sleepBarWidgetHeight, sleepBarY, sleepBarThickness;
   // seconds
   int secondsHeight, secondsY;
@@ -430,9 +431,10 @@ void SidebarWidgets_updateFonts() {
         .stepsTextY = 13,
         .sleepTimerHeight = 32,
         .sleepTextY = 13,
-        .sleepComboHeight = 51,
-        .sleepComboDividerY = 33,
-        .sleepComboDeepY = 32,
+        .sleepComboHeight = 36,
+        .sleepComboBarY = 1,
+        .sleepComboTotalY = 4,
+        .sleepComboDeepY = 21,
         .sleepBarWidgetHeight = 42,
         .sleepBarY = 33,
         .sleepBarThickness = 5,
@@ -479,9 +481,10 @@ void SidebarWidgets_updateFonts() {
         .stepsTextY = 13,
         .sleepTimerHeight = 36,
         .sleepTextY = 13,
-        .sleepComboHeight = 55,
-        .sleepComboDividerY = 33,
-        .sleepComboDeepY = 32,
+        .sleepComboHeight = 38,
+        .sleepComboBarY = 1,
+        .sleepComboTotalY = 4,
+        .sleepComboDeepY = 21,
         .sleepBarWidgetHeight = 46,
         .sleepBarY = 33,
         .sleepBarThickness = 5,
@@ -532,9 +535,10 @@ void SidebarWidgets_updateFonts() {
     layout.stepsTextY = 10;
     layout.sleepTimerHeight = 35;
     layout.sleepTextY = 10;
-    layout.sleepComboHeight = 60;
-    layout.sleepComboDividerY = 39;
-    layout.sleepComboDeepY = 36;
+    layout.sleepComboHeight = 46;
+    layout.sleepComboBarY = 1;
+    layout.sleepComboTotalY = 3;
+    layout.sleepComboDeepY = 25;
     layout.sleepBarWidgetHeight = 47;
     layout.sleepBarY = 37;
     layout.sleepBarThickness = 7;
@@ -578,9 +582,10 @@ void SidebarWidgets_updateFonts() {
     layout.stepsTextY = 11;
     layout.sleepTimerHeight = 32;
     layout.sleepTextY = 11;
-    layout.sleepComboHeight = 58;
-    layout.sleepComboDividerY = 40;
-    layout.sleepComboDeepY = 37;
+    layout.sleepComboHeight = 46;
+    layout.sleepComboBarY = 1;
+    layout.sleepComboTotalY = 3;
+    layout.sleepComboDeepY = 25;
     layout.sleepBarWidgetHeight = 44;
     layout.sleepBarY = 38;
     layout.sleepBarThickness = 7;
@@ -1323,17 +1328,23 @@ void Distance_draw(GContext *ctx, int yPosition) {
 
 /***** Sleep Time Widgets *****/
 
-// What the sleep renderer draws below the total-sleep number.
+// What the sleep renderer adds around the total-sleep number.
 typedef enum {
-  SLEEP_EXTRA_NONE = 0,   // Sleep / Deep Sleep: one number only
-  SLEEP_EXTRA_LINE,       // Sleep + Deep Sleep: divider + restful number
-  SLEEP_EXTRA_BAR         // Sleep + Deep Bar: bar filled to the restful share
+  SLEEP_EXTRA_NONE = 0,   // Sleep / Deep Sleep: icon + one number
+  SLEEP_EXTRA_COMBO,      // Sleep + Deep Sleep: bar in the identifier row, then the
+                          // total, then the restful figure in the small font
+  SLEEP_EXTRA_BAR         // Sleep + Deep Bar: icon, the total, then the bar
 } SleepExtra;
 
-// Every sleep widget hides its icon the same way: drop the icon and reclaim the
-// vertical space the icon occupied above the first text line.
-static int sleep_widget_height(int fullHeight) {
-  return SidebarWidgets_hideIdentifier ? (fullHeight - layout.sleepTextY) : fullHeight;
+// The y of a variant's FIRST text line. It doubles as the identifier row's height:
+// hiding the identifier drops that row (icon, or the combo's bar) and reclaims
+// exactly this much vertical space.
+static int sleep_top_y(SleepExtra extra) {
+  return (extra == SLEEP_EXTRA_COMBO) ? layout.sleepComboTotalY : layout.sleepTextY;
+}
+
+static int sleep_widget_height(int fullHeight, SleepExtra extra) {
+  return SidebarWidgets_hideIdentifier ? (fullHeight - sleep_top_y(extra)) : fullHeight;
 }
 
 static int read_sleep_seconds(HealthMetric metric) {
@@ -1341,17 +1352,31 @@ static int read_sleep_seconds(HealthMetric metric) {
   return (int)health_service_sum_today(metric);
 }
 
-// Shared renderer for all sleep widgets: recolored icon on top, the total-sleep
-// decimal line, and optionally the restful figure as a second line or a fill bar.
+// Outlined bar filled to the restful share of the night. The outline is drawn even
+// at 0 % so a dataless widget reads as an empty bar rather than a missing one.
+static void draw_sleep_bar(GContext *ctx, int barY, int total_s, int deep_s) {
+  GRect frame = GRect(layout.forecastDividerX + SidebarWidgets_xOffset, barY,
+                      layout.forecastDividerWidth, layout.sleepBarThickness);
+  graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
+  graphics_draw_rect(ctx, frame);
+
+  int fill = sleep_bar_fill_px(total_s, deep_s, frame.size.w - 2);
+  if (fill > 0) {
+    graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
+    graphics_fill_rect(ctx,
+                       GRect(frame.origin.x + 1, frame.origin.y + 1,
+                             fill, layout.sleepBarThickness - 2),
+                       0, GCornerNone);
+  }
+}
+
+// Shared renderer for all sleep widgets: an identifier row (icon, or the combo's
+// bar), the total-sleep decimal line, and the restful figure as a small second line
+// or a fill bar underneath.
 static void draw_sleep_widget(GContext *ctx, int yPosition, GDrawCommandImage *img,
                               HealthMetric metric, SleepExtra extra) {
-  int hs = SidebarWidgets_hideIdentifier ? layout.sleepTextY : 0;
-  if (!SidebarWidgets_hideIdentifier && img) {
-    gdraw_command_image_recolor(img, dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
-    gdraw_command_image_draw(ctx, img,
-                             GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
-  }
+  int topY = sleep_top_y(extra);
+  int hs = SidebarWidgets_hideIdentifier ? topY : 0;
 
   int sleep_seconds = read_sleep_seconds(metric);
   int deep_seconds = (extra == SLEEP_EXTRA_NONE)
@@ -1362,6 +1387,19 @@ static void draw_sleep_widget(GContext *ctx, int yPosition, GDrawCommandImage *i
   deep_seconds = 6300;
 #endif
 
+  if (!SidebarWidgets_hideIdentifier) {
+    if (extra == SLEEP_EXTRA_COMBO) {
+      // The combo widget spends its identifier row on the bar instead of the icon:
+      // two numbers plus the share, in less height than the icon variant.
+      draw_sleep_bar(ctx, yPosition + layout.sleepComboBarY, sleep_seconds, deep_seconds);
+    } else if (img) {
+      gdraw_command_image_recolor(img, dynamicSettings.iconFillColor,
+                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_draw(ctx, img,
+                               GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
+    }
+  }
+
   char sleep_text[12];
   sleep_format_decimal(sleep_seconds, settings.decimalSeparator,
                        sleep_text, sizeof(sleep_text));
@@ -1369,45 +1407,25 @@ static void draw_sleep_widget(GContext *ctx, int yPosition, GDrawCommandImage *i
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
   graphics_draw_text(ctx, sleep_text, mdSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
-                           yPosition + layout.sleepTextY - hs, layout.textRectWidth, 20),
+                           yPosition + topY - hs, layout.textRectWidth, 20),
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
-  if (extra == SLEEP_EXTRA_LINE) {
-    graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
-    graphics_fill_rect(ctx,
-                       GRect(layout.forecastDividerX + SidebarWidgets_xOffset,
-                             yPosition + layout.sleepComboDividerY - hs,
-                             layout.forecastDividerWidth, 1),
-                       0, GCornerNone);
-
+  if (extra == SLEEP_EXTRA_COMBO) {
     sleep_format_decimal(deep_seconds, settings.decimalSeparator,
                          sleep_text, sizeof(sleep_text));
-    graphics_draw_text(ctx, sleep_text, mdSidebarFont,
+    graphics_draw_text(ctx, sleep_text, smSidebarFont,
                        GRect(layout.textRectX + SidebarWidgets_xOffset,
                              yPosition + layout.sleepComboDeepY - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
   } else if (extra == SLEEP_EXTRA_BAR) {
-    GRect frame = GRect(layout.forecastDividerX + SidebarWidgets_xOffset,
-                        yPosition + layout.sleepBarY - hs,
-                        layout.forecastDividerWidth, layout.sleepBarThickness);
-    // The outline is drawn even at 0 % so a dataless widget reads as an empty bar
-    // rather than a missing one.
-    graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
-    graphics_draw_rect(ctx, frame);
-
-    int fill = sleep_bar_fill_px(sleep_seconds, deep_seconds, frame.size.w - 2);
-    if (fill > 0) {
-      graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
-      graphics_fill_rect(ctx,
-                         GRect(frame.origin.x + 1, frame.origin.y + 1,
-                               fill, layout.sleepBarThickness - 2),
-                         0, GCornerNone);
-    }
+    draw_sleep_bar(ctx, yPosition + layout.sleepBarY - hs, sleep_seconds, deep_seconds);
   }
 }
 
-int SleepTimer_getHeight() { return sleep_widget_height(layout.sleepTimerHeight); }
+int SleepTimer_getHeight() {
+  return sleep_widget_height(layout.sleepTimerHeight, SLEEP_EXTRA_NONE);
+}
 
 void SleepTimer_draw(GContext *ctx, int yPosition) {
   draw_sleep_widget(ctx, yPosition, sleepImage, HealthMetricSleepSeconds,
@@ -1416,25 +1434,31 @@ void SleepTimer_draw(GContext *ctx, int yPosition) {
 
 /***** Deep (Restful) Sleep Widget *****/
 
-int DeepSleep_getHeight() { return sleep_widget_height(layout.sleepTimerHeight); }
+int DeepSleep_getHeight() {
+  return sleep_widget_height(layout.sleepTimerHeight, SLEEP_EXTRA_NONE);
+}
 
 void DeepSleep_draw(GContext *ctx, int yPosition) {
   draw_sleep_widget(ctx, yPosition, deepSleepImage, HealthMetricSleepRestfulSeconds,
                     SLEEP_EXTRA_NONE);
 }
 
-/***** Sleep + Deep Sleep Widget (two numbers, divider between) *****/
+/***** Sleep + Deep Sleep Widget (share bar, total, restful in the small font) *****/
 
-int SleepCombined_getHeight() { return sleep_widget_height(layout.sleepComboHeight); }
+int SleepCombined_getHeight() {
+  return sleep_widget_height(layout.sleepComboHeight, SLEEP_EXTRA_COMBO);
+}
 
 void SleepCombined_draw(GContext *ctx, int yPosition) {
-  draw_sleep_widget(ctx, yPosition, sleepImage, HealthMetricSleepSeconds,
-                    SLEEP_EXTRA_LINE);
+  draw_sleep_widget(ctx, yPosition, NULL, HealthMetricSleepSeconds,
+                    SLEEP_EXTRA_COMBO);
 }
 
 /***** Sleep + Deep Bar Widget (total number + restful-share bar) *****/
 
-int SleepDeepBar_getHeight() { return sleep_widget_height(layout.sleepBarWidgetHeight); }
+int SleepDeepBar_getHeight() {
+  return sleep_widget_height(layout.sleepBarWidgetHeight, SLEEP_EXTRA_BAR);
+}
 
 void SleepDeepBar_draw(GContext *ctx, int yPosition) {
   draw_sleep_widget(ctx, yPosition, sleepImage, HealthMetricSleepSeconds,
