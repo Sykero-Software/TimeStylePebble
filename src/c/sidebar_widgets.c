@@ -431,7 +431,7 @@ void SidebarWidgets_updateFonts() {
         .stepsTextY = 13,
         .sleepTimerHeight = 32,
         .sleepTextY = 13,
-        .sleepComboHeight = 36,
+        .sleepComboHeight = 34,
         .sleepComboBarY = 1,
         .sleepComboTotalY = 4,
         .sleepComboDeepY = 21,
@@ -481,7 +481,7 @@ void SidebarWidgets_updateFonts() {
         .stepsTextY = 13,
         .sleepTimerHeight = 36,
         .sleepTextY = 13,
-        .sleepComboHeight = 38,
+        .sleepComboHeight = 34,
         .sleepComboBarY = 1,
         .sleepComboTotalY = 4,
         .sleepComboDeepY = 21,
@@ -535,7 +535,7 @@ void SidebarWidgets_updateFonts() {
     layout.stepsTextY = 10;
     layout.sleepTimerHeight = 35;
     layout.sleepTextY = 10;
-    layout.sleepComboHeight = 46;
+    layout.sleepComboHeight = 42;
     layout.sleepComboBarY = 1;
     layout.sleepComboTotalY = 3;
     layout.sleepComboDeepY = 25;
@@ -582,7 +582,7 @@ void SidebarWidgets_updateFonts() {
     layout.stepsTextY = 11;
     layout.sleepTimerHeight = 32;
     layout.sleepTextY = 11;
-    layout.sleepComboHeight = 46;
+    layout.sleepComboHeight = 42;
     layout.sleepComboBarY = 1;
     layout.sleepComboTotalY = 3;
     layout.sleepComboDeepY = 25;
