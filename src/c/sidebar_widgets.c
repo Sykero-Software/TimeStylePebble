@@ -14,6 +14,7 @@
 #include "tuya_leds.h"
 #include "sidebar.h"   // sidebarWidth, for fitting the LED row
 #include "battery_days.h"
+#include "sleep_calc.h"
 
 int SidebarWidgets_xOffset;
 uint8_t SidebarWidgets_currentWidgetType = 0;
@@ -1282,16 +1283,6 @@ int SleepTimer_getHeight() {
       ? (layout.sleepTimerHeight - layout.sleepTextY) : layout.sleepTimerHeight;
 }
 
-// Format sleep seconds as "H<sep>T" (hours dot tenths) using the configured decimal
-// separator, e.g. 7h23m -> "7.3" (tenths truncated, matching the steps widget).
-static void format_sleep_decimal(int seconds, char *buf, size_t n) {
-  if (seconds < 0) { seconds = 0; }
-  int total_tenths = seconds * 10 / 3600;  // truncated tenths of an hour
-  int hours = total_tenths / 10;
-  int tenths = total_tenths % 10;
-  snprintf(buf, n, "%d%c%d", hours, settings.decimalSeparator, tenths);
-}
-
 // Shared renderer for the Sleep / Deep Sleep widgets: recolored icon on top + one
 // centered decimal line. They differ only in icon and health metric.
 static void draw_sleep_metric(GContext *ctx, int yPosition,
@@ -1315,7 +1306,7 @@ static void draw_sleep_metric(GContext *ctx, int yPosition,
 #endif
 
   char sleep_text[12];
-  format_sleep_decimal(sleep_seconds, sleep_text, sizeof(sleep_text));
+  sleep_format_decimal(sleep_seconds, settings.decimalSeparator, sleep_text, sizeof(sleep_text));
 
   graphics_context_set_text_color(ctx, settings.sidebarTextColor);
   graphics_draw_text(ctx, sleep_text, mdSidebarFont,
