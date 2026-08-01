@@ -25,15 +25,18 @@ test('non-array input yields an empty payload', () => {
 test('keeps crypto wids (legacy 15/16/17 and the 200+ range), drops other out-of-range', () => {
   assert.deepStrictEqual(widgetListToPayload([15, 16, 17, 200, 215]), [15, 16, 17, 200, 215]);
   assert.deepStrictEqual(widgetListToPayload([216, 222]), [216, 222]);   // currency range kept
-  assert.deepStrictEqual(widgetListToPayload([223, 100, 199, 24]), []);  // 223 (marker collision) and others dropped
+  assert.deepStrictEqual(widgetListToPayload([223, 100, 199, 26]), []);  // 223 (marker collision) and others dropped
   assert.deepStrictEqual(widgetListToPayload([7, 200, 999]), [7, 200]);
 });
 
-test('keeps every id up to MAX_WIDGET_TYPE (23, Tuya LEDs); drops id 24', () => {
+test('keeps every id up to MAX_WIDGET_TYPE (25, Sleep + Deep Bar); drops id 26', () => {
   // Guards the MAX_WIDGET_TYPE mirror against src/c/widget_list.h WL_MAX_WIDGET_TYPE:
-  // ids up to 23 must survive the payload builder (a stale max would drop them).
-  assert.deepStrictEqual(widgetListToPayload([9, 20, 10, 21, 22, 23]), [9, 20, 10, 21, 22, 23]);
-  assert.deepStrictEqual(widgetListToPayload([23, 24]), [23]);
+  // ids up to 25 must survive the payload builder (a stale max would drop them).
+  assert.deepStrictEqual(widgetListToPayload([9, 20, 10, 21, 22, 23, 24, 25]),
+                                             [9, 20, 10, 21, 22, 23, 24, 25]);
+  assert.deepStrictEqual(widgetListToPayload([25, 26]), [25]);
+  // with the hide-identifier flag OR-ed in the new ids must still pass through
+  assert.deepStrictEqual(widgetListToPayload([24 | 0x20, 25 | 0x20]), [24 | 0x20, 25 | 0x20]);
 });
 
 test('widgetListToPayload keeps Tuya wids (128..143)', () => {

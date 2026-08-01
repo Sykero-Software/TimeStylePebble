@@ -27,6 +27,8 @@ export const STATIC_WIDGETS: WidgetOption[] = [
   { id: 19, label: 'Cheapest electricity hour' },
   { id: 9, label: 'Sleep' },
   { id: 20, label: 'Deep Sleep' },
+  { id: 24, label: 'Sleep + Deep Sleep' },
+  { id: 25, label: 'Sleep + Deep Bar' },
   { id: 10, label: 'Steps' },
   { id: 21, label: 'Distance' },
   { id: 12, label: 'Heart Rate' },
