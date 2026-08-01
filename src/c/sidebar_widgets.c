@@ -195,6 +195,10 @@ SidebarWidget sleepCombinedWidget;
 int SleepCombined_getHeight();
 void SleepCombined_draw(GContext *ctx, int yPosition);
 
+SidebarWidget sleepDeepBarWidget;
+int SleepDeepBar_getHeight();
+void SleepDeepBar_draw(GContext *ctx, int yPosition);
+
 SidebarWidget heartRateWidget;
 int HeartRate_getHeight();
 void HeartRate_draw(GContext *ctx, int yPosition);
@@ -327,6 +331,9 @@ void SidebarWidgets_init() {
 
   sleepCombinedWidget.getHeight = SleepCombined_getHeight;
   sleepCombinedWidget.draw = SleepCombined_draw;
+
+  sleepDeepBarWidget.getHeight = SleepDeepBar_getHeight;
+  sleepDeepBarWidget.draw = SleepDeepBar_draw;
 
   heartRateWidget.getHeight = HeartRate_getHeight;
   heartRateWidget.draw = HeartRate_draw;
@@ -703,6 +710,8 @@ SidebarWidget getSidebarWidgetByType(SidebarWidgetType type) {
     return deepSleepWidget;
   case SLEEP_COMBINED:
     return sleepCombinedWidget;
+  case SLEEP_DEEP_BAR:
+    return sleepDeepBarWidget;
   case HEARTRATE:
     return heartRateWidget;
 #endif
@@ -1378,6 +1387,23 @@ static void draw_sleep_widget(GContext *ctx, int yPosition, GDrawCommandImage *i
                              yPosition + layout.sleepComboDeepY - hs,
                              layout.textRectWidth, 20),
                        GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+  } else if (extra == SLEEP_EXTRA_BAR) {
+    GRect frame = GRect(layout.forecastDividerX + SidebarWidgets_xOffset,
+                        yPosition + layout.sleepBarY - hs,
+                        layout.forecastDividerWidth, layout.sleepBarThickness);
+    // The outline is drawn even at 0 % so a dataless widget reads as an empty bar
+    // rather than a missing one.
+    graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
+    graphics_draw_rect(ctx, frame);
+
+    int fill = sleep_bar_fill_px(sleep_seconds, deep_seconds, frame.size.w - 2);
+    if (fill > 0) {
+      graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
+      graphics_fill_rect(ctx,
+                         GRect(frame.origin.x + 1, frame.origin.y + 1,
+                               fill, layout.sleepBarThickness - 2),
+                         0, GCornerNone);
+    }
   }
 }
 
@@ -1404,6 +1430,15 @@ int SleepCombined_getHeight() { return sleep_widget_height(layout.sleepComboHeig
 void SleepCombined_draw(GContext *ctx, int yPosition) {
   draw_sleep_widget(ctx, yPosition, sleepImage, HealthMetricSleepSeconds,
                     SLEEP_EXTRA_LINE);
+}
+
+/***** Sleep + Deep Bar Widget (total number + restful-share bar) *****/
+
+int SleepDeepBar_getHeight() { return sleep_widget_height(layout.sleepBarWidgetHeight); }
+
+void SleepDeepBar_draw(GContext *ctx, int yPosition) {
+  draw_sleep_widget(ctx, yPosition, sleepImage, HealthMetricSleepSeconds,
+                    SLEEP_EXTRA_BAR);
 }
 
 int HeartRate_getHeight() {
