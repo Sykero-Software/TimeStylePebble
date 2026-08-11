@@ -6,6 +6,8 @@
 #include "settings.h"
 #include "sidebar.h"
 #include "clock_analog.h"
+#include "warn_border_calc.h"
+#include "battery_days.h"
 
 #include <pebble-fctx/fctx.h>
 #include <pebble-fctx/fpath.h>
@@ -164,7 +166,17 @@ static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_t
   fctx_deinit_context(&fctx);
 }
 
-void update_clock_area_layer(Layer *l, GContext* ctx) {
+// Frame thickness. graphics_draw_rect strokes centred on the path, so a 1px inset keeps
+// the whole stroke inside the layer for both widths. Emery is the high-density board,
+// where 2px reads as a hairline.
+#ifdef PBL_PLATFORM_EMERY
+  #define WARN_BORDER_WIDTH 3
+#else
+  #define WARN_BORDER_WIDTH 2
+#endif
+#define WARN_BORDER_INSET 1
+
+static void draw_clock_content(Layer *l, GContext* ctx) {
   // check layer bounds
   GRect bounds = layer_get_unobstructed_bounds(l);
 
@@ -305,6 +317,38 @@ void update_clock_area_layer(Layer *l, GContext* ctx) {
   fctx_end_fill(&fctx);
 
   fctx_deinit_context(&fctx);
+}
+
+// Warning frame around the clock area: the region between the sidebar columns, below the
+// big-date strip and above the status strip. Drawn LAST so a clock hand or digit can
+// never occlude it, and inside the clock layer so it needs no geometry of its own -- the
+// layer's frame is already exactly that region (apply_twt_layout in main.c) and follows
+// the sidebars, date strip and status strip appearing or disappearing.
+static void draw_warn_border(Layer *l, GContext* ctx) {
+  BatteryChargeState charge = battery_state_service_peek();
+  int kind = warn_border_kind(charge.charge_percent, charge.is_charging,
+                              BatteryDays_currentEstimateTenths(),
+                              settings.batteryWarnPct, settings.batteryWarnDaysTenths,
+                              bluetooth_connection_service_peek(),
+                              settings.btWarnBorder != 0);
+  if (kind == WARN_BORDER_NONE) { return; }
+
+  uint8_t argb = warn_border_color(kind, settings.batteryWarnColor.argb,
+                                   settings.btWarnColor.argb, settings.timeBgColor.argb);
+  GColor c; c.argb = argb;
+
+  // Unobstructed bounds, so the frame moves with the timeline-peek banner instead of
+  // hiding behind it.
+  GRect r = grect_inset(layer_get_unobstructed_bounds(l),
+                        GEdgeInsets(WARN_BORDER_INSET));
+  graphics_context_set_stroke_color(ctx, c);
+  graphics_context_set_stroke_width(ctx, WARN_BORDER_WIDTH);
+  graphics_draw_rect(ctx, r);
+}
+
+void update_clock_area_layer(Layer *l, GContext* ctx) {
+  draw_clock_content(l, ctx);
+  draw_warn_border(l, ctx);
 }
 
 
