@@ -166,16 +166,6 @@ static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_t
   fctx_deinit_context(&fctx);
 }
 
-// Frame thickness. graphics_draw_rect strokes centred on the path, so a 1px inset keeps
-// the whole stroke inside the layer for both widths. Emery is the high-density board,
-// where 2px reads as a hairline.
-#ifdef PBL_PLATFORM_EMERY
-  #define WARN_BORDER_WIDTH 3
-#else
-  #define WARN_BORDER_WIDTH 2
-#endif
-#define WARN_BORDER_INSET 1
-
 static void draw_clock_content(Layer *l, GContext* ctx) {
   // check layer bounds
   GRect bounds = layer_get_unobstructed_bounds(l);
@@ -318,6 +308,16 @@ static void draw_clock_content(Layer *l, GContext* ctx) {
 
   fctx_deinit_context(&fctx);
 }
+
+// Frame thickness. The SDK's graphics_context_set_stroke_width only supports ODD
+// widths: an even value is stored as-is but the drawing routines round it DOWN to the
+// previous odd value at draw time, so 2 would silently render as a 1px hairline -- 3 is
+// the smallest width that actually draws thicker than 1px, on every board. Note
+// graphics_draw_rect still strokes centred on the path, which is why the inset stays 1:
+// a width-3 stroke centred on a path 1px in occupies rows 0,1,2 -- flush to the edge
+// without overshooting.
+#define WARN_BORDER_WIDTH 3
+#define WARN_BORDER_INSET 1
 
 // Warning frame around the clock area: the region between the sidebar columns, below the
 // big-date strip and above the status strip. Drawn LAST so a clock hand or digit can
