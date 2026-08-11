@@ -21,6 +21,7 @@ export const STRAIGHT_THROUGH_KEYS: string[] = [
   'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
   'SettingClockStyle', 'SettingAnalogTicks', 'SettingAnalogDigitalClock', 'SettingStatusClockDigital',
   'SettingNightRotationMode', 'SettingNightRotationStart', 'SettingNightRotationEnd',
+  'SettingNightSlowRotation', 'SettingNightColors',
   'SettingBatteryWarnPct', 'SettingBatteryWarnDays', 'SettingBtWarnBorder',
 ];
 
@@ -34,4 +35,5 @@ export const COLOR_KEYS: string[] = [
   'SettingTwtStatusBgColor', 'SettingTwtFlashColor', 'SettingDateBgColor',
   'SettingSidebarBgColorLeft', 'SettingSidebarBgColorRight',
   'SettingBatteryWarnColor', 'SettingBtWarnColor',
+  'SettingNightBgColor', 'SettingNightFgColor',
 ];

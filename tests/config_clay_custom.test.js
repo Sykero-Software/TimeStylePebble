@@ -108,6 +108,8 @@ function makeClay(widgetVals, opts) {
   byKey['SettingBatteryWarnPct'].value = String(opts.batteryWarnPct !== undefined ? opts.batteryWarnPct : 0);
   byKey['SettingBatteryWarnDays'].value = String(opts.batteryWarnDays !== undefined ? opts.batteryWarnDays : 0);
   byKey['SettingBtWarnBorder'].value = opts.btWarnBorder !== undefined ? opts.btWarnBorder : false;
+  byKey['SettingNightRotationMode'].value = String(opts.nightMode !== undefined ? opts.nightMode : 0);
+  byKey['SettingNightColors'].value = opts.nightColors !== undefined ? opts.nightColors : false;
   return {
     // Mirror Clay 1.0.4's real event set. There is NO AFTER_RENDER — a missing
     // constant passes undefined to on(), which Clay's _transformEventNames
@@ -533,10 +535,10 @@ test('accordion: chevron flips ▸ -> ▾ when a section opens', () => {
   assert.match(w.$manipulatorTarget.innerHTML, /▾/, 'open shows ▾');
 });
 
-test('accordion: Sidebar widgets is a single group (14 rows, not split by sub-labels)', () => {
+test('accordion: Sidebar widgets is a single group (15 rows, not split by sub-labels)', () => {
   const c = render([]);
   const headings = c.getAllItems().filter((it) => it.config.type === 'heading');
-  assert.strictEqual(headings.length, 14, 'exactly 14 accordion heading rows (14 sections 1:1)');
+  assert.strictEqual(headings.length, 15, 'exactly 15 accordion heading rows (15 sections 1:1)');
   const head = openSectionFor(c, 'SettingShowBatteryPct');
   assert.strictEqual(head.config.defaultValue, 'Sidebar widgets',
     'battery setting opens under the "Sidebar widgets" heading, not a sub-label');
@@ -615,4 +617,51 @@ test('live change: enabling the disconnect toggle reveals the disconnect colour'
   c.byKey['SettingBtWarnBorder'].value = true;
   c.byKey['SettingBtWarnBorder'].changeHandlers.forEach((fn) => fn());
   assert.strictEqual(c.byKey['SettingBtWarnColor'].shown, true);
+});
+
+// ----------------------------------------------------------------- Night
+test('night items are gated on the window and the colours toggle', () => {
+  // Window off -> everything below the mode select is hidden.
+  let c = render([], { nightMode: 0, nightColors: false });
+  openSectionFor(c, 'SettingNightSlowRotation');
+  assert.strictEqual(c.byKey['SettingNightSlowRotation'].shown, false);
+  assert.strictEqual(c.byKey['SettingNightColors'].shown, false);
+  assert.strictEqual(c.byKey['SettingNightBgColor'].shown, false);
+  assert.strictEqual(c.byKey['SettingNightRotationStart'].shown, false);
+
+  // Follow Quiet Time -> the consumers show, the hour fields do not.
+  c = render([], { nightMode: 1, nightColors: false });
+  openSectionFor(c, 'SettingNightSlowRotation');
+  assert.strictEqual(c.byKey['SettingNightSlowRotation'].shown, true);
+  assert.strictEqual(c.byKey['SettingNightColors'].shown, true);
+  assert.strictEqual(c.byKey['SettingNightRotationStart'].shown, false);
+  assert.strictEqual(c.byKey['SettingNightBgColor'].shown, false);
+
+  // Custom hours + colours on -> everything shows.
+  c = render([], { nightMode: 2, nightColors: true });
+  openSectionFor(c, 'SettingNightSlowRotation');
+  assert.strictEqual(c.byKey['SettingNightRotationStart'].shown, true);
+  assert.strictEqual(c.byKey['SettingNightRotationEnd'].shown, true);
+  assert.strictEqual(c.byKey['SettingNightBgColor'].shown, true);
+  assert.strictEqual(c.byKey['SettingNightFgColor'].shown, true);
+});
+
+test('live change: turning on the night window reveals the consumers without reopening the page', () => {
+  const c = render([], { nightMode: 0 });
+  openSectionFor(c, 'SettingNightSlowRotation');
+  assert.strictEqual(c.byKey['SettingNightSlowRotation'].shown, false);
+  c.byKey['SettingNightRotationMode'].value = '1';
+  c.byKey['SettingNightRotationMode'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingNightSlowRotation'].shown, true);
+  assert.strictEqual(c.byKey['SettingNightColors'].shown, true);
+});
+
+test('live change: turning on night colours reveals the palette pickers', () => {
+  const c = render([], { nightMode: 1, nightColors: false });
+  openSectionFor(c, 'SettingNightColors');
+  assert.strictEqual(c.byKey['SettingNightBgColor'].shown, false);
+  c.byKey['SettingNightColors'].value = true;
+  c.byKey['SettingNightColors'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingNightBgColor'].shown, true);
+  assert.strictEqual(c.byKey['SettingNightFgColor'].shown, true);
 });

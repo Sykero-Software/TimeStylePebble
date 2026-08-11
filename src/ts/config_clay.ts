@@ -200,23 +200,6 @@ const config = [
       { type: 'widgetList', messageKey: 'WidgetList', defaultValue: [12, 15, 17] },
       { type: 'text', defaultValue: '<b>Right sidebar widgets</b>' },
       { type: 'widgetList', messageKey: 'WidgetListRight', defaultValue: [] },
-      { type: 'select', messageKey: 'SettingNightRotationMode', label: 'Slow rotation at night',
-        defaultValue: '0', options: [
-          { label: 'Off', value: '0' },
-          { label: 'Follow Quiet Time', value: '1' },
-          { label: 'Custom hours', value: '2' },
-        ] },
-      { type: 'input', messageKey: 'SettingNightRotationStart', label: 'Night starts (hour)',
-        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '23' }, defaultValue: '23' },
-      { type: 'input', messageKey: 'SettingNightRotationEnd', label: 'Night ends (hour)',
-        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '7' }, defaultValue: '7' },
-      { type: 'text', id: 'night-rotation-help', defaultValue:
-        'During the night window, groups set to 5 / 10 / 30 s drop to one change per ' +
-        'minute. Rotation keeps going and every widget is still shown — only the extra ' +
-        'wakeups go away, which is where the battery saving comes from. Has no effect ' +
-        'if all your groups are already 1 min or slower.<br>' +
-        'The window runs from the start hour up to (not including) the end hour, and may ' +
-        'cross midnight. Setting both to the same hour disables it.' },
       { type: 'radiogroup', messageKey: 'SettingUseLargeFonts', label: 'Sidebar font size',
         defaultValue: '0', options: [{ label: 'Large', value: '1' }, { label: 'Normal', value: '0' }] },
       { type: 'radiogroup', messageKey: 'SettingShowBatteryPct', label: 'Battery meter style',
@@ -498,6 +481,53 @@ const config = [
         'If both a battery and a disconnect warning apply, the battery one wins. A ' +
         'colour that matches your clock background is drawn black or white instead, so ' +
         'the frame is never invisible.' },
+    ],
+  },
+
+  // -------------------------------------------------------------------- Night
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Night' },
+      { type: 'text', defaultValue:
+        'One night window, two independent uses: saving battery on sidebar rotation, ' +
+        'and a dark palette.' },
+      // NOTE: the messageKey names below keep the historical "SettingNightRotation*"
+      // spelling on purpose, even though this window now feeds two independent
+      // consumers (slow rotation + night colours), not just rotation. Clay's settings
+      // store keys off the messageKey, so renaming any of the three would silently
+      // reset every existing user's configured night window on their next config open.
+      // Only the displayed labels changed — do not "fix" the names.
+      { type: 'select', messageKey: 'SettingNightRotationMode', label: 'Night mode',
+        defaultValue: '0', options: [
+          { label: 'Off', value: '0' },
+          { label: 'Follow Quiet Time', value: '1' },
+          { label: 'Custom hours', value: '2' },
+        ] },
+      { type: 'input', messageKey: 'SettingNightRotationStart', label: 'Night starts (hour)',
+        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '23' }, defaultValue: '23' },
+      { type: 'input', messageKey: 'SettingNightRotationEnd', label: 'Night ends (hour)',
+        attributes: { type: 'number', min: 0, max: 23, step: 1, placeholder: '7' }, defaultValue: '7' },
+      { type: 'toggle', messageKey: 'SettingNightSlowRotation', label: 'Slow widget rotation',
+        defaultValue: true },
+      { type: 'text', id: 'night-rotation-help', defaultValue:
+        'During the night window, groups set to 5 / 10 / 30 s drop to one change per ' +
+        'minute. Rotation keeps going and every widget is still shown — only the extra ' +
+        'wakeups go away, which is where the battery saving comes from. Has no effect ' +
+        'if all your groups are already 1 min or slower.' },
+      { type: 'toggle', messageKey: 'SettingNightColors', label: 'Night colours',
+        defaultValue: false },
+      { type: 'color', messageKey: 'SettingNightBgColor', label: 'Night background',
+        defaultValue: '0x000000', sunlight: false, allowGray: true },
+      { type: 'color', messageKey: 'SettingNightFgColor', label: 'Night foreground',
+        defaultValue: '0xFFFFFF', sunlight: false, allowGray: true },
+      { type: 'text', id: 'night-help', defaultValue:
+        'Night colours replace every background and every text/hand colour while the ' +
+        'window is on, then restore your own colours afterwards — nothing is ' +
+        'overwritten. The window runs from the start hour up to (not including) the end ' +
+        'hour, and may cross midnight. Setting both to the same hour disables it.<br>' +
+        'Warning borders keep their own colours at night, so a low battery still stands ' +
+        'out.' },
     ],
   },
 

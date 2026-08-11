@@ -101,3 +101,14 @@ test('the warning-frame settings reach the watch', () => {
     assert.ok(COLOR_KEYS.indexOf(k) !== -1, k + ' must be sent as a colour');
   });
 });
+
+test('the night palette settings reach the watch', () => {
+  const { COLOR_KEYS } = require('../src/pkjs/config_send_keys');
+  ['SettingNightSlowRotation', 'SettingNightColors'].forEach((k) => {
+    assert.ok(STRAIGHT_THROUGH_KEYS.indexOf(k) !== -1,
+      k + ' must be sent, or the night feature silently stays at the C default');
+  });
+  ['SettingNightBgColor', 'SettingNightFgColor'].forEach((k) => {
+    assert.ok(COLOR_KEYS.indexOf(k) !== -1, k + ' must be sent as a colour');
+  });
+});

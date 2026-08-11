@@ -85,9 +85,11 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     const belowDigi = key('SettingAnalogDigitalClock').get() === true;
     const bigDate = parseInt(key('SettingBigDate').get(), 10) === 1;
     const altClock = has(ids, [3]);
-    // 2 == NIGHT_ROTATION_CUSTOM: only that mode uses the two hour fields (Off and
-    // Follow Quiet Time need no schedule of their own).
-    const nightCustom = parseInt(key('SettingNightRotationMode').get(), 10) === 2;
+    // 0 == NIGHT_WINDOW_OFF: with no window, nothing below the mode select applies.
+    const nightMode = parseInt(key('SettingNightRotationMode').get(), 10);
+    const nightOn = nightMode !== 0;
+    const nightCustom = nightMode === 2;   // only Custom hours uses the two hour fields
+    const nightColors = key('SettingNightColors').get() === true;
     // Either battery trigger switched on makes the battery colour relevant.
     const batWarn = parseInt(key('SettingBatteryWarnPct').get(), 10) > 0
       || parseInt(key('SettingBatteryWarnDays').get(), 10) > 0;
@@ -117,11 +119,17 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     gk.SettingBigDateFont = bigDate;
     gk.SettingNightRotationStart = nightCustom;
     gk.SettingNightRotationEnd = nightCustom;
+    gk.SettingNightSlowRotation = nightOn;
+    gk.SettingNightColors = nightOn;
+    gk.SettingNightBgColor = nightOn && nightColors;
+    gk.SettingNightFgColor = nightOn && nightColors;
     gk.SettingBatteryWarnColor = batWarn;
     gk.SettingBtWarnColor = btWarn;
     gi['analog-credit'] = analog;
     gi['heading-weather'] = weather;
     gi['heading-electricity'] = cheapHour;
+    gi['night-rotation-help'] = nightOn;
+    gi['night-help'] = nightOn;
     // NOTE: heading-crypto / heading-currency are deliberately NOT gated — each
     // section is the only place to create its widget type, so gating it on
     // placement deadlocks adding the first coin/pair (fb27e08 / 5553520 bug).
@@ -237,7 +245,8 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     applyVisibility();
     ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery',
      'SettingFallbackColumn', 'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingBigDate',
-     'SettingNightRotationMode', 'SettingBatteryWarnPct', 'SettingBatteryWarnDays', 'SettingBtWarnBorder']
+     'SettingNightRotationMode', 'SettingNightColors',
+     'SettingBatteryWarnPct', 'SettingBatteryWarnDays', 'SettingBtWarnBorder']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', applyVisibility); });
   });
 }
