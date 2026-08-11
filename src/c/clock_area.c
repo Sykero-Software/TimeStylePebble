@@ -326,6 +326,14 @@ static void draw_clock_content(Layer *l, GContext* ctx) {
 // layer's frame is already exactly that region (apply_twt_layout in main.c) and follows
 // the sidebars, date strip and status strip appearing or disappearing.
 static void draw_warn_border(Layer *l, GContext* ctx) {
+  // Feature entirely off (both battery triggers AND the BT trigger 0/false) -- the
+  // default. Bail out before touching any service, so the default configuration never
+  // pays for battery_state_service_peek/BatteryDays_currentEstimateTenths/
+  // bluetooth_connection_service_peek on every redraw (up to 60x/min with some
+  // configurations). Mirrors night_window_now()'s cheap path in main.c.
+  if (settings.batteryWarnPct == 0 && settings.batteryWarnDaysTenths == 0
+      && settings.btWarnBorder == 0) { return; }
+
   BatteryChargeState charge = battery_state_service_peek();
   int kind = warn_border_kind(charge.charge_percent, charge.is_charging,
                               BatteryDays_currentEstimateTenths(),

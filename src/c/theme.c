@@ -23,7 +23,7 @@ void Theme_update(bool nightActive) {
   theme.sidebarColor       = mapc(settings.sidebarColor, true, nightActive);
   theme.sidebarTextColor   = mapc(settings.sidebarTextColor, false, nightActive);
   theme.sidebarBgColorLeft = mapc(settings.sidebarBgColorLeft, true, nightActive);
-  theme.sidebarBgColorRight= mapc(settings.sidebarBgColorRight, true, nightActive);
+  theme.sidebarBgColorRight = mapc(settings.sidebarBgColorRight, true, nightActive);
   theme.dateBgColor        = mapc(settings.dateBgColor, true, nightActive);
   theme.twtStatusBgColor   = mapc(settings.twtStatusBgColor, true, nightActive);
   // Deliberately NOT night-mapped: the flash marks a work-time target being reached and

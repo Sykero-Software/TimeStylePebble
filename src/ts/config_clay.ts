@@ -441,6 +441,7 @@ const config = [
     ],
   },
 
+  // ------------------------------------------------------------ Warning border
   {
     type: 'section',
     items: [

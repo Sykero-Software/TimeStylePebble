@@ -115,6 +115,12 @@ void Settings_loadFromStorage() {
 
   // Warning frame off by default (both triggers 0). Colours are only used once a
   // trigger is switched on; GColorRed/GColorYellow exist only on colour boards.
+  // On 1-bit boards this C default (GColorWhite) does NOT agree with the Clay config
+  // page's default (0xFF0000, which GColorFromHEX resolves to BLACK on those boards) --
+  // so the frame colour flips white->black the first time a user saves the config page.
+  // That is safe only because warn_border_calc's invisibility guard substitutes a
+  // contrasting colour when the configured colour equals the background (black, by
+  // default, on 1-bit boards); it is NOT because these two defaults agree.
   settings.batteryWarnPct = 0;
   settings.batteryWarnDaysTenths = 0;
   settings.btWarnBorder = false;

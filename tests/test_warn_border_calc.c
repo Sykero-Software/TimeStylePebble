@@ -14,6 +14,9 @@
 #define YELLOW 0xFC
 #define DKGRAY 0xD5  /* a3 r1 g1 b1 -- dark, so the guard must pick white */
 #define LTGRAY 0xEA  /* a3 r2 g2 b2 -- light, so the guard must pick black */
+#define GREEN  0xCC  /* a3 r0 g3 b0 -- saturated green: unweighted sum (3) reads dark and
+                         picks white (~1.4:1 contrast); weighted luminance (18) reads light
+                         and correctly picks black (~5.6:1) */
 
 int main(void) {
   const int DAYS_5 = 50;      // 5.0 days, in tenths
@@ -76,6 +79,11 @@ int main(void) {
   // Alpha bits must not defeat the comparison: the same RGB with a different alpha is
   // still the same visible colour, so the guard must still fire.
   assert(warn_border_color(WARN_BORDER_BATTERY, RED, YELLOW, (uint8_t)(RED & 0x3F)) == WHITE);
+
+  // Weighted luminance: a saturated green background with a green-configured warning
+  // colour must resolve to BLACK (green reads as light to the eye; an unweighted
+  // channel sum wrongly reads it as dark and would pick white -- ~1.4:1 contrast).
+  assert(warn_border_color(WARN_BORDER_BATTERY, GREEN, YELLOW, GREEN) == BLACK);
 
   printf("PASS\n");
   return 0;

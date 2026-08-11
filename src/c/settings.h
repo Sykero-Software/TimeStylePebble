@@ -39,6 +39,10 @@ typedef enum {
 // Settings struct -- note, all new settings should ALWAYS be added to the bottom
 typedef struct {
   // color settings
+  //
+  // A colour a user can configure must ALSO be mapped in Theme_update (src/c/theme.c),
+  // or it will stay in its day colour all night: drawing code reads theme.*, never
+  // settings.*Color, directly.
   GColor timeColor;
   GColor timeBgColor;
   GColor sidebarColor;

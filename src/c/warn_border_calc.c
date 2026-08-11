@@ -17,13 +17,16 @@ int warn_border_kind(int batteryPct, bool isCharging, int batteryDaysTenths,
   return WARN_BORDER_NONE;
 }
 
-// Sum of the three 2-bit channels (0..9). >= 5 counts as a light background, so a
-// mid-grey (2,2,2 = 6) gets a black frame and a dark grey (1,1,1 = 3) a white one.
+// Weighted luminance over the three 2-bit channels (0..27), mirroring the rule
+// twt_status.c's status_update_proc already uses for the same light/dark decision
+// (r*3 + g*6 + b, >= 15 = light) -- one rule for this project, not two. An unweighted
+// sum picks white on a saturated green (r=0,g=3,b=0: sum 3, "dark") even though green
+// reads as light to the eye; weighting green heaviest fixes that.
 static bool argb_is_light(uint8_t argb) {
   int r = (argb >> 4) & 0x3;
   int g = (argb >> 2) & 0x3;
   int b = argb & 0x3;
-  return (r + g + b) >= 5;
+  return (r * 3 + g * 6 + b) >= 15;
 }
 
 uint8_t warn_border_color(int kind, uint8_t batteryArgb, uint8_t btArgb,
