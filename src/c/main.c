@@ -18,6 +18,7 @@
 #include "battery_days.h"
 #include "poll_state_calc.h"
 #include "night_window_calc.h"
+#include "theme.h"
 
 // windows and layers
 static Window* mainWindow;
@@ -251,6 +252,12 @@ static bool night_window_now(void) {
                               quiet_time_is_active());
 }
 
+// Is the NIGHT PALETTE in effect right now? The window alone is not enough -- the colours
+// are their own opt-in, so a user can keep the rotation saving without a dark watchface.
+static bool night_colors_now(void) {
+  return settings.nightColors && night_window_now();
+}
+
 static void schedule_rotation_timer(void) {
   if (rotationTimer) { app_timer_cancel(rotationTimer); rotationTimer = NULL; }
   if (updatingEverySecond) { return; }
@@ -292,6 +299,9 @@ void redrawScreen() {
       updatingEverySecond = false;
     }
   }
+
+  // Resolve the palette before anything paints with it.
+  Theme_update(night_colors_now());
 
   window_set_background_color(mainWindow, settings.timeBgColor);
 
@@ -398,15 +408,21 @@ static void cold_scan_cb(uint8_t w, void *ctx) {
 }
 
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  // Night-window boundary. schedule_rotation_timer() is otherwise reachable only from
-  // redrawScreen() and from the rotation timer's own callback -- so once the night window
-  // suppresses the timer, the callback stops firing and nothing would re-arm it in the
-  // morning. Sample the window once a minute and reschedule when it flips (both ways).
+  // Night boundary, sampled once a minute. Two things depend on it and NEITHER has an
+  // event of its own: schedule_rotation_timer() is otherwise reachable only from
+  // redrawScreen() and the rotation timer's own callback (so once the window suppresses
+  // the timer, nothing would re-arm it in the morning), and Quiet Time -- one of the
+  // window modes -- emits no start/end event at all. The window's boundaries are
+  // hour-granular, so a per-minute check is exact enough and rides a tick the watchface
+  // performs anyway; the flip test keeps it from repainting 1440 times a day.
   if (tick_time->tm_sec == 0) {
     int nightNow = night_window_now() ? 1 : 0;
     if (nightNow != nightLast) {
       nightLast = nightNow;
       schedule_rotation_timer();
+    }
+    if (night_colors_now() != Theme_nightActive()) {
+      redrawScreen();   // recomputes the theme and repaints everything
     }
   }
 
@@ -606,6 +622,10 @@ static void init() {
 
   // init settings
   Settings_init();
+
+  // Resolve the palette so the very first paint (before redrawScreen ever runs) is
+  // already correct.
+  Theme_update(night_colors_now());
 
   // Restore the poll clock (see poll_state_load): a relaunch must NOT restart it.
   poll_state_load();
