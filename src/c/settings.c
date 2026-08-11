@@ -113,6 +113,19 @@ void Settings_loadFromStorage() {
   settings.analogDigitalClock = false;            // digital line under analog off by default; appended field, no version bump
   settings.statusClockDigital = false;            // status-strip digital swap off by default; appended field, no version bump
 
+  // Warning frame off by default (both triggers 0). Colours are only used once a
+  // trigger is switched on; GColorRed/GColorYellow exist only on colour boards.
+  settings.batteryWarnPct = 0;
+  settings.batteryWarnDaysTenths = 0;
+  settings.btWarnBorder = false;
+#ifdef PBL_COLOR
+  settings.batteryWarnColor = GColorRed;
+  settings.btWarnColor = GColorYellow;
+#else
+  settings.batteryWarnColor = GColorWhite;
+  settings.btWarnColor = GColorWhite;
+#endif
+
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
   if (persist_exists(SETTINGS_PERSIST_KEY)) {
@@ -259,6 +272,10 @@ void Settings_loadFromStorage() {
   if (settings.analogTickStyle > ANALOG_TICKS_BOLD) { settings.analogTickStyle = ANALOG_TICKS_BOLD; clamped = true; }
   if (settings.analogDigitalClock > 1) { settings.analogDigitalClock = 0; clamped = true; }
   if (settings.statusClockDigital > 1) { settings.statusClockDigital = 0; clamped = true; }
+  if (settings.batteryWarnPct > 100) { settings.batteryWarnPct = 0; clamped = true; }
+  // 100 tenths = 10 days; a larger threshold would mean "always warning".
+  if (settings.batteryWarnDaysTenths > 100) { settings.batteryWarnDaysTenths = 0; clamped = true; }
+  if (settings.btWarnBorder > 1) { settings.btWarnBorder = 0; clamped = true; }
 
   if (migrated) { APP_LOG(APP_LOG_LEVEL_INFO, "settings: one-time widget-list migration applied"); }
   if (clamped)  { APP_LOG(APP_LOG_LEVEL_WARNING, "settings out of range, clamped to safe values"); }

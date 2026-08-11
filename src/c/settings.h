@@ -213,6 +213,17 @@ typedef struct {
   uint8_t nightRotationMode;
   uint8_t nightRotationStart;
   uint8_t nightRotationEnd;
+
+  // Warning frame around the clock area. Two independent battery triggers, either of
+  // which may be off (0): percent and the battery-days estimate (in tenths of a day).
+  // btWarnBorder is a bool. Both borders default OFF -- a red frame appearing on an
+  // installed watchface after an update would read as a fault, not a feature.
+  // Appended fields, zero-default on load of an older blob; no settings-version bump.
+  uint8_t batteryWarnPct;         // warn at or below this %; 0 = off
+  uint8_t batteryWarnDaysTenths;  // warn at or below this many tenths of a day; 0 = off
+  GColor batteryWarnColor;
+  uint8_t btWarnBorder;           // bool: frame while the phone is disconnected
+  GColor btWarnColor;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)

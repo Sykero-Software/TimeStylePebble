@@ -133,7 +133,12 @@
       "TuyaLeds",
       "SettingNightRotationMode",
       "SettingNightRotationStart",
-      "SettingNightRotationEnd"
+      "SettingNightRotationEnd",
+      "SettingBatteryWarnPct",
+      "SettingBatteryWarnDays",
+      "SettingBatteryWarnColor",
+      "SettingBtWarnBorder",
+      "SettingBtWarnColor"
     ],
     "resources": {
       "media": [

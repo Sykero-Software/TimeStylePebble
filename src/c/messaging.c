@@ -198,6 +198,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *nightRotMode_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationMode);
   Tuple *nightRotStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationStart);
   Tuple *nightRotEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationEnd);
+  Tuple *batWarnPct_tuple = dict_find(iterator, MESSAGE_KEY_SettingBatteryWarnPct);
+  Tuple *batWarnDays_tuple = dict_find(iterator, MESSAGE_KEY_SettingBatteryWarnDays);
+  Tuple *batWarnColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingBatteryWarnColor);
+  Tuple *btWarnBorder_tuple = dict_find(iterator, MESSAGE_KEY_SettingBtWarnBorder);
+  Tuple *btWarnColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingBtWarnColor);
   Tuple *elecQuietStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietStart);
   Tuple *elecQuietEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecQuietEnd);
   Tuple *elecFactor_tuple = dict_find(iterator, MESSAGE_KEY_SettingElecCheapFactorPct);
@@ -287,6 +292,26 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(sidebarBgRight_tuple != NULL) {
     int32_t v = sidebarBgRight_tuple->value->int32;
     settings.sidebarBgColorRight = (v < 0) ? GColorClear : GColorFromHEX(v); // <0 = inherit
+  }
+
+  // Warning frame. Out-of-range values are ignored rather than clamped, matching the
+  // night-rotation apply above: a garbled message must not rewrite a good setting.
+  if(batWarnPct_tuple != NULL) {
+    int v = batWarnPct_tuple->value->int32;
+    if (v >= 0 && v <= 100) { settings.batteryWarnPct = (uint8_t)v; }
+  }
+  if(batWarnDays_tuple != NULL) {
+    int v = batWarnDays_tuple->value->int32;
+    if (v >= 0 && v <= 100) { settings.batteryWarnDaysTenths = (uint8_t)v; }
+  }
+  if(batWarnColor_tuple != NULL) {
+    settings.batteryWarnColor = GColorFromHEX(batWarnColor_tuple->value->int32);
+  }
+  if(btWarnBorder_tuple != NULL) {
+    settings.btWarnBorder = btWarnBorder_tuple->value->int32 ? 1 : 0;
+  }
+  if(btWarnColor_tuple != NULL) {
+    settings.btWarnColor = GColorFromHEX(btWarnColor_tuple->value->int32);
   }
 
   if(sidebarPos_tuple != NULL) {
