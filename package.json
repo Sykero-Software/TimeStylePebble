@@ -138,7 +138,11 @@
       "SettingBatteryWarnDays",
       "SettingBatteryWarnColor",
       "SettingBtWarnBorder",
-      "SettingBtWarnColor"
+      "SettingBtWarnColor",
+      "SettingNightSlowRotation",
+      "SettingNightColors",
+      "SettingNightBgColor",
+      "SettingNightFgColor"
     ],
     "resources": {
       "media": [

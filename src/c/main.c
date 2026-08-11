@@ -262,7 +262,9 @@ static void schedule_rotation_timer(void) {
   // minute tick still repaints the sidebar -- so the group keeps cycling at 1/min while
   // costing zero extra wakeups. (Freezing it outright would need a change in sidebar.c
   // and would hide half a rotating pair all night.)
-  p = night_window_rotation_interval(p, night_window_now());
+  // The night window now also drives the palette, so slowing rotation is opt-out
+  // (default on = the behaviour the window used to imply on its own).
+  p = night_window_rotation_interval(p, night_window_now() && settings.nightSlowRotation);
   if (p <= 0) { return; }
   time_t now = time(NULL);
   struct tm *lt = localtime(&now);

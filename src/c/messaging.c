@@ -198,6 +198,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   Tuple *nightRotMode_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationMode);
   Tuple *nightRotStart_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationStart);
   Tuple *nightRotEnd_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightRotationEnd);
+  Tuple *nightSlowRot_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightSlowRotation);
+  Tuple *nightColors_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightColors);
+  Tuple *nightBgColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightBgColor);
+  Tuple *nightFgColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingNightFgColor);
   Tuple *batWarnPct_tuple = dict_find(iterator, MESSAGE_KEY_SettingBatteryWarnPct);
   Tuple *batWarnDays_tuple = dict_find(iterator, MESSAGE_KEY_SettingBatteryWarnDays);
   Tuple *batWarnColor_tuple = dict_find(iterator, MESSAGE_KEY_SettingBatteryWarnColor);
@@ -375,6 +379,18 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   if(nightRotEnd_tuple != NULL) {
     int v = nightRotEnd_tuple->value->int32;
     if (v >= 0 && v <= 23) { settings.nightEndHour = (uint8_t)v; }
+  }
+  if(nightSlowRot_tuple != NULL) {
+    settings.nightSlowRotation = nightSlowRot_tuple->value->int32 ? 1 : 0;
+  }
+  if(nightColors_tuple != NULL) {
+    settings.nightColors = nightColors_tuple->value->int32 ? 1 : 0;
+  }
+  if(nightBgColor_tuple != NULL) {
+    settings.nightBgColor = GColorFromHEX(nightBgColor_tuple->value->int32);
+  }
+  if(nightFgColor_tuple != NULL) {
+    settings.nightFgColor = GColorFromHEX(nightFgColor_tuple->value->int32);
   }
 
   if(elecQuietStart_tuple != NULL) {

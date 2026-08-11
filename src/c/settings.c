@@ -126,6 +126,15 @@ void Settings_loadFromStorage() {
   settings.btWarnColor = GColorWhite;
 #endif
 
+  // The night window now also drives an optional palette. nightSlowRotation defaults
+  // ON so a user who already had a night window configured keeps exactly today's
+  // rotation-slowing behaviour; nightColors defaults OFF since repainting the
+  // watchface black unasked is not an upgrade. Appended fields, no settings-version bump.
+  settings.nightSlowRotation = true;
+  settings.nightColors = false;
+  settings.nightBgColor = GColorBlack;
+  settings.nightFgColor = GColorWhite;
+
   // to correct settings migration bug (settings key v6), we must do another
   // migration (nooooooooooo)
   if (persist_exists(SETTINGS_PERSIST_KEY)) {
@@ -258,6 +267,8 @@ void Settings_loadFromStorage() {
   }
   if (settings.nightStartHour > 23) { settings.nightStartHour = 23; clamped = true; }
   if (settings.nightEndHour > 23) { settings.nightEndHour = 7; clamped = true; }
+  if (settings.nightSlowRotation > 1) { settings.nightSlowRotation = 1; clamped = true; }
+  if (settings.nightColors > 1) { settings.nightColors = 0; clamped = true; }
   if (settings.elecCheapFactorPct < 1 || settings.elecCheapFactorPct > 100) {
     settings.elecCheapFactorPct = 70; clamped = true;
   }

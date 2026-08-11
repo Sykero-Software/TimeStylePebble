@@ -225,6 +225,18 @@ typedef struct {
   GColor batteryWarnColor;
   uint8_t btWarnBorder;           // bool: frame while the phone is disconnected
   GColor btWarnColor;
+
+  // The night window (nightMode / nightStartHour / nightEndHour above) has two
+  // independent consumers. nightSlowRotation defaults ON so a user who already had a
+  // night window keeps exactly today's behaviour; nightColors defaults OFF because
+  // repainting a watchface black unasked is not an upgrade. Appended fields,
+  // zero-default on load of an older blob; no settings-version bump -- and note the
+  // default for nightSlowRotation is therefore applied by the pre-read default
+  // assignment, not by the blob.
+  uint8_t nightSlowRotation;   // bool
+  uint8_t nightColors;         // bool
+  GColor nightBgColor;
+  GColor nightFgColor;
 } Settings;
 
 // Dynamic settings (calculated at runtime based on currently-selected widgets)
