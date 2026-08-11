@@ -4,6 +4,7 @@
 #include "date_header.h"
 #include "date_header_calc.h"
 #include "settings.h"
+#include "theme.h"
 #include "languages.h"
 
 // One centered line, e.g. "Ti 6.6" — weekday (title-cased) + day.month. No
@@ -138,8 +139,8 @@ void DateHeader_redraw(void) {
   // (apply_twt_layout) calls DateHeader_redraw() right after DateHeader_setHidden(false),
   // so becoming visible still refreshes immediately.
   if (layer_get_hidden(text_layer_get_layer(s_date_layer))) return;
-  text_layer_set_text_color(s_date_layer, settings.timeColor); // track color setting changes
-  text_layer_set_background_color(s_date_layer, settings.dateBgColor); // track color setting changes
+  text_layer_set_text_color(s_date_layer, theme.timeColor); // track color setting changes
+  text_layer_set_background_color(s_date_layer, theme.dateBgColor); // track color setting changes
   text_layer_set_font(s_date_layer, pick_date_font_cached(s_date_buffer, s_frame.size.w));
   text_layer_set_text(s_date_layer, s_date_buffer);
   layer_mark_dirty(text_layer_get_layer(s_date_layer));
@@ -155,8 +156,8 @@ void DateHeader_initLayer(Layer* parent, GRect frame) {
   if (!DateHeader_isSupported()) return;
   s_date_layer = text_layer_create(frame);
   s_frame = frame;
-  text_layer_set_background_color(s_date_layer, settings.dateBgColor); // GColorClear = inherit
-  text_layer_set_text_color(s_date_layer, settings.timeColor);
+  text_layer_set_background_color(s_date_layer, theme.dateBgColor); // GColorClear = inherit
+  text_layer_set_text_color(s_date_layer, theme.timeColor);
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(s_date_layer, GTextOverflowModeTrailingEllipsis);
   layer_add_child(parent, text_layer_get_layer(s_date_layer));

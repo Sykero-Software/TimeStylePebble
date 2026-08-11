@@ -2,6 +2,7 @@
 #include <pebble.h>
 #include "clock_area.h"
 #include "settings.h"
+#include "theme.h"
 #include "clock_digit_legacy.h"
 
 #define DIGIT_COUNT 4
@@ -26,8 +27,8 @@ void ClockArea_update_time(struct tm* time_info) {
 }
 
 void ClockArea_redraw() {
-  GColor fg = settings.timeColor;
-  GColor bg = settings.timeBgColor;
+  GColor fg = theme.timeColor;
+  GColor bg = theme.timeBgColor;
   int offset = settings.sidebarOnLeft ? 30 : 0;
 
   int h_font = settings.clockFontId;
@@ -90,7 +91,7 @@ void ClockArea_init(Window* window) {
     layer_add_child(clock_area_layer, bitmap_layer_get_layer(digits[i].imageLayer));
   }
 
-  window_set_background_color(window, settings.timeBgColor);
+  window_set_background_color(window, theme.timeBgColor);
 }
 
 void ClockArea_deinit() {

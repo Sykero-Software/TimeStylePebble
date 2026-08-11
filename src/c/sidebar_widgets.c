@@ -1,6 +1,7 @@
 #include "sidebar_widgets.h"
 #include "languages.h"
 #include "settings.h"
+#include "theme.h"
 #include "sidebar.h"
 #include "util.h"
 #include "weather.h"
@@ -751,7 +752,7 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
   uint8_t battery_percent =
       (chargeState.charge_percent > 0) ? chargeState.charge_percent : 5;
 
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   char batteryString[6];
   int batteryPositionY =
@@ -759,8 +760,8 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
 
   if (!SidebarWidgets_hideIdentifier) {
     if (batteryImage) {
-      gdraw_command_image_recolor(batteryImage, dynamicSettings.iconFillColor,
-                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_recolor(batteryImage, theme.iconFillColor,
+                                  theme.iconStrokeColor);
       gdraw_command_image_draw(
           ctx, batteryImage,
           GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
@@ -770,8 +771,8 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
       if (batteryChargeImage) {
         // the charge "bolt" icon uses inverted colors
         gdraw_command_image_recolor(batteryChargeImage,
-                                    dynamicSettings.iconStrokeColor,
-                                    dynamicSettings.iconFillColor);
+                                    theme.iconStrokeColor,
+                                    theme.iconFillColor);
         gdraw_command_image_draw(
             ctx, batteryChargeImage,
             GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
@@ -780,7 +781,7 @@ void BatteryMeter_draw(GContext *ctx, int yPosition) {
 
       int width = roundf(18 * battery_percent / 100.0f);
 
-      graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
+      graphics_context_set_fill_color(ctx, theme.iconStrokeColor);
 
 #ifdef PBL_COLOR
       if (battery_percent <= 20) {
@@ -834,15 +835,15 @@ void BatteryDays_draw(GContext *ctx, int yPosition) {
   uint8_t battery_percent =
       (chargeState.charge_percent > 0) ? chargeState.charge_percent : 5;
 
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   char daysString[8];
   int batteryPositionY = yPosition - 5; // correct for vertical empty space on battery icon
 
   if (!SidebarWidgets_hideIdentifier) {
     if (batteryImage) {
-      gdraw_command_image_recolor(batteryImage, dynamicSettings.iconFillColor,
-                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_recolor(batteryImage, theme.iconFillColor,
+                                  theme.iconStrokeColor);
       gdraw_command_image_draw(
           ctx, batteryImage,
           GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
@@ -851,15 +852,15 @@ void BatteryDays_draw(GContext *ctx, int yPosition) {
     if (chargeState.is_charging) {
       if (batteryChargeImage) {
         gdraw_command_image_recolor(batteryChargeImage,
-                                    dynamicSettings.iconStrokeColor,
-                                    dynamicSettings.iconFillColor);
+                                    theme.iconStrokeColor,
+                                    theme.iconFillColor);
         gdraw_command_image_draw(
             ctx, batteryChargeImage,
             GPoint(3 + SidebarWidgets_xOffset, batteryPositionY));
       }
     } else {
       int width = roundf(18 * battery_percent / 100.0f);
-      graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
+      graphics_context_set_fill_color(ctx, theme.iconStrokeColor);
 #ifdef PBL_COLOR
       if (battery_percent <= 20) {
         graphics_context_set_fill_color(ctx, GColorRed);
@@ -897,7 +898,7 @@ int DateWidget_getHeight() {
 }
 
 void DateWidget_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   // compensate for extra space that appears on the top of the date widget
   yPosition -= layout.dateTopCorrection;
@@ -918,21 +919,21 @@ void DateWidget_draw(GContext *ctx, int yPosition) {
 #endif
     if (activeDateImage) {
       gdraw_command_image_recolor(activeDateImage,
-                                  dynamicSettings.iconFillColor,
-                                  dynamicSettings.iconStrokeColor);
+                                  theme.iconFillColor,
+                                  theme.iconStrokeColor);
       gdraw_command_image_draw(ctx, activeDateImage,
                                GPoint(layout.dateBgX + SidebarWidgets_xOffset,
                                       yPosition + layout.dateBgY));
     }
   } else {
-    graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
+    graphics_context_set_fill_color(ctx, theme.iconStrokeColor);
     graphics_fill_rect(ctx,
                        GRect(layout.dateBgRectX + SidebarWidgets_xOffset,
                              yPosition + layout.dateBgRectY,
                              layout.dateBgRectWidth, layout.dateBgRectHeight),
                        2, GCornersAll);
 
-    graphics_context_set_fill_color(ctx, dynamicSettings.iconFillColor);
+    graphics_context_set_fill_color(ctx, theme.iconFillColor);
     graphics_fill_rect(ctx,
                        GRect(layout.dateBgRectX + 2 + SidebarWidgets_xOffset,
                              yPosition + layout.dateBgRectY + 2,
@@ -942,7 +943,7 @@ void DateWidget_draw(GContext *ctx, int yPosition) {
   }
 
   // next, draw the date number
-  graphics_context_set_text_color(ctx, dynamicSettings.iconStrokeColor);
+  graphics_context_set_text_color(ctx, theme.iconStrokeColor);
 
   int yOffset = layout.dateDayNumY;
 
@@ -952,7 +953,7 @@ void DateWidget_draw(GContext *ctx, int yPosition) {
                      GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 
   // switch back to normal color for the rest
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   // draw the month
   yOffset = layout.dateMonthY;
@@ -982,15 +983,15 @@ int CurrentWeather_getHeight() {
 }
 
 void CurrentWeather_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   int hs = SidebarWidgets_hideIdentifier ? layout.weatherTempY : 0;
 
   if (!SidebarWidgets_hideIdentifier) {
     if (Weather_currentWeatherIcon) {
       gdraw_command_image_recolor(Weather_currentWeatherIcon,
-                                  dynamicSettings.iconFillColor,
-                                  dynamicSettings.iconStrokeColor);
+                                  theme.iconFillColor,
+                                  theme.iconStrokeColor);
       gdraw_command_image_draw(ctx, Weather_currentWeatherIcon,
                                GPoint(3 + SidebarWidgets_xOffset, yPosition));
     }
@@ -1057,8 +1058,8 @@ int BTDisconnect_getHeight() { return layout.btDisconnectHeight; }
 
 void BTDisconnect_draw(GContext *ctx, int yPosition) {
   if (disconnectImage) {
-    gdraw_command_image_recolor(disconnectImage, dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
+    gdraw_command_image_recolor(disconnectImage, theme.iconFillColor,
+                                theme.iconStrokeColor);
 
     gdraw_command_image_draw(ctx, disconnectImage,
                              GPoint(3 + SidebarWidgets_xOffset, yPosition));
@@ -1092,7 +1093,7 @@ static int basic_widget_height(void) {
 int WeekNumber_getHeight() { return basic_widget_height(); }
 
 void WeekNumber_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
   draw_basic_widget(ctx, yPosition, wordForWeek[settings.languageId],
                     currentWeekNum, layout.basicWidgetY);
 }
@@ -1102,7 +1103,7 @@ void WeekNumber_draw(GContext *ctx, int yPosition) {
 int Seconds_getHeight() { return layout.secondsHeight; }
 
 void Seconds_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   graphics_draw_text(ctx, currentSecondsNum, lgSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
@@ -1120,14 +1121,14 @@ int WeatherForecast_getHeight() {
 }
 
 void WeatherForecast_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   int hs = SidebarWidgets_hideIdentifier ? layout.forecastHighY : 0;
 
   if (!SidebarWidgets_hideIdentifier && Weather_forecastWeatherIcon) {
     gdraw_command_image_recolor(Weather_forecastWeatherIcon,
-                                dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
+                                theme.iconFillColor,
+                                theme.iconStrokeColor);
 
     gdraw_command_image_draw(ctx, Weather_forecastWeatherIcon,
                              GPoint(3 + SidebarWidgets_xOffset, yPosition));
@@ -1146,7 +1147,7 @@ void WeatherForecast_draw(GContext *ctx, int yPosition) {
 
     char tempString[8];
 
-    graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
+    graphics_context_set_fill_color(ctx, theme.sidebarTextColor);
 
     // in large font mode, omit the degree symbol and move the text
     if (!settings.useLargeFonts) {
@@ -1190,7 +1191,7 @@ void WeatherForecast_draw(GContext *ctx, int yPosition) {
 int AltTime_getHeight() { return basic_widget_height(); }
 
 void AltTime_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
   draw_basic_widget(ctx, yPosition, settings.altclockName, altClock,
                     layout.basicWidgetY - 1);
 }
@@ -1200,7 +1201,7 @@ void AltTime_draw(GContext *ctx, int yPosition) {
 int UVIndex_getHeight() { return basic_widget_height(); }
 
 void UVIndex_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
   char uvString[5];
   // A real UV index is always >= 0. A negative value (INT32_MIN before any data,
   // or -1 sent by the provider when no reading could be obtained -- e.g. FMI at
@@ -1232,8 +1233,8 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
   int hs = SidebarWidgets_hideIdentifier ? layout.stepsTextY : 0;
   if (!SidebarWidgets_hideIdentifier) {
     if (stepsImage) {
-      gdraw_command_image_recolor(stepsImage, dynamicSettings.iconFillColor,
-                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_recolor(stepsImage, theme.iconFillColor,
+                                  theme.iconStrokeColor);
       gdraw_command_image_draw(ctx, stepsImage,
                                GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
     }
@@ -1301,7 +1302,7 @@ static void draw_steps_metric(GContext *ctx, int yPosition, bool use_distance) {
     }
   }
 
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   graphics_draw_text(
       ctx, steps_text, mdSidebarFont,
@@ -1357,12 +1358,12 @@ static int read_sleep_seconds(HealthMetric metric) {
 static void draw_sleep_bar(GContext *ctx, int barY, int total_s, int deep_s) {
   GRect frame = GRect(layout.forecastDividerX + SidebarWidgets_xOffset, barY,
                       layout.forecastDividerWidth, layout.sleepBarThickness);
-  graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_stroke_color(ctx, theme.sidebarTextColor);
   graphics_draw_rect(ctx, frame);
 
   int fill = sleep_bar_fill_px(total_s, deep_s, frame.size.w - 2);
   if (fill > 0) {
-    graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
+    graphics_context_set_fill_color(ctx, theme.sidebarTextColor);
     graphics_fill_rect(ctx,
                        GRect(frame.origin.x + 1, frame.origin.y + 1,
                              fill, layout.sleepBarThickness - 2),
@@ -1393,8 +1394,8 @@ static void draw_sleep_widget(GContext *ctx, int yPosition, GDrawCommandImage *i
       // two numbers plus the share, in less height than the icon variant.
       draw_sleep_bar(ctx, yPosition + layout.sleepComboBarY, sleep_seconds, deep_seconds);
     } else if (img) {
-      gdraw_command_image_recolor(img, dynamicSettings.iconFillColor,
-                                  dynamicSettings.iconStrokeColor);
+      gdraw_command_image_recolor(img, theme.iconFillColor,
+                                  theme.iconStrokeColor);
       gdraw_command_image_draw(ctx, img,
                                GPoint(3 + SidebarWidgets_xOffset, yPosition - 7));
     }
@@ -1404,7 +1405,7 @@ static void draw_sleep_widget(GContext *ctx, int yPosition, GDrawCommandImage *i
   sleep_format_decimal(sleep_seconds, settings.decimalSeparator,
                        sleep_text, sizeof(sleep_text));
 
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
   graphics_draw_text(ctx, sleep_text, mdSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
                            yPosition + topY - hs, layout.textRectWidth, 20),
@@ -1474,8 +1475,8 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
   int hs = SidebarWidgets_hideIdentifier ? layout.heartRateValueY : 0;
 
   if (!SidebarWidgets_hideIdentifier && heartImage) {
-    gdraw_command_image_recolor(heartImage, dynamicSettings.iconFillColor,
-                                dynamicSettings.iconStrokeColor);
+    gdraw_command_image_recolor(heartImage, theme.iconFillColor,
+                                theme.iconStrokeColor);
     gdraw_command_image_draw(ctx, heartImage,
                              GPoint(3 + SidebarWidgets_xOffset, yPosition));
   }
@@ -1494,7 +1495,7 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
 
   snprintf(heart_rate_text, sizeof(heart_rate_text), "%i", heart_rate);
 
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
   graphics_draw_text(ctx, heart_rate_text, currentSidebarFont,
                      GRect(layout.textRectX + SidebarWidgets_xOffset,
                            yPosition + yOffset - hs, layout.textRectWidth, 20),
@@ -1527,7 +1528,7 @@ void HeartRate_draw(GContext *ctx, int yPosition) {
 int Beats_getHeight() { return basic_widget_height(); }
 
 void Beats_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
   draw_basic_widget(ctx, yPosition, "@", currentBeats, layout.basicWidgetY - 1);
 }
 
@@ -1542,10 +1543,10 @@ static void elec_draw_bolt(GContext *ctx, int yPosition) {
   if (!SidebarWidgets_hideIdentifier && electricityBoltPath) {
     gpath_move_to(electricityBoltPath,
                   GPoint(9 + SidebarWidgets_xOffset, yPosition));
-    graphics_context_set_fill_color(ctx, dynamicSettings.iconStrokeColor);
+    graphics_context_set_fill_color(ctx, theme.iconStrokeColor);
     gpath_draw_filled(ctx, electricityBoltPath);
   }
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 }
 
 static void elec_draw_small_line(GContext *ctx, int yPosition, const char *small) {
@@ -1683,7 +1684,7 @@ void CheapestHour_draw(GContext *ctx, int yPosition) {
 int CryptoSlot_getHeight() { return basic_widget_height(); }
 
 void CryptoSlot_draw(GContext *ctx, int yPosition) {
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   uint8_t wid = SidebarWidgets_currentWidgetType;
   CryptoSlot *s = Crypto_isWid(wid) ? Crypto_find(wid)
@@ -1784,12 +1785,12 @@ void TuyaLeds_drawWidget(GContext *ctx, int yPosition) {
       }
       // Outline in the sidebar text colour keeps the blob readable on any sidebar
       // background, and IS the whole indicator for the unknown state.
-      graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
+      graphics_context_set_stroke_color(ctx, theme.sidebarTextColor);
       graphics_draw_circle(ctx, p, r);
 #else
       // Black & white: on = filled, off = outline only, unknown = outline + centre dot.
-      graphics_context_set_stroke_color(ctx, settings.sidebarTextColor);
-      graphics_context_set_fill_color(ctx, settings.sidebarTextColor);
+      graphics_context_set_stroke_color(ctx, theme.sidebarTextColor);
+      graphics_context_set_fill_color(ctx, theme.sidebarTextColor);
       if (state == TUYA_LED_ON) {
         graphics_fill_circle(ctx, p, r);
       } else if (state == TUYA_LED_UNKNOWN) {

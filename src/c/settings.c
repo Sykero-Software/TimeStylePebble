@@ -365,17 +365,4 @@ void Settings_updateDynamicSettings() {
   // since it can become visible when the status strip toggles.
   WidgetList_forEachId(settings.widgetList, settings.widgetCount, dyn_scan_cb, NULL);
   WidgetList_forEachId(settings.rightWidgetList, settings.rightWidgetCount, dyn_scan_cb, NULL);
-
-  // if the (primary) sidebar background is black, use inverted icon colors.
-  // sidebarBgColorLeft is the primary-background key; GColorClear = inherit
-  // settings.sidebarColor.
-  GColor primaryBg = gcolor_equal(settings.sidebarBgColorLeft, GColorClear)
-      ? settings.sidebarColor : settings.sidebarBgColorLeft;
-  if (gcolor_equal(primaryBg, GColorBlack)) {
-    dynamicSettings.iconFillColor = GColorBlack;
-    dynamicSettings.iconStrokeColor = settings.sidebarTextColor;
-  } else {
-    dynamicSettings.iconFillColor = GColorWhite;
-    dynamicSettings.iconStrokeColor = GColorBlack;
-  }
 }

@@ -303,7 +303,7 @@ void redrawScreen() {
   // Resolve the palette before anything paints with it.
   Theme_update(night_colors_now());
 
-  window_set_background_color(mainWindow, settings.timeBgColor);
+  window_set_background_color(mainWindow, theme.timeBgColor);
 
   // maybe the language changed!
   update_clock();
@@ -319,7 +319,7 @@ void redrawScreen() {
 }
 
 static void main_window_load(Window *window) {
-  window_set_background_color(window, settings.timeBgColor);
+  window_set_background_color(window, theme.timeBgColor);
 
   // create the sidebar
   Sidebar_init(window);

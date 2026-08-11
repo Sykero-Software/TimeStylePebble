@@ -4,6 +4,7 @@
 #include "midi_status.h"
 #include "twt_status.h"   // reuse TwtStatus_isSupported() + TWT_STATUS_HEIGHT
 #include "settings.h"
+#include "theme.h"
 
 MidiStatus midi_status;
 
@@ -71,8 +72,8 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
 
   // Shared "status area" background (same setting as the work-time strip);
   // GColorClear = inherit watchface bg (no fill). Mirrors twt_status.c.
-  if (!gcolor_equal(settings.twtStatusBgColor, GColorClear)) {
-    graphics_context_set_fill_color(ctx, settings.twtStatusBgColor);
+  if (!gcolor_equal(theme.twtStatusBgColor, GColorClear)) {
+    graphics_context_set_fill_color(ctx, theme.twtStatusBgColor);
     graphics_fill_rect(ctx, b, 0, GCornerNone);
   }
 
@@ -92,12 +93,12 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   int leftPad = 8;                      // gap from the strip's left edge to the dot
   int cx = leftPad + r;
   int cy = top + lineH / 2;
-  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorRed, settings.timeColor));
+  graphics_context_set_fill_color(ctx, PBL_IF_COLOR_ELSE(GColorRed, theme.timeColor));
   graphics_fill_circle(ctx, GPoint(cx, cy), r);
 
   // Elapsed time + device name, after the dot, truncated with an ellipsis if long.
   int textX = cx + r + 6;
-  graphics_context_set_text_color(ctx, settings.timeColor);
+  graphics_context_set_text_color(ctx, theme.timeColor);
   graphics_draw_text(ctx, s_status_buffer, font,
       GRect(textX, top - 2, b.size.w - textX, lineH),
       GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft, NULL);

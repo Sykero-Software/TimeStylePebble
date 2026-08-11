@@ -3,6 +3,7 @@
 
 #include "twt_status.h"
 #include "settings.h"
+#include "theme.h"
 #include "twt_calc.h"
 
 TwtStatus twt_status;
@@ -126,15 +127,15 @@ static void status_update_proc(Layer* layer, GContext* ctx) {
   // During a flash "on" tick, fill the whole strip with the bright flash colour and
   // draw text/bar in a contrasting colour, so the alert is unmistakable. Otherwise the
   // configurable strip background (GColorClear = inherit watchface bg, no fill).
-  GColor text_color = settings.timeColor;
+  GColor text_color = theme.timeColor;
   if (s_flash_on) {
-    graphics_context_set_fill_color(ctx, settings.twtFlashColor);
+    graphics_context_set_fill_color(ctx, theme.twtFlashColor);
     graphics_fill_rect(ctx, b, 0, GCornerNone);
     // luminance of the flash colour -> black text on light, white text on dark
-    unsigned r = settings.twtFlashColor.r, g = settings.twtFlashColor.g, bl = settings.twtFlashColor.b;
+    unsigned r = theme.twtFlashColor.r, g = theme.twtFlashColor.g, bl = theme.twtFlashColor.b;
     text_color = ((r * 3 + g * 6 + bl) >= 15) ? GColorBlack : GColorWhite;  // (3+6+1)*1.5 threshold on 0..3 channels
-  } else if (!gcolor_equal(settings.twtStatusBgColor, GColorClear)) {
-    graphics_context_set_fill_color(ctx, settings.twtStatusBgColor);
+  } else if (!gcolor_equal(theme.twtStatusBgColor, GColorClear)) {
+    graphics_context_set_fill_color(ctx, theme.twtStatusBgColor);
     graphics_fill_rect(ctx, b, 0, GCornerNone);
   }
 

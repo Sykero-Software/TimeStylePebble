@@ -1,6 +1,7 @@
 #include "sidebar.h"
 #include "languages.h"
 #include "settings.h"
+#include "theme.h"
 #include "sidebar_widgets.h"
 #include "weather.h"
 #include "twt_status.h"
@@ -262,9 +263,9 @@ void drawRoundSidebar(GContext *ctx, GRect bgBounds,
   SidebarWidgets_updateFonts();
 
   // Round has a single continuous sidebar -> use the primary background color
-  // (legacy key sidebarBgColorLeft); GColorClear = inherit settings.sidebarColor.
-  GColor roundBg = gcolor_equal(settings.sidebarBgColorLeft, GColorClear)
-      ? settings.sidebarColor : settings.sidebarBgColorLeft;
+  // (legacy key sidebarBgColorLeft); GColorClear = inherit theme.sidebarColor.
+  GColor roundBg = gcolor_equal(theme.sidebarBgColorLeft, GColorClear)
+      ? theme.sidebarColor : theme.sidebarBgColorLeft;
   graphics_context_set_fill_color(ctx, roundBg);
 
   graphics_fill_radial(ctx, bgBounds, GOvalScaleModeFillCircle, 100,
@@ -348,11 +349,11 @@ static void drawWidgetColumn(Layer *l, GContext *ctx,
   SidebarWidgets_xOffset = (sidebarWidth - 30) / 2;   // zero on every rect platform besides emery
   SidebarWidgets_updateFonts();
 
-  GColor sidebarBg = isPrimary ? settings.sidebarBgColorLeft : settings.sidebarBgColorRight;
-  if (gcolor_equal(sidebarBg, GColorClear)) { sidebarBg = settings.sidebarColor; }
+  GColor sidebarBg = isPrimary ? theme.sidebarBgColorLeft : theme.sidebarBgColorRight;
+  if (gcolor_equal(sidebarBg, GColorClear)) { sidebarBg = theme.sidebarColor; }
   graphics_context_set_fill_color(ctx, sidebarBg);
   graphics_fill_rect(ctx, layer_get_bounds(l), 0, GCornerNone);
-  graphics_context_set_text_color(ctx, settings.sidebarTextColor);
+  graphics_context_set_text_color(ctx, theme.sidebarTextColor);
 
   int v_padding = V_PADDING_DEFAULT;
   int innerTop = v_padding;

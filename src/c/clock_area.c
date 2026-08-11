@@ -4,6 +4,7 @@
 #include "clock_area.h"
 #include "clock_area_calc.h"
 #include "settings.h"
+#include "theme.h"
 #include "sidebar.h"
 #include "clock_analog.h"
 #include "warn_border_calc.h"
@@ -133,7 +134,7 @@ static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_t
   if (settings.clockFontId == FONT_SETTING_BITHAM) {
     // graphics_draw_text uses layer-local coords, so NO frame-origin adjust here.
     GFont font = fonts_get_system_font(bitham_font_key(band_h));
-    graphics_context_set_text_color(ctx, settings.timeColor);
+    graphics_context_set_text_color(ctx, theme.timeColor);
     bitham_draw_line(ctx, buf, font,
         GRect(bounds.origin.x, band_top, bounds.size.w, band_h));
     return;
@@ -142,7 +143,7 @@ static void draw_digital_below(GContext* ctx, Layer* l, GRect bounds, int band_t
   FContext fctx;
   fctx_init_context(&fctx, ctx);
   fctx_set_color_bias(&fctx, 0);
-  fctx_set_fill_color(&fctx, settings.timeColor);
+  fctx_set_fill_color(&fctx, theme.timeColor);
 
   #ifdef PBL_COLOR
     fctx_enable_aa(settings.clockFontId != FONT_SETTING_LECO);
@@ -197,10 +198,10 @@ static void draw_clock_content(Layer *l, GContext* ctx) {
         ? GRect(bounds.origin.x, bounds.origin.y, w, dial_side)   // top-aligned square
         : bounds;                                                 // centred (default)
     ClockAnalog_draw(ctx, dial_bounds, s_clock_hours, s_clock_minutes,
-                     settings.timeColor, settings.timeBgColor, settings.analogTickStyle);
+                     theme.timeColor, theme.timeBgColor, settings.analogTickStyle);
 
     // The band below a top-aligned dial shows the window background, which is
-    // settings.timeBgColor (set in main.c) — same as the dial's fill — so the
+    // theme.timeBgColor (set in main.c) — same as the dial's fill — so the
     // band needs no extra fill; the digital text draws straight onto it.
     if (show_digital) {
       draw_digital_below(ctx, l, bounds, band_top, band_h);
@@ -234,7 +235,7 @@ static void draw_clock_content(Layer *l, GContext* ctx) {
 
   fctx_init_context(&fctx, ctx);
   fctx_set_color_bias(&fctx, 0);
-  fctx_set_fill_color(&fctx, settings.timeColor);
+  fctx_set_fill_color(&fctx, theme.timeColor);
 
 
   // calculate font size
@@ -334,7 +335,7 @@ static void draw_warn_border(Layer *l, GContext* ctx) {
   if (kind == WARN_BORDER_NONE) { return; }
 
   uint8_t argb = warn_border_color(kind, settings.batteryWarnColor.argb,
-                                   settings.btWarnColor.argb, settings.timeBgColor.argb);
+                                   settings.btWarnColor.argb, theme.timeBgColor.argb);
   GColor c; c.argb = argb;
 
   // Unobstructed bounds, so the frame moves with the timeline-peek banner instead of

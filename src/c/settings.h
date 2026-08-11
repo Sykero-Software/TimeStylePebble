@@ -246,9 +246,6 @@ typedef struct {
   bool enableAutoBatteryWidget;
   bool enableBeats;
   bool enableAltTimeZone;
-  
-  GColor iconFillColor;
-  GColor iconStrokeColor;
 } DynamicSettings;
 
 // Legacy packed settings struct
