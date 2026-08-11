@@ -204,15 +204,16 @@ typedef struct {
   // zero-default (off) on load of an older blob; no settings-version bump.
   uint8_t statusClockDigital;
 
-  // Night rotation: slow sub-minute sidebar rotation down to the minute tick during a
-  // night window, to stop it repainting the whole watchface 2-12x/min while nobody is
-  // looking. mode is a NightRotationMode (0 = off, 1 = follow Quiet Time, 2 = custom
-  // hours); the two hours are a half-open [start, end) window that may wrap midnight,
-  // used only in mode 2. Appended fields, zero-default (mode 0 = off, i.e. today's
+  // Night window: a shared notion of "is it night right now", used to slow
+  // sub-minute sidebar rotation down to the minute tick so it stops repainting
+  // the whole watchface 2-12x/min while nobody is looking. mode is a
+  // NightWindowMode (0 = off, 1 = follow Quiet Time, 2 = custom hours); the two
+  // hours are a half-open [start, end) window that may wrap midnight, used only
+  // in mode 2. Appended fields, zero-default (mode 0 = off, i.e. today's
   // behaviour) on load of an older blob; no settings-version bump.
-  uint8_t nightRotationMode;
-  uint8_t nightRotationStart;
-  uint8_t nightRotationEnd;
+  uint8_t nightMode;
+  uint8_t nightStartHour;
+  uint8_t nightEndHour;
 
   // Warning frame around the clock area. Two independent battery triggers, either of
   // which may be off (0): percent and the battery-days estimate (in tenths of a day).

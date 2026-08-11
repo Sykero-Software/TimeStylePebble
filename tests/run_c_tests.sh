@@ -28,7 +28,7 @@ run_one t_battery_days       tests/test_battery_days.c       src/c/battery_days_
 run_one t_widget_list        tests/test_widget_list.c        src/c/widget_list.c
 run_one t_fallback_place     tests/test_fallback_place.c     src/c/widget_list.c
 run_one t_electricity_calc   tests/test_electricity_calc.c   src/c/electricity_calc.c
-run_one t_night_rotation     tests/test_night_rotation_calc.c src/c/night_rotation_calc.c src/c/electricity_calc.c
+run_one t_night_window       tests/test_night_window_calc.c  src/c/night_window_calc.c src/c/electricity_calc.c
 run_one t_warn_border_calc   tests/test_warn_border_calc.c   src/c/warn_border_calc.c
 run_one t_poll_state_calc    tests/test_poll_state_calc.c    src/c/poll_state_calc.c
 run_one t_clock_area_calc    tests/test_clock_area_calc.c    src/c/clock_area_calc.c

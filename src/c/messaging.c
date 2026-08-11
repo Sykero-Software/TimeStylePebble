@@ -12,7 +12,7 @@
 #include "tuya_leds.h"
 #include "languages.h"
 #include "date_header_calc.h"
-#include "night_rotation_calc.h"
+#include "night_window_calc.h"
 #include "widget_list.h"
 
 void (*message_processed_callback)(void);
@@ -295,7 +295,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   }
 
   // Warning frame. Out-of-range values are ignored rather than clamped, matching the
-  // night-rotation apply above: a garbled message must not rewrite a good setting.
+  // night-window apply above: a garbled message must not rewrite a good setting.
   if(batWarnPct_tuple != NULL) {
     int v = batWarnPct_tuple->value->int32;
     if (v >= 0 && v <= 100) { settings.batteryWarnPct = (uint8_t)v; }
@@ -359,22 +359,22 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
     if (v >= 5 && v <= 240) { settings.pollIntervalMin = (uint8_t)v; }
   }
 
-  // Night rotation: apply only in-range values, like the electricity quiet hours. An
+  // Night window: apply only in-range values, like the electricity quiet hours. An
   // out-of-range mode is dropped rather than defaulted, so a garbled dict cannot silently
   // freeze the sidebar.
   if(nightRotMode_tuple != NULL) {
     int v = nightRotMode_tuple->value->int32;
-    if (v >= NIGHT_ROTATION_OFF && v <= NIGHT_ROTATION_CUSTOM) {
-      settings.nightRotationMode = (uint8_t)v;
+    if (v >= NIGHT_WINDOW_OFF && v <= NIGHT_WINDOW_CUSTOM) {
+      settings.nightMode = (uint8_t)v;
     }
   }
   if(nightRotStart_tuple != NULL) {
     int v = nightRotStart_tuple->value->int32;
-    if (v >= 0 && v <= 23) { settings.nightRotationStart = (uint8_t)v; }
+    if (v >= 0 && v <= 23) { settings.nightStartHour = (uint8_t)v; }
   }
   if(nightRotEnd_tuple != NULL) {
     int v = nightRotEnd_tuple->value->int32;
-    if (v >= 0 && v <= 23) { settings.nightRotationEnd = (uint8_t)v; }
+    if (v >= 0 && v <= 23) { settings.nightEndHour = (uint8_t)v; }
   }
 
   if(elecQuietStart_tuple != NULL) {
