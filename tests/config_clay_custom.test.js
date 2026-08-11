@@ -533,7 +533,7 @@ test('accordion: chevron flips ▸ -> ▾ when a section opens', () => {
   assert.match(w.$manipulatorTarget.innerHTML, /▾/, 'open shows ▾');
 });
 
-test('accordion: Sidebar widgets is a single group (13 rows, not split by sub-labels)', () => {
+test('accordion: Sidebar widgets is a single group (14 rows, not split by sub-labels)', () => {
   const c = render([]);
   const headings = c.getAllItems().filter((it) => it.config.type === 'heading');
   assert.strictEqual(headings.length, 14, 'exactly 14 accordion heading rows (14 sections 1:1)');
