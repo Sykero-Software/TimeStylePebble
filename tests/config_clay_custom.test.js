@@ -105,6 +105,9 @@ function makeClay(widgetVals, opts) {
   byKey['SettingClockStyle'].value = String(opts.clockStyle !== undefined ? opts.clockStyle : 0);
   byKey['SettingBigDate'].value = String(opts.bigDate !== undefined ? opts.bigDate : 1);
   byKey['SettingAnalogDigitalClock'].value = opts.analogDigital !== undefined ? opts.analogDigital : false;
+  byKey['SettingBatteryWarnPct'].value = String(opts.batteryWarnPct !== undefined ? opts.batteryWarnPct : 0);
+  byKey['SettingBatteryWarnDays'].value = String(opts.batteryWarnDays !== undefined ? opts.batteryWarnDays : 0);
+  byKey['SettingBtWarnBorder'].value = opts.btWarnBorder !== undefined ? opts.btWarnBorder : false;
   return {
     // Mirror Clay 1.0.4's real event set. There is NO AFTER_RENDER — a missing
     // constant passes undefined to on(), which Clay's _transformEventNames
@@ -533,7 +536,7 @@ test('accordion: chevron flips ▸ -> ▾ when a section opens', () => {
 test('accordion: Sidebar widgets is a single group (13 rows, not split by sub-labels)', () => {
   const c = render([]);
   const headings = c.getAllItems().filter((it) => it.config.type === 'heading');
-  assert.strictEqual(headings.length, 13, 'exactly 13 accordion heading rows (13 sections 1:1)');
+  assert.strictEqual(headings.length, 14, 'exactly 14 accordion heading rows (14 sections 1:1)');
   const head = openSectionFor(c, 'SettingShowBatteryPct');
   assert.strictEqual(head.config.defaultValue, 'Sidebar widgets',
     'battery setting opens under the "Sidebar widgets" heading, not a sub-label');
@@ -572,4 +575,44 @@ test('accordion: custom-component sections collapse (widgetList/cryptoList/... h
   assert.strictEqual(c.byKey['weather_datasource'].shown, false, 'Weather collapses (after widgetList)');
   assert.strictEqual(c.byKey['SettingMidiVibe'].shown, false, 'MIDI collapses');
   assert.strictEqual(c.byKey['SettingPollIntervalMin'].shown, false, 'Data Refresh collapses');
+});
+
+// ----------------------------------------------------------- Warning border
+test('warning-frame colours are hidden until their trigger is on', () => {
+  // Both triggers Off, BT border off -> neither colour is shown.
+  const off = render([], { batteryWarnPct: 0, batteryWarnDays: 0, btWarnBorder: false });
+  openSectionFor(off, 'SettingBatteryWarnColor');
+  assert.strictEqual(off.byKey['SettingBatteryWarnColor'].shown, false);
+  assert.strictEqual(off.byKey['SettingBtWarnColor'].shown, false);
+
+  // Either battery trigger alone reveals the battery colour.
+  const pctOn = render([], { batteryWarnPct: 20, batteryWarnDays: 0, btWarnBorder: false });
+  openSectionFor(pctOn, 'SettingBatteryWarnColor');
+  assert.strictEqual(pctOn.byKey['SettingBatteryWarnColor'].shown, true);
+  const daysOn = render([], { batteryWarnPct: 0, batteryWarnDays: 10, btWarnBorder: false });
+  openSectionFor(daysOn, 'SettingBatteryWarnColor');
+  assert.strictEqual(daysOn.byKey['SettingBatteryWarnColor'].shown, true);
+
+  // The toggle reveals the disconnect colour.
+  const btOn = render([], { batteryWarnPct: 0, batteryWarnDays: 0, btWarnBorder: true });
+  openSectionFor(btOn, 'SettingBtWarnColor');
+  assert.strictEqual(btOn.byKey['SettingBtWarnColor'].shown, true);
+});
+
+test('live change: turning on a battery trigger reveals the battery colour without reopening the page', () => {
+  const c = render([], { batteryWarnPct: 0, batteryWarnDays: 0, btWarnBorder: false });
+  openSectionFor(c, 'SettingBatteryWarnColor');
+  assert.strictEqual(c.byKey['SettingBatteryWarnColor'].shown, false);
+  c.byKey['SettingBatteryWarnPct'].value = '20';
+  c.byKey['SettingBatteryWarnPct'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingBatteryWarnColor'].shown, true);
+});
+
+test('live change: enabling the disconnect toggle reveals the disconnect colour', () => {
+  const c = render([], { btWarnBorder: false });
+  openSectionFor(c, 'SettingBtWarnColor');
+  assert.strictEqual(c.byKey['SettingBtWarnColor'].shown, false);
+  c.byKey['SettingBtWarnBorder'].value = true;
+  c.byKey['SettingBtWarnBorder'].changeHandlers.forEach((fn) => fn());
+  assert.strictEqual(c.byKey['SettingBtWarnColor'].shown, true);
 });

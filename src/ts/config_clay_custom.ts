@@ -88,6 +88,10 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     // 2 == NIGHT_ROTATION_CUSTOM: only that mode uses the two hour fields (Off and
     // Follow Quiet Time need no schedule of their own).
     const nightCustom = parseInt(key('SettingNightRotationMode').get(), 10) === 2;
+    // Either battery trigger switched on makes the battery colour relevant.
+    const batWarn = parseInt(key('SettingBatteryWarnPct').get(), 10) > 0
+      || parseInt(key('SettingBatteryWarnDays').get(), 10) > 0;
+    const btWarn = key('SettingBtWarnBorder').get() === true;
     const gk: { [k: string]: boolean } = {};
     const gi: { [k: string]: boolean } = {};
     gk.SettingUseMetric = temp;
@@ -113,6 +117,8 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     gk.SettingBigDateFont = bigDate;
     gk.SettingNightRotationStart = nightCustom;
     gk.SettingNightRotationEnd = nightCustom;
+    gk.SettingBatteryWarnColor = batWarn;
+    gk.SettingBtWarnColor = btWarn;
     gi['analog-credit'] = analog;
     gi['heading-weather'] = weather;
     gi['heading-electricity'] = cheapHour;
@@ -231,7 +237,7 @@ function clayConfigCustom(this: ClayConfigThis, minified: unknown): void {
     applyVisibility();
     ['WidgetList', 'WidgetListRight', 'weather_loc_mode', 'SettingDisableAutobattery',
      'SettingFallbackColumn', 'SettingClockStyle', 'SettingAnalogDigitalClock', 'SettingBigDate',
-     'SettingNightRotationMode']
+     'SettingNightRotationMode', 'SettingBatteryWarnPct', 'SettingBatteryWarnDays', 'SettingBtWarnBorder']
       .forEach((k) => { clayConfig.getItemByMessageKey(k).on('change', applyVisibility); });
   });
 }

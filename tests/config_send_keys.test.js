@@ -71,3 +71,33 @@ test('SettingStatusClockDigital reaches the watch', () => {
   assert.ok(STRAIGHT_THROUGH_KEYS.indexOf('SettingStatusClockDigital') !== -1,
     'SettingStatusClockDigital must be sent so the status-strip digital-clock swap works on a real watch');
 });
+
+// Colours were exempt from the coverage tests above because index.ts sends them on its
+// own path (24-bit RGB ints, not scalars) with the key list inlined in index.ts. That
+// inline list is exactly as forgettable as STRAIGHT_THROUGH_KEYS was: a colour missing
+// from it renders and saves in the webview and never reaches the watch. COLOR_KEYS moves
+// the list into this module so it can be asserted here too.
+test('every config colour setting is wired into the colour send path', () => {
+  const { COLOR_KEYS } = require('../src/pkjs/config_send_keys');
+  const set = new Set(COLOR_KEYS);
+  const colors = flattenConfig(configArr)
+    .filter((it) => it && it.type === 'color' && typeof it.messageKey === 'string'
+      && it.messageKey.indexOf('Setting') === 0)
+    .map((it) => it.messageKey);
+  assert.ok(colors.length > 0, 'expected at least one Setting* colour item in the config');
+  const missing = colors.filter((k) => !set.has(k));
+  assert.deepStrictEqual(missing, [],
+    'colour settings missing from COLOR_KEYS (their config value never reaches the watch): '
+    + missing.join(', '));
+});
+
+test('the warning-frame settings reach the watch', () => {
+  const { COLOR_KEYS } = require('../src/pkjs/config_send_keys');
+  ['SettingBatteryWarnPct', 'SettingBatteryWarnDays', 'SettingBtWarnBorder'].forEach((k) => {
+    assert.ok(STRAIGHT_THROUGH_KEYS.indexOf(k) !== -1,
+      k + ' must be sent, or the warning frame silently stays at the C default (off)');
+  });
+  ['SettingBatteryWarnColor', 'SettingBtWarnColor'].forEach((k) => {
+    assert.ok(COLOR_KEYS.indexOf(k) !== -1, k + ' must be sent as a colour');
+  });
+});

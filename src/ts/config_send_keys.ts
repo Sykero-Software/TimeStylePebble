@@ -21,4 +21,17 @@ export const STRAIGHT_THROUGH_KEYS: string[] = [
   'SettingAutoBatteryThreshold', 'SettingFallbackColumn', 'SettingFallbackPosition',
   'SettingClockStyle', 'SettingAnalogTicks', 'SettingAnalogDigitalClock', 'SettingStatusClockDigital',
   'SettingNightRotationMode', 'SettingNightRotationStart', 'SettingNightRotationEnd',
+  'SettingBatteryWarnPct', 'SettingBatteryWarnDays', 'SettingBtWarnBorder',
+];
+
+// Colour settings, sent on index.ts's own path: Clay yields a 24-bit RGB value which the
+// watch decodes with GColorFromHEX (a negative value means "inherit" for the four panel
+// backgrounds). Kept here, not inline in index.ts, so config_send_keys.test.js can assert
+// that every Clay colour item is actually sent -- the same class of silent bug the
+// straight-through coverage test exists for.
+export const COLOR_KEYS: string[] = [
+  'SettingColorTime', 'SettingColorBG', 'SettingColorSidebar', 'SettingSidebarTextColor',
+  'SettingTwtStatusBgColor', 'SettingTwtFlashColor', 'SettingDateBgColor',
+  'SettingSidebarBgColorLeft', 'SettingSidebarBgColorRight',
+  'SettingBatteryWarnColor', 'SettingBtWarnColor',
 ];

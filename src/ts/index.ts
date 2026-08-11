@@ -21,7 +21,7 @@ import { widgetListToPayload } from './widget_list_payload';
 import { slotsToList, splitListByPosition } from './widget_slots';
 import { isWatchPollRequest, isColdPollRequest } from './poll_request';
 import { toAppMessageValue } from './app_message_value';
-import { STRAIGHT_THROUGH_KEYS } from './config_send_keys';
+import { STRAIGHT_THROUGH_KEYS, COLOR_KEYS } from './config_send_keys';
 
 const clay = new Clay(clayConfig, clayConfigCustom, { autoHandleEvents: false });
 clay.registerComponent(widgetListComponent);
@@ -178,9 +178,7 @@ Pebble.addEventListener('webviewclosed', (e) => {
   function colorInt(v: string | number): number {
     return (typeof v === 'string') ? (parseInt(v.replace(/^0x/, ''), 16) & 0xFFFFFF) : (v & 0xFFFFFF);
   }
-  ['SettingColorTime', 'SettingColorBG', 'SettingColorSidebar', 'SettingSidebarTextColor',
-    'SettingTwtStatusBgColor', 'SettingTwtFlashColor', 'SettingDateBgColor', 'SettingSidebarBgColorLeft',
-    'SettingSidebarBgColorRight'].forEach((k) => {
+  COLOR_KEYS.forEach((k) => {
     if (s[k] !== undefined && s[k] !== null) { dict[k] = colorInt(s[k]); }
   });
 

@@ -458,6 +458,49 @@ const config = [
     ],
   },
 
+  {
+    type: 'section',
+    items: [
+      { type: 'heading', defaultValue: 'Warning border' },
+      { type: 'text', defaultValue:
+        'Draws a coloured frame around the clock (not around the sidebars or the ' +
+        'date/status strips) when something needs attention. Off by default.' },
+      { type: 'select', messageKey: 'SettingBatteryWarnPct', label: 'Battery warning below',
+        defaultValue: '0', options: [
+          { label: 'Off', value: '0' },
+          { label: '5 %', value: '5' },
+          { label: '10 %', value: '10' },
+          { label: '15 %', value: '15' },
+          { label: '20 %', value: '20' },
+          { label: '25 %', value: '25' },
+          { label: '30 %', value: '30' },
+        ] },
+      { type: 'select', messageKey: 'SettingBatteryWarnDays', label: 'Battery warning below (days left)',
+        defaultValue: '0', options: [
+          { label: 'Off', value: '0' },
+          { label: '0.5 days', value: '5' },
+          { label: '1 day', value: '10' },
+          { label: '2 days', value: '20' },
+          { label: '3 days', value: '30' },
+          { label: '5 days', value: '50' },
+        ] },
+      { type: 'color', messageKey: 'SettingBatteryWarnColor', label: 'Battery border colour',
+        defaultValue: '0xFF0000', sunlight: false, allowGray: true },
+      { type: 'toggle', messageKey: 'SettingBtWarnBorder',
+        label: 'Border while phone is disconnected', defaultValue: false },
+      { type: 'color', messageKey: 'SettingBtWarnColor', label: 'Disconnect border colour',
+        defaultValue: '0xFFFF00', sunlight: false, allowGray: true },
+      { type: 'text', id: 'warn-border-help', defaultValue:
+        'The two battery triggers are independent — either one alone switches the frame ' +
+        'on, and either can be Off. The days trigger uses the same estimate as the ' +
+        '“Battery (days left)” widget, so it does nothing until the watch has learned ' +
+        'your discharge rate. No frame is shown while charging.<br>' +
+        'If both a battery and a disconnect warning apply, the battery one wins. A ' +
+        'colour that matches your clock background is drawn black or white instead, so ' +
+        'the frame is never invisible.' },
+    ],
+  },
+
   { type: 'submit', defaultValue: 'Save' },
 ];
 
